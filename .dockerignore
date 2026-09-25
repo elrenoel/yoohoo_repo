@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+.env*
+.codex
+.agents
+build
+*.log

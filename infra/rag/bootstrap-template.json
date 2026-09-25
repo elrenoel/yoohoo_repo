@@ -1,0 +1,358 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Yoohoo RAG build bootstrap - uses private S3 and CodeBuild to build immutable Lambda images when local Docker is unavailable.",
+  "Metadata": {
+    "AWSToolsMetrics": {
+      "AWSAgentToolkit": "aws-cloudformation@3"
+    },
+    "com.aws.cloudformation.Context": {
+      "arch": "private S3 source -> privileged CodeBuild -> immutable ECR image",
+      "must": [
+        "Never upload .env files or credentials in the source archive",
+        "CodeBuild push access stays scoped to this repository"
+      ],
+      "ref": [
+        {
+          "at": "infra/rag/README.md",
+          "has": "RAG deployment and operational constraints",
+          "scope": "workspace"
+        }
+      ]
+    }
+  },
+  "Resources": {
+    "ArtifactBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Private staging for a sanitized source archive consumed by CodeBuild; 7-day expiry limits source retention.",
+          "must": [
+            "Block all public access and reject non-TLS requests",
+            "Retain on stack replacement/deletion to avoid implicit data loss"
+          ],
+          "mutable": "change-with-constraints"
+        }
+      },
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "${AWS::StackName}-artifacts-${AWS::AccountId}-${AWS::Region}"
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "IgnorePublicAcls": true,
+          "BlockPublicPolicy": true,
+          "RestrictPublicBuckets": true
+        },
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "VersioningConfiguration": {
+          "Status": "Enabled"
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "ExpireBuildSources",
+              "Status": "Enabled",
+              "Prefix": "source/",
+              "ExpirationInDays": 7,
+              "NoncurrentVersionExpiration": {
+                "NoncurrentDays": 7
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ArtifactBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Rejects plaintext transport for build source objects.",
+          "must": [
+            "Keep aws:SecureTransport deny on bucket and objects"
+          ],
+          "mutable": "change-with-constraints"
+        }
+      },
+      "Properties": {
+        "Bucket": {
+          "Ref": "ArtifactBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "DenyInsecureTransport",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "ArtifactBucket",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Sub": "${ArtifactBucket.Arn}/*"
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ImageRepository": {
+      "Type": "AWS::ECR::Repository",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Stores one shared runtime image; Lambda ImageConfig selects each handler.",
+          "must": [
+            "Tags remain immutable so a deployed Lambda revision cannot change underneath it"
+          ],
+          "mutable": "change-with-constraints"
+        }
+      },
+      "Properties": {
+        "RepositoryName": {
+          "Fn::Sub": "${AWS::StackName}"
+        },
+        "EncryptionConfiguration": {
+          "EncryptionType": "AES256"
+        },
+        "ImageTagMutability": "IMMUTABLE",
+        "ImageScanningConfiguration": {
+          "ScanOnPush": true
+        },
+        "LifecyclePolicy": {
+          "LifecyclePolicyText": "{\"rules\":[{\"rulePriority\":1,\"description\":\"Keep ten most recent images\",\"selection\":{\"tagStatus\":\"any\",\"countType\":\"imageCountMoreThan\",\"countNumber\":10},\"action\":{\"type\":\"expire\"}}]}"
+        }
+      }
+    },
+    "BuildLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Bounded retention for remote image build diagnostics.",
+          "must": [
+            "Never log secret values or source environment files"
+          ],
+          "mutable": "free-to-tune"
+        }
+      },
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/codebuild/${AWS::StackName}"
+        },
+        "RetentionInDays": 30
+      }
+    },
+    "BuildRole": {
+      "Type": "AWS::IAM::Role",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Allows CodeBuild to read only the staged source and push only this repository.",
+          "must": [
+            "Do not broaden S3 or repository permissions"
+          ],
+          "mutable": "change-with-constraints"
+        }
+      },
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codebuild.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "BuildOnlyThisImage",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "${BuildLogGroup.Arn}:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "ArtifactBucket",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:GetObjectVersion"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "${ArtifactBucket.Arn}/source/*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": "ecr:GetAuthorizationToken",
+                  "Resource": "*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "ecr:BatchCheckLayerAvailability",
+                    "ecr:CompleteLayerUpload",
+                    "ecr:DescribeImages",
+                    "ecr:InitiateLayerUpload",
+                    "ecr:PutImage",
+                    "ecr:UploadLayerPart"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "ImageRepository",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ImageBuild": {
+      "Type": "AWS::CodeBuild::Project",
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Builds the native Node/canvas Lambda image in Linux because the developer machine has no Docker runtime.",
+          "must": [
+            "Privileged mode is required only for Docker image build",
+            "Source archive must exclude .env, node_modules, build output, and VCS metadata"
+          ],
+          "mutable": "change-with-constraints"
+        }
+      },
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-image"
+        },
+        "ServiceRole": {
+          "Fn::GetAtt": [
+            "BuildRole",
+            "Arn"
+          ]
+        },
+        "TimeoutInMinutes": 30,
+        "QueuedTimeoutInMinutes": 30,
+        "Source": {
+          "Type": "S3",
+          "Location": {
+            "Fn::Sub": "${ArtifactBucket}/source/rag-source.zip"
+          },
+          "BuildSpec": "version: 0.2\nphases:\n  pre_build:\n    on-failure: ABORT\n    commands:\n      - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $IMAGE_URI\n  build:\n    on-failure: ABORT\n    commands:\n      - docker build --pull -f infra/rag/Dockerfile -t $IMAGE_URI:$IMAGE_TAG .\n  post_build:\n    on-failure: ABORT\n    commands:\n      - test \"$CODEBUILD_BUILD_SUCCEEDING\" = \"1\"\n      - docker push $IMAGE_URI:$IMAGE_TAG\n"
+        },
+        "Artifacts": {
+          "Type": "NO_ARTIFACTS"
+        },
+        "Environment": {
+          "Type": "LINUX_CONTAINER",
+          "ComputeType": "BUILD_GENERAL1_MEDIUM",
+          "Image": "aws/codebuild/standard:7.0",
+          "ImagePullCredentialsType": "CODEBUILD",
+          "PrivilegedMode": true,
+          "EnvironmentVariables": [
+            {
+              "Name": "IMAGE_URI",
+              "Type": "PLAINTEXT",
+              "Value": {
+                "Fn::GetAtt": [
+                  "ImageRepository",
+                  "RepositoryUri"
+                ]
+              }
+            },
+            {
+              "Name": "IMAGE_TAG",
+              "Type": "PLAINTEXT",
+              "Value": "manual"
+            }
+          ]
+        },
+        "LogsConfig": {
+          "CloudWatchLogs": {
+            "Status": "ENABLED",
+            "GroupName": {
+              "Ref": "BuildLogGroup"
+            },
+            "StreamName": "image"
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ArtifactBucketName": {
+      "Description": "Private bucket used for sanitized build source archives",
+      "Value": {
+        "Ref": "ArtifactBucket"
+      }
+    },
+    "ImageRepositoryUri": {
+      "Description": "Immutable ECR repository URI for the RAG Lambda image",
+      "Value": {
+        "Fn::GetAtt": [
+          "ImageRepository",
+          "RepositoryUri"
+        ]
+      }
+    },
+    "BuildProjectName": {
+      "Description": "CodeBuild project used to build and push the Lambda image",
+      "Value": {
+        "Ref": "ImageBuild"
+      }
+    }
+  }
+}

@@ -1,0 +1,40 @@
+%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj
+4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj
+5 0 obj << /Length 420 >> stream
+BT
+/F1 16 Tf
+50 700 Td
+(SISTEM OPERASI: VIRTUAL MEMORY DAN PAGING) Tj
+/F1 11 Tf
+0 -30 Td
+(1. Virtual Memory adalah teknik pemisahan memori logis dari RAM fisik.) Tj
+0 -20 Td
+(2. Paging membagi memori menjadi Page dan Frame berukuran tetap.) Tj
+0 -20 Td
+(3. Page Table memetakan page logis ke frame fisik.) Tj
+0 -20 Td
+(4. TLB adalah cache hardware berkecepatan tinggi untuk translasi memori.) Tj
+0 -20 Td
+(5. Demand Paging memuat page hanya saat dibutuhkan.) Tj
+0 -20 Td
+(6. Page Fault terjadi ketika mengakses page yang belum di RAM.) Tj
+0 -20 Td
+(7. Thrashing terjadi jika proses terlalu banyak melakukan swap I/O.) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000234 00000 n 
+0000000305 00000 n 
+trailer << /Size 6 /Root 1 0 R >>
+startxref
+778
+%%EOF

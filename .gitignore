@@ -1,0 +1,70 @@
+# Dependencies
+/node_modules/
+/.pnp/
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Test output
+/coverage/
+/test-results/
+/playwright-report/
+/.nyc_output/
+
+# Next.js and production builds
+/.next/
+/out/
+/build/
+/.swc/
+/.turbo/
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Supabase CLI local state
+/supabase/.temp/
+/supabase/.branches/
+
+# AWS local build/deployment artifacts
+/.aws-sam/
+/cdk.out/
+
+# Vercel
+/.vercel/
+
+# Editors and OS files
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+Desktop.ini

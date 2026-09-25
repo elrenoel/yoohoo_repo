@@ -1,0 +1,24 @@
+SISTEM BASIS DATA: TRANSAKSI, ACID, DAN ISOLATION LEVEL
+
+1. Konsep Transaksi Basis Data
+Transaksi adalah satu unit kerja logis yang terdiri dari serangkaian operasi pembacaan (READ) dan penulisan (WRITE) basis data yang harus diperlakukan sebagai satu kesatuan atomik. Transaksi berakhir dengan COMMIT (semua perubahan disimpan permanen) atau ROLLBACK (semua perubahan dibatalkan sehingga basis data kembali ke keadaan konsisten semula).
+
+2. Prinsip ACID
+Untuk menjamin integritas data dalam lingkungan multi-pengguna dan tahan terhadap kegagalan sistem, sistem manajemen basis data (DBMS) harus mematuhi 4 properti ACID:
+- Atomicity (Keutuhan): Prinsip "semua atau tidak sama sekali" (All-or-Nothing). Jika satu bagian transaksi gagal, seluruh transaksi harus di-rollback.
+- Consistency (Konsistensi): Transaksi harus membawa basis data dari satu status valid ke status valid lainnya, dengan memenuhi seluruh aturan integritas (constraints, cascades, triggers).
+- Isolation (Isolasi): Eksekusi transaksi yang berjalan bersamaan (konkuren) tidak boleh saling mengganggu atau melihat status perubahan belum ter-commit milik transaksi lain.
+- Durability (Daya Tahan): Sekali transaksi berhasil di-COMMIT, perubahannya bersifat permanen dan tidak akan hilang meskipun terjadi crash sistem atau pemadaman listrik (dijamin melalui Write-Ahead Logging / WAL).
+
+3. Fenomena Anomali Konkurensi
+Ketika banyak transaksi mengakses data yang sama secara bersamaan tanpa isolasi yang memadai, dapat timbul berbagai anomali:
+- Dirty Read: Transaksi T1 membaca data yang telah dimodifikasi oleh transaksi T2, namun T2 kemudian melakukan ROLLBACK.
+- Non-Repeatable Read (Fuzzy Read): Transaksi T1 membaca baris data yang sama dua kali, namun nilainya berbeda karena transaksi T2 telah memodifikasi dan me-commit data tersebut di antara dua pembacaan T1.
+- Phantom Read: Transaksi T1 menjalankan kueri dengan filter kondisi tertentu dua kali, namun mendapatkan jumlah baris yang berbeda karena transaksi T2 melakukan INSERT/DELETE baris baru yang cocok dengan filter tersebut dan me-commit perubahannya.
+
+4. Tingkat Isolasi SQL (ANSI SQL Isolation Levels)
+Standar SQL mendefinisikan 4 level isolasi transaksi dengan trade-off antara konsistensi data vs konkurensi performa:
+1. Read Uncommitted: Level terendah. Mengizinkan Dirty Read, Non-Repeatable Read, dan Phantom Read. Performa tertinggi.
+2. Read Committed: Default di banyak RDBMS (seperti PostgreSQL). Mencegah Dirty Read, namun masih rentan terhadap Non-Repeatable Read dan Phantom Read.
+3. Repeatable Read: Menjamin bahwa data yang dibaca sekali akan tetap bernilai sama sepanjang transaksi. Mencegah Dirty Read dan Non-Repeatable Read (di PostgreSQL juga mencegah Phantom Read menggunakan snapshot isolasi).
+4. Serializable: Level isolasi tertinggi dan paling ketat. Menjamin eksekusi transaksi konkuren menghasilkan efek yang sama persis seperti jika transaksi dieksekusi secara serial satu per satu. Mencegah semua anomali konkurensi.

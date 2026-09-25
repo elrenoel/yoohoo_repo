@@ -1,0 +1,64 @@
+{
+  "Comment": "Yoohoo RAG keyword extraction and selected-material generation; no source content in state history",
+  "StartAt": "RouteMode",
+  "TimeoutSeconds": 14400,
+  "States": {
+    "RouteMode": { "Type": "Choice", "Choices": [{ "Variable": "$.mode", "StringEquals": "generate", "Next": "GenerateSelected" }], "Default": "ProcessChunks" },
+    "ProcessChunks": {
+      "Type": "Map", "ItemsPath": "$.chunkIds", "MaxConcurrency": 10,
+      "ItemSelector": { "documentId.$": "$.documentId", "userId.$": "$.userId", "chunkId.$": "$$.Map.Item.Value" },
+      "ItemProcessor": {
+        "ProcessorConfig": { "Mode": "INLINE" }, "StartAt": "ExtractKeywords",
+        "States": {
+          "ExtractKeywords": {
+            "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${WorkerArn}", "Payload.$": "$" }, "ResultPath": null,
+            "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "BackoffRate": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }],
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "RecordSkippedChunk" }], "End": true, "TimeoutSeconds": 310
+          },
+          "RecordSkippedChunk": {
+            "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${FinalizerArn}", "Payload": { "documentId.$": "$.documentId", "userId.$": "$.userId", "skippedChunkId.$": "$.chunkId" } }, "ResultPath": null,
+            "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }], "End": true, "TimeoutSeconds": 70
+          }
+        }
+      },
+      "ResultPath": null, "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MarkFailed" }], "Next": "Finalize"
+    },
+    "Finalize": {
+      "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${FinalizerArn}", "Payload.$": "$" }, "ResultPath": null,
+      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }],
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MarkFailed" }], "End": true, "TimeoutSeconds": 70
+    },
+    "MarkFailed": {
+      "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${FinalizerArn}", "Payload": { "documentId.$": "$.documentId", "userId.$": "$.userId", "failed": true } },
+      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }], "End": true, "TimeoutSeconds": 70
+    },
+    "GenerateSelected": {
+      "Type": "Map", "ItemsPath": "$.chunkIds", "MaxConcurrency": 5,
+      "ItemSelector": { "mode": "generate", "jobId.$": "$.jobId", "documentId.$": "$.documentId", "userId.$": "$.userId", "chunkId.$": "$$.Map.Item.Value" },
+      "ItemProcessor": {
+        "ProcessorConfig": { "Mode": "INLINE" }, "StartAt": "GenerateChunkMaterials",
+        "States": {
+          "GenerateChunkMaterials": {
+            "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${WorkerArn}", "Payload.$": "$" }, "ResultPath": null,
+            "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "BackoffRate": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }],
+            "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "RecordGenerationFailure" }], "End": true, "TimeoutSeconds": 310
+          },
+          "RecordGenerationFailure": {
+            "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${FinalizerArn}", "Payload": { "mode": "generate", "jobId.$": "$.jobId", "documentId.$": "$.documentId", "userId.$": "$.userId", "failedChunkId.$": "$.chunkId" } }, "ResultPath": null,
+            "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }], "End": true, "TimeoutSeconds": 70
+          }
+        }
+      },
+      "ResultPath": null, "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MarkGenerationFailed" }], "Next": "FinalizeGeneration"
+    },
+    "FinalizeGeneration": {
+      "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${FinalizerArn}", "Payload.$": "$" }, "ResultPath": null,
+      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }],
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MarkGenerationFailed" }], "End": true, "TimeoutSeconds": 70
+    },
+    "MarkGenerationFailed": {
+      "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${FinalizerArn}", "Payload": { "mode": "generate", "jobId.$": "$.jobId", "documentId.$": "$.documentId", "userId.$": "$.userId", "failed": true } },
+      "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }], "End": true, "TimeoutSeconds": 70
+    }
+  }
+}

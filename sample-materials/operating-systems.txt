@@ -1,0 +1,39 @@
+BAB 4: MANAJEMEN MEMORI DAN VIRTUAL MEMORY (SISTEM OPERASI)
+
+1. Konsep Virtual Memory
+Virtual memory adalah teknik manajemen memori yang memisahkan memori logis pengguna dari memori fisik (RAM). Dengan teknik ini, program yang berukuran lebih besar daripada ukuran RAM fisik yang tersedia tetap dapat dieksekusi oleh sistem komputer. Konsep ini memungkinkan sistem operasi memetakan alamat virtual ke alamat fisik dan memanfaatkan ruang penyimpanan sekunder (seperti SSD/HDD) sebagai area swap/paging file.
+
+Keuntungan utama Virtual Memory:
+- Menjalankan proses berukuran besar tanpa dibatasi keterbatasan RAM fisik.
+- Meningkatkan derajat multiprogramming (lebih banyak proses yang dapat dimuat ke memori secara bersamaan).
+- Mengurangi kebutuhan I/O untuk memuat atau menukar seluruh struktur proses.
+
+2. Paging dan Struktur Page Table
+Paging adalah skema manajemen memori non-contiguous yang membagi memori fisik menjadi blok-blok berukuran tetap yang disebut "Frame", dan membagi ruang alamat logis menjadi blok-blok dengan ukuran yang sama yang disebut "Page". 
+
+Komponen utama:
+- Logical Address: Terdiri dari Page Number (p) dan Page Offset (d).
+- Page Table: Struktur data yang menyimpan pemetaan antara Page logis dengan Frame fisik. Setiap proses memiliki page table tersendiri.
+- TLB (Translation Lookaside Buffer): Cache hardware berkecepatan tinggi yang menyimpan translasi alamat page-to-frame terbaru untuk meminimalkan waktu akses memori.
+
+3. Page Fault dan Demand Paging
+Demand Paging adalah strategi di mana page hanya dimuat ke dalam memori fisik saat page tersebut benar-benar dibutuhkan selama eksekusi program.
+Jika suatu instruksi mencoba mengakses page yang belum ada di memori fisik (bit valid-invalid bernilai invalid), CPU akan memicu interupsi hardware khusus yang disebut "Page Fault".
+
+Langkah-langkah penanganan Page Fault oleh OS:
+1. CPU mendeteksi page fault dan melakukan trap ke sistem operasi.
+2. OS memeriksa tabel internal proses untuk menentukan apakah referensi alamat tersebut valid.
+3. Jika valid tetapi belum dimuat, OS mencari frame kosong di memori fisik.
+4. OS menjadwalkan operasi disk I/O untuk membaca page dari backing store ke dalam frame yang dipilih.
+5. Setelah I/O selesai, OS memperbarui Page Table (mengubah bit valid menjadi 1).
+6. Instruksi yang sempat terinterupsi di-restart dari awal.
+
+4. Algoritma Page Replacement
+Ketika terjadi page fault dan tidak ada frame fisik yang kosong, OS harus memilih salah satu frame yang sedang digunakan untuk digantikan (evict) ke disk (proses ini disebut victim frame).
+- FIFO (First-In, First-Out): Mengganti page yang paling awal dimuat ke memori. Rentan terhadap Belady's Anomaly (penambahan jumlah frame fisik justru menyebabkan peningkatan jumlah page fault).
+- Optimal (OPT): Mengganti page yang tidak akan digunakan untuk periode waktu terlama di masa depan. Digunakan sebagai tolak ukur teoretis (benchmark).
+- LRU (Least Recently Used): Mengganti page yang sudah paling lama tidak diakses di masa lampau. Merupakan aproksimasi terbaik untuk OPT dan tidak menderita Belady's Anomaly.
+- Clock / Second-Chance Algorithm: Aproksimasi LRU yang efisien menggunakan bit referensi (reference bit) melingkar menyerupai jarum jam.
+
+5. Thrashing
+Thrashing adalah kondisi kritis di mana sistem operasi menghabiskan lebih banyak waktu untuk melakukan paging/swap I/O daripada mengeksekusi instruksi program nyata. Thrashing terjadi saat total kebutuhan working-set dari semua proses yang berjalan melebihi kapasitas memori fisik yang tersedia. Solusi pencegahan thrashing mencakup penggunaan Working-Set Model dan pengontrolan Page Fault Frequency (PFF).

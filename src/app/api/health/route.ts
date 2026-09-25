@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {db} from "@/db";
+export async function GET(){const started=Date.now();try{const r=await db.from("user").select("id",{head:true,count:"exact"}).limit(1);if(r.error)throw r.error;return NextResponse.json({status:"ok",database:"supabase",latencyMs:Date.now()-started});}catch(error){return NextResponse.json({status:"error",database:"supabase",message:error instanceof Error?error.message:"Database unavailable"},{status:503});}}

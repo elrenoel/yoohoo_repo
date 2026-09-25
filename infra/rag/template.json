@@ -1,0 +1,926 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Transform": "AWS::Serverless-2016-10-31",
+  "Description": "Yoohoo PDF RAG pipeline: keyword extraction and selected flashcard/quiz generation with backend ownership enforcement.",
+  "Metadata": {
+    "AWSToolsMetrics": {
+      "AWSAgentToolkit": "aws-cloudformation@3"
+    }
+  },
+  "Parameters": {
+    "FrontendOrigin": {
+      "Type": "String",
+      "AllowedPattern": "https?://[^/]+",
+      "Description": "Exact frontend origin; no trailing slash"
+    },
+    "DatabaseSecretName": {
+      "Type": "String",
+      "Description": "Secrets Manager JSON secret containing SUPABASE_DATABASE_URL"
+    },
+    "GeminiSecretName": {
+      "Type": "String",
+      "Description": "Secrets Manager JSON secret containing GEMINI_API_KEY"
+    },
+    "GeminiModel": {
+      "Type": "String",
+      "Default": "gemini-3.5-flash-lite"
+    },
+    "ArchiveMode": {
+      "Type": "String",
+      "AllowedValues": [
+        "Age60",
+        "Inactive90"
+      ],
+      "Description": "Age60: Glacier 60 days since creation. Inactive90: archive 90 days since access."
+    },
+    "DatabaseCA": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Optional public Supabase root CA PEM; enables verified database TLS"
+    }
+  },
+  "Conditions": {
+    "ArchiveByAge": {
+      "Fn::Equals": [
+        {
+          "Ref": "ArchiveMode"
+        },
+        "Age60"
+      ]
+    }
+  },
+  "Resources": {
+    "DocumentsBucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}"
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "IgnorePublicAcls": true,
+          "BlockPublicPolicy": true,
+          "RestrictPublicBuckets": true
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "CorsConfiguration": {
+          "CorsRules": [
+            {
+              "AllowedMethods": [
+                "PUT"
+              ],
+              "AllowedOrigins": [
+                {
+                  "Ref": "FrontendOrigin"
+                }
+              ],
+              "AllowedHeaders": [
+                "content-type",
+                "if-none-match",
+                "x-amz-checksum-crc32",
+                "x-amz-sdk-checksum-algorithm"
+              ],
+              "ExposedHeaders": [
+                "ETag"
+              ],
+              "MaxAge": 300
+            }
+          ]
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "ArchivePDF",
+              "Status": "Enabled",
+              "Prefix": "uploads/",
+              "Transitions": {
+                "Fn::If": [
+                  "ArchiveByAge",
+                  [
+                    {
+                      "StorageClass": "GLACIER",
+                      "TransitionInDays": 60
+                    }
+                  ],
+                  [
+                    {
+                      "StorageClass": "INTELLIGENT_TIERING",
+                      "TransitionInDays": 0
+                    }
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "IntelligentTieringConfigurations": {
+          "Fn::If": [
+            "ArchiveByAge",
+            {
+              "Ref": "AWS::NoValue"
+            },
+            [
+              {
+                "Id": "InactivePDF",
+                "Status": "Enabled",
+                "Prefix": "uploads/",
+                "Tierings": [
+                  {
+                    "AccessTier": "ARCHIVE_ACCESS",
+                    "Days": 90
+                  }
+                ]
+              }
+            ]
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Private immutable uploads; confirmation marker avoids DB/S3 race. No versioning per request.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "BucketTLS": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "DocumentsBucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": [
+                "s3:GetObject",
+                "s3:PutObject",
+                "s3:DeleteObject"
+              ],
+              "Resource": {
+                "Fn::Sub": "arn:${AWS::Partition}:s3:::${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}/*"
+              },
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "OrchestratorLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-orchestrator"
+        },
+        "RetentionInDays": 30
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "OrchestratorRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "PipelineScopedAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-orchestrator:log-stream:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:s3:::${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}/uploads/*"
+                    },
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:s3:::${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}/ready/*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "states:StartExecution"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-keywords"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-finalizer"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "Orchestrator": {
+      "Type": "AWS::Serverless::Function",
+      "DependsOn": [
+        "OrchestratorLogs"
+      ],
+      "Metadata": {
+        "DockerContext": "../..",
+        "Dockerfile": "infra/rag/Dockerfile",
+        "DockerTag": "rag-orchestrator",
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-orchestrator"
+        },
+        "PackageType": "Image",
+        "Architectures": [
+          "x86_64"
+        ],
+        "ImageConfig": {
+          "Command": [
+            "orchestrator.handler"
+          ]
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "OrchestratorRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 900,
+        "MemorySize": 3008,
+        "Environment": {
+          "Variables": {
+            "SUPABASE_DATABASE_URL": {
+              "Fn::Sub": "{{resolve:secretsmanager:${DatabaseSecretName}:SecretString:SUPABASE_DATABASE_URL}}"
+            },
+            "RAG_BUCKET_NAME": {
+              "Fn::Sub": "${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}"
+            },
+            "RAG_STATE_MACHINE_ARN": {
+              "Fn::Sub": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-keywords"
+            },
+            "RAG_CHUNK_PAGES": "5",
+            "SUPABASE_DATABASE_CA": {
+              "Ref": "DatabaseCA"
+            }
+          }
+        },
+        "Events": {
+          "ConfirmedUpload": {
+            "Type": "S3",
+            "Properties": {
+              "Bucket": {
+                "Ref": "DocumentsBucket"
+              },
+              "Events": "s3:ObjectCreated:*",
+              "Filter": {
+                "S3Key": {
+                  "Rules": [
+                    {
+                      "Name": "prefix",
+                      "Value": "ready/"
+                    },
+                    {
+                      "Name": "suffix",
+                      "Value": ".json"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "EventInvokeConfig": {
+          "MaximumRetryAttempts": 2,
+          "MaximumEventAgeInSeconds": 3600,
+          "DestinationConfig": {
+            "OnFailure": {
+              "Type": "Lambda",
+              "Destination": {
+                "Fn::GetAtt": [
+                  "Finalizer",
+                  "Arn"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "WorkerLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-worker"
+        },
+        "RetentionInDays": 30
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "WorkerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "PipelineScopedAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-worker:log-stream:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:s3:::${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}/uploads/*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "Worker": {
+      "Type": "AWS::Serverless::Function",
+      "DependsOn": [
+        "WorkerLogs"
+      ],
+      "Metadata": {
+        "DockerContext": "../..",
+        "Dockerfile": "infra/rag/Dockerfile",
+        "DockerTag": "rag-worker",
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-worker"
+        },
+        "PackageType": "Image",
+        "Architectures": [
+          "x86_64"
+        ],
+        "ImageConfig": {
+          "Command": [
+            "worker.handler"
+          ]
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "WorkerRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 300,
+        "MemorySize": 3008,
+        "Environment": {
+          "Variables": {
+            "SUPABASE_DATABASE_URL": {
+              "Fn::Sub": "{{resolve:secretsmanager:${DatabaseSecretName}:SecretString:SUPABASE_DATABASE_URL}}"
+            },
+            "RAG_BUCKET_NAME": {
+              "Fn::Sub": "${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}"
+            },
+            "GEMINI_API_KEY": {
+              "Fn::Sub": "{{resolve:secretsmanager:${GeminiSecretName}:SecretString:GEMINI_API_KEY}}"
+            },
+            "GEMINI_MODEL": {
+              "Ref": "GeminiModel"
+            },
+            "SUPABASE_DATABASE_CA": {
+              "Ref": "DatabaseCA"
+            }
+          }
+        }
+      }
+    },
+    "FinalizerLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/aws/lambda/${AWS::StackName}-finalizer"
+        },
+        "RetentionInDays": 30
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "FinalizerRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "PipelineScopedAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${AWS::StackName}-finalizer:log-stream:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:s3:::${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}/ready/*"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "Finalizer": {
+      "Type": "AWS::Serverless::Function",
+      "DependsOn": [
+        "FinalizerLogs"
+      ],
+      "Metadata": {
+        "DockerContext": "../..",
+        "Dockerfile": "infra/rag/Dockerfile",
+        "DockerTag": "rag-finalizer",
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      },
+      "Properties": {
+        "FunctionName": {
+          "Fn::Sub": "${AWS::StackName}-finalizer"
+        },
+        "PackageType": "Image",
+        "Architectures": [
+          "x86_64"
+        ],
+        "ImageConfig": {
+          "Command": [
+            "finalizer.handler"
+          ]
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "FinalizerRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 60,
+        "MemorySize": 512,
+        "Environment": {
+          "Variables": {
+            "SUPABASE_DATABASE_URL": {
+              "Fn::Sub": "{{resolve:secretsmanager:${DatabaseSecretName}:SecretString:SUPABASE_DATABASE_URL}}"
+            },
+            "RAG_BUCKET_NAME": {
+              "Fn::Sub": "${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}"
+            },
+            "SUPABASE_DATABASE_CA": {
+              "Ref": "DatabaseCA"
+            }
+          }
+        }
+      }
+    },
+    "StateRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole",
+              "Condition": {
+                "StringEquals": {
+                  "aws:SourceAccount": {
+                    "Ref": "AWS::AccountId"
+                  }
+                },
+                "ArnEquals": {
+                  "aws:SourceArn": {
+                    "Fn::Sub": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-keywords"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "PipelineScopedAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Worker",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "Finalizer",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "StateMachine": {
+      "Type": "AWS::Serverless::StateMachine",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-keywords"
+        },
+        "Type": "STANDARD",
+        "Role": {
+          "Fn::GetAtt": [
+            "StateRole",
+            "Arn"
+          ]
+        },
+        "DefinitionUri": "state-machine.asl.json",
+        "DefinitionSubstitutions": {
+          "WorkerArn": {
+            "Fn::GetAtt": [
+              "Worker",
+              "Arn"
+            ]
+          },
+          "FinalizerArn": {
+            "Fn::GetAtt": [
+              "Finalizer",
+              "Arn"
+            ]
+          }
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "TerminalFailureRule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "EventPattern": {
+          "source": [
+            "aws.states"
+          ],
+          "detail-type": [
+            "Step Functions Execution Status Change"
+          ],
+          "detail": {
+            "stateMachineArn": [
+              {
+                "Ref": "StateMachine"
+              }
+            ],
+            "status": [
+              "FAILED",
+              "TIMED_OUT",
+              "ABORTED"
+            ]
+          }
+        },
+        "Targets": [
+          {
+            "Id": "FinalizeFailure",
+            "Arn": {
+              "Fn::GetAtt": [
+                "Finalizer",
+                "Arn"
+              ]
+            }
+          }
+        ]
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "TerminalFailurePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Finalizer"
+        },
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "TerminalFailureRule",
+            "Arn"
+          ]
+        },
+        "SourceAccount": {
+          "Ref": "AWS::AccountId"
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "BackendUploadPolicy": {
+      "Type": "AWS::IAM::ManagedPolicy",
+      "Properties": {
+        "Description": "Attach only to the trusted Next.js backend role; no browser credentials",
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject",
+                "s3:GetObject"
+              ],
+              "Resource": {
+                "Fn::Sub": "arn:${AWS::Partition}:s3:::${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}/uploads/*"
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "s3:PutObject"
+              ],
+              "Resource": {
+                "Fn::Sub": "arn:${AWS::Partition}:s3:::${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}/ready/*"
+              }
+            },
+            {
+              "Effect": "Allow",
+              "Action": [
+                "states:StartExecution"
+              ],
+              "Resource": {
+                "Ref": "StateMachine"
+              }
+            }
+          ]
+        }
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    },
+    "PipelineFailureAlarm": {
+      "Type": "AWS::CloudWatch::Alarm",
+      "Properties": {
+        "AlarmDescription": "Inspect Step Functions execution history on failures",
+        "Namespace": "AWS/States",
+        "MetricName": "ExecutionsFailed",
+        "Dimensions": [
+          {
+            "Name": "StateMachineArn",
+            "Value": {
+              "Ref": "StateMachine"
+            }
+          }
+        ],
+        "Statistic": "Sum",
+        "Period": 300,
+        "EvaluationPeriods": 1,
+        "Threshold": 0,
+        "ComparisonOperator": "GreaterThanThreshold",
+        "TreatMissingData": "notBreaching"
+      },
+      "Metadata": {
+        "com.aws.cloudformation.Context": {
+          "why": "Dedicated PDF keyword pipeline resource; see README.md for deployment and failure handling.",
+          "must": [
+            "Scope access to this stack; never grant public data access."
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "BucketName": {
+      "Description": "Next.js RAG_BUCKET_NAME",
+      "Value": {
+        "Ref": "DocumentsBucket"
+      }
+    },
+    "StateMachineArn": {
+      "Description": "Workflow ARN",
+      "Value": {
+        "Ref": "StateMachine"
+      }
+    },
+    "BackendUploadPolicyArn": {
+      "Description": "Attach to backend runtime role",
+      "Value": {
+        "Ref": "BackendUploadPolicy"
+      }
+    }
+  }
+}
