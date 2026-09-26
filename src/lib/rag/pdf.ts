@@ -5,7 +5,8 @@ export async function extractChunks(bytes: Uint8Array) {
   const pdf = await getDocumentProxy(new Uint8Array(bytes));
   try {
     const { text } = await extractText(pdf, { mergePages: false });
-    return { pageCount: pdf.numPages, chunks: chunkPages(text, Number(process.env.RAG_CHUNK_PAGES ?? 5)) };
+    return { pageCount: pdf.numPages, pages: text,
+      chunks: chunkPages(text, Number(process.env.RAG_CHUNK_PAGES ?? 5), Number(process.env.RAG_CHUNK_OVERLAP_PARAGRAPHS ?? 2)) };
   } finally { await pdf.loadingTask.destroy(); }
 }
 

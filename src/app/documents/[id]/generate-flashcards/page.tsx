@@ -15,6 +15,7 @@ export default function GenerateFlashcardsPage() {
   const searchParams = useSearchParams();
   const [job, setJob] = useState<Job | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [limitReached, setLimitReached] = useState(false);
   const [takingLong, setTakingLong] = useState(false);
   const started = useRef(false);
   const storageKey = `yoohoo:generation:${id}`;
@@ -25,6 +26,9 @@ export default function GenerateFlashcardsPage() {
     if (!response.ok) throw new Error(body.error || "Gagal memeriksa proses generate.");
     setJob(body.job);
     if (body.job.status === "failed") {
+      // Jangan resume job yang sudah final gagal setelah refresh. User bisa
+      // menekan "Coba lagi" untuk membuat generation job baru.
+      localStorage.removeItem(storageKey);
       setError(body.job.errorMessage || "Pembuatan materi gagal. Silakan coba lagi.");
       return body.job as Job;
     }
@@ -37,10 +41,14 @@ export default function GenerateFlashcardsPage() {
 
   const start = useCallback(async () => {
     setError(null);
+    setLimitReached(false);
     setTakingLong(false);
     const response = await fetch(`/api/documents/${id}/generate`, { method: "POST" });
     const body = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(body.error || "Gagal memulai proses generate.");
+    if (!response.ok) {
+      if (response.status === 429 || body.limitReached === true) setLimitReached(true);
+      throw new Error(body.error || "Gagal memulai proses generate.");
+    }
     localStorage.setItem(storageKey, body.jobId);
     window.history.replaceState(null, "", `/documents/${id}/generate-flashcards?jobId=${body.jobId}`);
     if (body.status === "completed") router.replace(`/documents/${id}/flashcards`);
@@ -82,7 +90,11 @@ export default function GenerateFlashcardsPage() {
           <p className="mt-2 text-sm text-neutral-600">{error}</p>
           <div className="mt-6 flex justify-center gap-3">
             <Link href={`/documents/${id}/keywords`} className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-medium">Ubah pilihan</Link>
-            <button onClick={() => start().catch(cause => setError(cause instanceof Error ? cause.message : "Terjadi kesalahan."))} className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Coba lagi</button>
+            {!limitReached ? (
+              <button onClick={() => start().catch(cause => setError(cause instanceof Error ? cause.message : "Terjadi kesalahan."))} className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Coba lagi</button>
+            ) : (
+              <Link href="/app" className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Kembali</Link>
+            )}
           </div>
         </> : <>
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">

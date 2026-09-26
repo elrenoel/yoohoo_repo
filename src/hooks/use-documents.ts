@@ -14,6 +14,8 @@ export interface UserDocument {
   id: string;
   title: string;
   createdAt: string;
+  isStarred: boolean;
+  starredAt?: string | null;
   lastAttempt?: { score: number; total: number; createdAt: string } | null;
 }
 
@@ -105,6 +107,23 @@ export function useDocuments() {
     },
   });
 
+  const starMutation = useMutation({
+    mutationFn: async ({ id, isStarred }: { id: string; isStarred: boolean }) => {
+      const res = await fetch(`/api/documents/${id}/star`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_starred: isStarred }) });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Gagal mengubah tanda bintang.");
+      return body as { isStarred: boolean; starredAt: string | null };
+    },
+    onMutate: async ({ id, isStarred }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.documents });
+      const previous = queryClient.getQueryData<UserDocument[]>(queryKeys.documents);
+      queryClient.setQueryData<UserDocument[]>(queryKeys.documents, old => old?.map(doc => doc.id === id ? { ...doc, isStarred } : doc) ?? []);
+      return { previous };
+    },
+    onError: (_error, _variables, context) => { if (context?.previous) queryClient.setQueryData(queryKeys.documents, context.previous); },
+    onSuccess: (data, variables) => { queryClient.setQueryData<UserDocument[]>(queryKeys.documents, old => old?.map(doc => doc.id === variables.id ? { ...doc, isStarred: data.isStarred, starredAt: data.starredAt } : doc) ?? []); queryClient.invalidateQueries({ queryKey: queryKeys.documents }); },
+  });
+
   const handleRenameSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
@@ -192,6 +211,8 @@ export function useDocuments() {
     cancelRename,
     handleRenameSubmit,
     isRenaming: renameMutation.isPending,
+    toggleStar: (doc: UserDocument) => starMutation.mutate({ id: doc.id, isStarred: !doc.isStarred }),
+    isStarring: starMutation.isPending,
     // Delete
     deleteTargetId,
     deleteTargetTitle,

@@ -1,7 +1,8 @@
 import { ragSql } from "@/lib/rag/db";
 import { RagError } from "@/lib/rag/core";
 import { documentId, jsonBody, ragResponseError, sessionUser } from "@/lib/rag/http";
-import { dispatchDocument, pdfKey, verifyPdf } from "@/lib/rag/storage";
+import { deletePdf, dispatchDocument, pdfKey, verifyPdf } from "@/lib/rag/storage";
+import { DAILY_LIMIT } from "@/lib/daily-limit";
 export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
@@ -13,9 +14,26 @@ export async function POST(request: Request) {
       ? body.contentLanguage
       : "auto";
     const key = pdfKey(userId, id), size = await verifyPdf(key), sql = ragSql();
-    await sql`insert into public.documents (id,user_id,title,raw_text,content_language,storage_path,file_size,status)
-      values (${id},${userId},${title},'',${contentLanguage},${key},${size},'uploaded') on conflict (id) do nothing`;
-    const [doc] = await sql`select id,status from public.documents where id=${id} and user_id=${userId} and storage_path=${key} and deleted_at is null`;
+    let doc: { id: string; status: string } | undefined;
+    try {
+      doc = await sql.begin(async tx => {
+        const [event] = await tx`select id from public.generation_quota_events where user_id=${userId} and event_key=${`document:${id}`} for update`;
+        if (!event) {
+          const [quota] = await tx`select * from private.consume_generation_quota_event(${userId},${`document:${id}`},'document_pipeline',${DAILY_LIMIT},${id})`;
+          void quota;
+        }
+        await tx`insert into public.documents (id,user_id,title,raw_text,content_language,storage_path,file_size,status)
+          values (${id},${userId},${title},'',${contentLanguage},${key},${size},'uploaded') on conflict (id) do nothing`;
+        const [row] = await tx`select id,status from public.documents where id=${id} and user_id=${userId} and storage_path=${key} and deleted_at is null`;
+        return row;
+      }) as { id: string; status: string } | undefined;
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("DAILY_LIMIT_REACHED")) {
+        await deletePdf(key);
+        return Response.json({ limitReached: true, remainingToday: 0, dailyLimit: DAILY_LIMIT, error: "Limit harian sudah tercapai. Coba lagi besok." }, { status: 429 });
+      }
+      throw error;
+    }
     if (!doc) throw new RagError("Dokumen tidak ditemukan.", 404);
     // Retrying confirm republishes the marker if dispatch failed after the DB commit.
     if (doc.status === "uploaded" || doc.status === "chunking" || doc.status === "indexing") await dispatchDocument(id, userId);

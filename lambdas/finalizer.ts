@@ -2,9 +2,10 @@ import { failDocument, finalizeDocument, finishChunk, type Job, type ChunkJob } 
 import type { S3Event } from "aws-lambda";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { bucket, s3 } from "../src/lib/rag/storage";
-import { failGenerationChunk, failGenerationJob, finalizeGenerationJob, type GenerationJob } from "../src/lib/rag/generation";
+import { generateRepresentativeQuiz } from "../src/lib/rag/materials";
+import { failGenerationBatch, failGenerationJob, finalizeGenerationJob, loadGenerationFlashcardsForQuiz, type GenerationJob } from "../src/lib/rag/generation";
 type FinalizeEvent = Job & { failed?: boolean; skippedChunkId?: string };
-type GenerationEvent = GenerationJob & { failed?: boolean; failedChunkId?: string };
+type GenerationEvent = GenerationJob & { failed?: boolean; failedBatchId?: string };
 export async function handler(input: FinalizeEvent | GenerationEvent | { detail: { input: string } } | { requestPayload: S3Event }) {
   if ("requestPayload" in input) {
     for (const record of input.requestPayload.Records) {
@@ -18,15 +19,18 @@ export async function handler(input: FinalizeEvent | GenerationEvent | { detail:
   }
   const event: FinalizeEvent | GenerationEvent = "detail" in input ? { ...JSON.parse(input.detail.input), failed: true } : input;
   if ("mode" in event && event.mode === "generate") {
-    if (event.failedChunkId) {
-      await failGenerationChunk({ ...event, chunkId: event.failedChunkId }, "Pembuatan materi gagal setelah beberapa percobaan.");
+    if (event.failedBatchId) {
+      await failGenerationBatch({ ...event, batchId: event.failedBatchId }, "Pembuatan materi gagal setelah beberapa percobaan.");
       return { failed: true };
     }
     if (event.failed) {
       await failGenerationJob(event, "Pembuatan materi gagal setelah beberapa percobaan.");
       return { failed: true };
     }
-    return await finalizeGenerationJob(event) ?? { done: true };
+    const staged = await loadGenerationFlashcardsForQuiz(event);
+    if (!staged) return { done: true };
+    const questions = await generateRepresentativeQuiz(staged.flashcards, staged.expectedQuizCount, staged.contentLanguage);
+    return await finalizeGenerationJob(event, questions) ?? { done: true };
   }
   if ("skippedChunkId" in event && event.skippedChunkId) {
     const job: ChunkJob = { ...event, chunkId: event.skippedChunkId };

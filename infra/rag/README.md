@@ -7,8 +7,8 @@ of flashcards and quiz. Embedding dedupe remains deferred.
 
 `/app` -> authenticated presign -> browser PUT PDF -> authenticated confirm ->
 commit document -> PUT `ready/<documentId>.json` -> S3 ObjectCreated -> orchestrator
--> Step Functions Map (10 concurrent) -> workers -> finalizer -> polling/selection UI
--> generation Map (5 concurrent) -> atomic publish -> flashcards -> quiz.
+-> Step Functions Map (1 keyword worker, bounded to respect Gemini free-tier rate limits) -> workers -> finalizer -> polling/selection UI
+-> generation Map (one keyword batch at a time, three-second spacing) -> atomic publish -> flashcards -> quiz.
 
 The confirmation marker is deliberate: a PDF ObjectCreated notification may arrive
 before `/confirm` commits. Workers must never process unconfirmed browser uploads.
@@ -52,8 +52,15 @@ It has already been applied to the connected project during implementation.
 S3 metadata remains nullable for legacy rows; confirm always supplies real values.
 
 `20260925100355_selected_rag_generation.sql` adds default-deny generation job
-tables and private transaction functions. A job reserves quota and snapshots the
-selected keyword IDs; worker output stays staged until every item succeeds.
+tables and private transaction functions. `20260925160254_generation_keyword_batches.sql`
+changes each generation item into an ordered batch of at most ten selected keyword
+IDs. A job reserves quota and snapshots the selected IDs; each worker fetches the
+source chunk associated with every keyword in its batch, sends one Gemini request,
+and stages only valid returned flashcards until every batch succeeds.
+`20260925161423_representative_generation_quiz.sql` then makes the finalizer send
+one additional Gemini request from the staged term/definition pairs. It creates
+`clamp(round(selected_keywords / 3), 5, 20)` representative questions for the
+whole deck rather than one question per keyword.
 
 ## AWS deployment
 
@@ -142,18 +149,29 @@ monitor finalizer errors as well because a DB outage can prevent recording failu
 
 ## Limits and failures
 
-- 100 MiB PDF, 5 pages/chunk by default (configurable 5–10), max 6,000 pages.
+- 100 MiB PDF, 5 pages/chunk with a two-paragraph overlap by default (configurable
+  5–10 pages), max 6,000 pages. Before worker fan-out, the orchestrator builds a
+  server-only overview from the early pages and detected table-of-contents pages;
+  each worker reads that overview from `documents.document_summary`.
   Text is never cut to 8,000 words. Oversized page count fails explicitly.
 - Fewer than 20 words on a page triggers scan rendering, including single-page PDFs.
   This is a heuristic, not proof that a page is scanned. PNGs are rendered at 1400px
   width with a 12 MiB chunk image budget; failures are reported as skipped chunks.
 - Gemini model env override, then the existing three-tier fallback, 500ms between
-  attempts. Per-attempt timeout 65s. No embeddings in this stage.
+  models. Selected-material generation batches at most ten keywords, runs batches
+  sequentially with a three-second interval, and retries a Gemini 429 up to three
+  times using exponential backoff (about 2s, 4s, then 8s plus jitter). Per-attempt
+  timeout is 65s. Invalid individual flashcards are logged and skipped without
+  discarding other valid items in the same batch. Once all flashcard batches finish,
+  the finalizer requests one exact-size, representative quiz from the complete deck;
+  invalid quiz payloads fail the job before any deck content is published. No
+  embeddings in this stage.
 - Invalid AI output / exhausted fallback skips that chunk. DB errors propagate to
   Step Functions retry. Lambda timeout after retries is recorded as a skipped chunk.
 - Dedupe uses JavaScript trim + lowercase and keeps the first deterministic row.
   Partial success becomes ready with a warning. No usable keywords becomes failed.
-- Inline Map uses only UUIDs, not text/images, in payload/history. Exceptionally
+- Inline Map uses only UUIDs, not text/images, in payload/history. Keyword extraction
+  uses one worker to avoid Gemini quota bursts. Exceptionally
   retry-heavy runs may exhaust Standard's 25,000-event history limit; the failure
   listener marks the document failed. For sustained very large workloads move to
   Distributed Map before raising the page cap.

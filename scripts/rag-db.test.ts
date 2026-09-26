@@ -17,8 +17,9 @@ test("live database: idempotency, ownership, dedupe and failure progress", { ski
       values (${documentId},${userId},'RAG integration test','',${'test-only/' + documentId},100,'chunking')`;
     const chunks = [{ chunkIndex: 0, pageStart: 1, pageEnd: 5, content: "Complete original text", scanPages: [2] },
       { chunkIndex: 1, pageStart: 6, pageEnd: 6, content: "Remaining original text", scanPages: [] }];
-    const ids = await saveChunks(job, 6, chunks);
-    assert.deepEqual(await saveChunks(job, 6, chunks), ids, "duplicate orchestrator preserves chunk IDs");
+    const overview = "Dokumen latihan yang membahas konsep manajemen memori sistem operasi.";
+    const ids = await saveChunks(job, 6, chunks, overview);
+    assert.deepEqual(await saveChunks(job, 6, chunks, overview), ids, "duplicate orchestrator preserves chunk IDs");
     const first = await loadChunk({ ...job, chunkId: ids[0] });
     assert.deepEqual(first.scan_pages, [2], "scan pages are JSON array, not JSON string");
     assert.equal(await loadChunk({ ...job, userId: "other-user", chunkId: ids[0] }), undefined);

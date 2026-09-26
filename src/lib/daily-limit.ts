@@ -22,7 +22,10 @@ export async function getUserQuota(userId: string): Promise<UserQuota | null> {
 
   const today = new Date().toISOString().split("T")[0]; // format "2026-08-18"
   const isNewDay = row.last_generation_date !== today;
-  const currentCount = isNewDay ? 0 : row.generation_count_today;
+  // Older Better Auth users may have a NULL counter because the field was
+  // added after their account was created. Treat that as zero so the daily
+  // quota can be consumed and displayed correctly.
+  const currentCount = isNewDay ? 0 : (row.generation_count_today ?? 0);
 
   return {
     currentCount,

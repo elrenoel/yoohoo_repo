@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   FileText,
   Clock,
   ArrowRight,
   Plus,
+  BookOpen,
   Loader2,
   Pencil,
   Check,
@@ -14,10 +16,13 @@ import {
   User as UserIcon,
   FolderOpen,
   Trash2,
+  Star,
+  MoreVertical,
 } from "lucide-react";
 import { formatDateTime } from "@/lib/format-date";
 import { useDocuments } from "@/hooks/use-documents";
 import { useLanguage } from "@/hooks/use-language";
+import { useSession } from "@/lib/session-provider";
 import Navbar from "@/components/layout/Navbar";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorState from "@/components/ui/ErrorState";
@@ -25,6 +30,9 @@ import Card from "@/components/ui/Card";
 
 export default function HistoryPage() {
   const { t } = useLanguage();
+  const [filter, setFilter] = useState<"all" | "starred">("all");
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const { data: session, isPending: isSessionPending } = useSession();
   const {
     documentsList,
     isLoading,
@@ -43,14 +51,20 @@ export default function HistoryPage() {
     cancelDelete,
     confirmDelete,
     handleRetry,
+    toggleStar,
   } = useDocuments();
+
+  const isLoggedIn = !isSessionPending && !!session?.user;
+  const showLoginState = !isSessionPending && !isLoggedIn;
+  const visibleDocuments = filter === "starred" ? documentsList.filter(doc => doc.isStarred) : documentsList;
+  const showEmptyState = isLoggedIn && !isLoading && !error && visibleDocuments.length === 0;
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
       <Navbar />
 
       {/* Main Content */}
-      <main className="max-w-3xl mx-auto px-6 py-12 flex-1 w-full">
+      <main className="max-w-5xl mx-auto px-6 py-12 flex-1 w-full">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
@@ -72,7 +86,7 @@ export default function HistoryPage() {
         </div>
 
         {/* State 1: Not logged in */}
-        {!isLoading && !error && documentsList.length === 0 && (
+        {showLoginState && (
           <Card variant="centered">
             <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4 text-neutral-600">
               <UserIcon className="w-6 h-6" />
@@ -95,7 +109,7 @@ export default function HistoryPage() {
 
         {/* State 2: Loading Skeleton */}
         {isLoading && (
-          <div className="space-y-3">
+          <div className="grid gap-4 md:grid-cols-2">
             {[1, 2, 3].map((i) => (
               <Card
                 key={i}
@@ -130,16 +144,24 @@ export default function HistoryPage() {
           </div>
         )}
 
-        {/* State 4: Document List */}
         {!isLoading && documentsList.length > 0 && (
-          <div className="space-y-3">
-            {documentsList.map((doc) => (
-              <Link
+          <div className="mb-5 flex items-center gap-2">
+            <button type="button" onClick={() => setFilter("all")} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${filter === "all" ? "bg-neutral-900 text-white" : "bg-white text-neutral-500 border border-neutral-200 hover:text-neutral-900"}`}>Semua</button>
+            <button type="button" onClick={() => setFilter("starred")} className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${filter === "starred" ? "bg-neutral-900 text-white" : "bg-white text-neutral-500 border border-neutral-200 hover:text-neutral-900"}`}>Ditandai</button>
+          </div>
+        )}
+
+        {/* State 4: Document List */}
+        {!isLoading && visibleDocuments.length > 0 && (
+          <div className="grid gap-4 md:grid-cols-2">
+            {visibleDocuments.map((doc) => {
+              const flashcardHref = `/documents/${doc.id}/${doc.isRagDocument && !doc.hasFlashcards ? "keywords" : "flashcards"}`;
+              return (
+              <article
                 key={doc.id}
-                href={`/documents/${doc.id}/${doc.isRagDocument && !doc.hasFlashcards ? "keywords" : "flashcards"}`}
-                className="group bg-white border border-neutral-200 hover:border-neutral-400 rounded-xl p-5 shadow-2xs transition flex items-center justify-between gap-4 block cursor-pointer"
+                className="group relative bg-white border border-neutral-200 hover:border-neutral-300 rounded-xl p-5 shadow-2xs transition flex flex-col gap-4 min-w-0"
               >
-                <div className="flex items-start gap-3.5 min-w-0 flex-1">
+                <div className="flex items-start gap-3.5 min-w-0">
                   <div className="w-10 h-10 rounded-lg bg-neutral-100 group-hover:bg-neutral-900 group-hover:text-white flex items-center justify-center text-neutral-700 shrink-0 transition">
                     <FileText className="w-5 h-5" />
                   </div>
@@ -193,17 +215,6 @@ export default function HistoryPage() {
                         <h2 className="text-sm font-semibold text-neutral-900 tracking-tight truncate group-hover:text-neutral-900">
                           {doc.title}
                         </h2>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            startRename(doc);
-                          }}
-                          title={t("history.renamePlaceholder")}
-                          className="shrink-0 w-6 h-6 rounded-md text-neutral-300 hover:text-neutral-900 hover:bg-neutral-100 flex items-center justify-center transition cursor-pointer"
-                        >
-                          <Pencil className="w-3 h-3" />
-                        </button>
                       </div>
                     )}
 
@@ -229,31 +240,68 @@ export default function HistoryPage() {
                       )}
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0">
                   <button
+                    type="button"
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      requestDelete(doc);
+                      toggleStar(doc);
                     }}
-                    title={t("history.delete")}
-                    className="w-8 h-8 rounded-lg bg-neutral-50 hover:bg-rose-50 flex items-center justify-center text-neutral-400 hover:text-rose-600 transition cursor-pointer"
+                    title={doc.isStarred ? "Hapus tanda" : "Tandai untuk dipelajari lagi"}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition cursor-pointer shrink-0 ${doc.isStarred ? "bg-amber-50 text-amber-500 hover:bg-amber-100" : "bg-neutral-50 text-neutral-400 hover:bg-amber-50 hover:text-amber-500"}`}
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Star className="w-3.5 h-3.5" fill={doc.isStarred ? "currentColor" : "none"} />
                   </button>
-                  <div className="w-8 h-8 rounded-lg bg-neutral-50 group-hover:bg-neutral-100 flex items-center justify-center text-neutral-400 group-hover:text-neutral-900 transition">
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOpenMenuId(current => current === doc.id ? null : doc.id);
+                    }}
+                    title="Menu dokumen"
+                    className="w-8 h-8 rounded-lg bg-neutral-50 hover:bg-neutral-100 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition cursor-pointer shrink-0"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+                  {openMenuId === doc.id && (
+                    <div className="absolute right-5 top-14 z-20 w-44 rounded-xl border border-neutral-200 bg-white p-1.5 shadow-lg" onClick={(e) => e.stopPropagation()}>
+                      <button type="button" onClick={() => { setOpenMenuId(null); startRename(doc); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-neutral-700 hover:bg-neutral-50 transition">
+                        <Pencil className="w-3.5 h-3.5 text-neutral-500" />
+                        <span>Ubah nama</span>
+                      </button>
+                      <button type="button" onClick={() => { setOpenMenuId(null); requestDelete(doc); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs text-rose-600 hover:bg-rose-50 transition">
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Hapus dokumen</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </Link>
-            ))}
+
+                <div className="grid grid-cols-2 gap-2 border-t border-neutral-100 pt-4">
+                  <Link
+                    href={flashcardHref}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-xs font-medium text-neutral-700 hover:border-neutral-400 hover:bg-neutral-50 transition"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>{doc.hasFlashcards ? t("history.viewFlashcards") : t("history.chooseKeywords")}</span>
+                  </Link>
+                  <Link
+                    href={`/documents/${doc.id}/quiz`}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white hover:bg-neutral-800 transition"
+                  >
+                    <ClipboardCheck className="w-3.5 h-3.5" />
+                    <span>{t("history.viewQuiz")}</span>
+                  </Link>
+                </div>
+              </article>
+              );
+            })}
           </div>
         )}
 
         {/* State 5: Empty State */}
-        {!isLoading && !error && documentsList.length === 0 && (
+        {showEmptyState && (
           <Card variant="centered" className="p-12">
             <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4 text-neutral-500">
               <FolderOpen className="w-6 h-6" />

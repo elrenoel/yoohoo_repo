@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { S3Client, GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, GetObjectCommand, HeadObjectCommand, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { SFNClient, StartExecutionCommand } from "@aws-sdk/client-sfn";
 import { MAX_PDF_BYTES, RagError } from "./core";
@@ -31,6 +31,11 @@ export async function verifyPdf(key: string) {
   if (Buffer.from(await prefix.Body!.transformToByteArray()).toString() !== "%PDF-") throw new RagError("Header PDF tidak valid.");
   return size;
 }
+export async function deletePdf(key: string) {
+  try { await s3().send(new DeleteObjectCommand({ Bucket: bucket(), Key: key })); } catch (error) {
+    console.warn("[RAG] failed to clean up unregistered upload", error instanceof Error ? error.message : error);
+  }
+}
 export async function readPdf(key: string) {
   const result = await s3().send(new GetObjectCommand({ Bucket: bucket(), Key: key }));
   if (!result.ContentLength || result.ContentLength > MAX_PDF_BYTES) throw new Error("Invalid PDF size");
@@ -43,14 +48,14 @@ export async function dispatchDocument(documentId: string, userId: string) {
     ContentType: "application/json", Body: JSON.stringify({ documentId, userId }) }));
 }
 
-export async function dispatchGeneration(jobId: string, documentId: string, userId: string, chunkIds: string[]) {
+export async function dispatchGeneration(jobId: string, documentId: string, userId: string, batchIds: string[]) {
   const stateMachineArn = process.env.RAG_STATE_MACHINE_ARN;
   if (!stateMachineArn) throw new Error("RAG_STATE_MACHINE_ARN is required");
   try {
     await sfn().send(new StartExecutionCommand({
       stateMachineArn,
       name: jobId,
-      input: JSON.stringify({ mode: "generate", jobId, documentId, userId, chunkIds }),
+      input: JSON.stringify({ mode: "generate", jobId, documentId, userId, batchIds }),
     }));
   } catch (error) {
     if (error instanceof Error && error.name === "ExecutionAlreadyExists") return;

@@ -3,6 +3,7 @@ import { SFNClient, StartExecutionCommand } from "@aws-sdk/client-sfn";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { bucket, s3, readPdf, pdfKey } from "../src/lib/rag/storage";
 import { extractChunks } from "../src/lib/rag/pdf";
+import { summarizeDocument } from "../src/lib/rag/ai";
 import { ragSql } from "../src/lib/rag/db";
 import { failDocument, ownedDocument, saveChunks, type Job } from "../src/lib/rag/pipeline";
 import { UUID } from "../src/lib/rag/core";
@@ -28,7 +29,9 @@ export async function handler(event: S3Event) {
       await ragSql()`update public.documents set status='chunking' where id=${job.documentId} and user_id=${job.userId} and status='uploaded' and deleted_at is null`;
       try {
         const result = await extractChunks(await readPdf(doc.storage_path));
-        ids = await saveChunks(job, result.pageCount, result.chunks);
+        // Generate this once before the Map fan-out; workers reload it from Postgres.
+        const documentSummary = await summarizeDocument(String(doc.title), result.pages);
+        ids = await saveChunks(job, result.pageCount, result.chunks, documentSummary);
       } catch (error) {
         console.error("[RAG orchestrator] extraction failed", { documentId: job.documentId, errorType: error instanceof Error ? error.name : "Unknown" });
         await failDocument(job, "PDF tidak dapat diproses. Periksa apakah file rusak, terenkripsi, atau melebihi 6.000 halaman.");

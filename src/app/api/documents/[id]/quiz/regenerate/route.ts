@@ -1,3 +1,38 @@
-import {NextRequest,NextResponse} from "next/server";import {auth} from "@/lib/auth";import {db,type Json} from "@/db";import {isQuotaError} from "@/db/helpers";import {handleApiError} from "@/lib/api-error";import {generateQuizQuestions} from "@/lib/ai";import {DAILY_LIMIT,getUserQuota} from "@/lib/daily-limit";
-export const dynamic="force-dynamic";export const maxDuration=60;const UUID=/^[0-9a-f-]{36}$/i;
-export async function POST(request:NextRequest,props:{params:Promise<{id:string}>}){try{const{id}=await props.params;if(!UUID.test(id))return NextResponse.json({success:false,error:"ID dokumen tidak valid."},{status:400});const s=await auth.api.getSession({headers:request.headers});if(!s?.user)return NextResponse.json({success:false,error:"Silakan masuk (login) terlebih dahulu untuk membuat soal baru.",requireAuth:true},{status:401});const doc=await db.from("documents").select("id,title,raw_text,content_language").eq("id",id).eq("user_id",s.user.id).is("deleted_at",null).maybeSingle();if(doc.error)throw doc.error;if(!doc.data)return NextResponse.json({success:false,error:"Dokumen tidak ditemukan."},{status:404});if(!doc.data.raw_text.trim())return NextResponse.json({success:false,error:"Dokumen ini tidak memiliki teks materi untuk dianalisis."},{status:400});const quota=await getUserQuota(s.user.id);if(!quota)return NextResponse.json({success:false,error:"Data user tidak ditemukan."},{status:404});if(quota.currentCount>=DAILY_LIMIT)return NextResponse.json({success:false,error:`Limit harian ${DAILY_LIMIT}x generate sudah tercapai. Coba lagi besok!`,limitReached:true,remainingToday:0,resetDate:quota.today},{status:429});const body=await request.json().catch(()=>({})) as {label?:string};const label=typeof body.label==="string"?body.label.trim().slice(0,100):null;const ai=await generateQuizQuestions(doc.data.raw_text,doc.data.content_language??undefined);const saved=await db.rpc("create_quiz_set",{p_user_id:s.user.id,p_document_id:id,p_label:label||null,p_questions:ai.quiz as unknown as Json,p_daily_limit:DAILY_LIMIT});if(saved.error){if(isQuotaError(saved.error))return NextResponse.json({success:false,error:`Limit harian ${DAILY_LIMIT}x generate sudah tercapai. Coba lagi besok!`,limitReached:true,remainingToday:0},{status:429});throw saved.error;}const r=saved.data as {id:string;label:string;remaining:number};return NextResponse.json({success:true,quizSet:{id:r.id,label:r.label,questionCount:ai.quiz.length},remainingToday:r.remaining,message:`Soal baru berhasil dibuat (${r.label}).`},{status:201});}catch(e){return handleApiError(e,"POST /api/documents/:id/quiz/regenerate");}}
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { ragSql } from "@/lib/rag/db";
+import { UUID } from "@/lib/rag/core";
+import { generateQuizQuestions } from "@/lib/ai";
+import { DAILY_LIMIT } from "@/lib/daily-limit";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
+
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await props.params;
+    if (!UUID.test(id)) return NextResponse.json({ success: false, error: "ID dokumen tidak valid." }, { status: 400 });
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) return NextResponse.json({ success: false, error: "Silakan masuk terlebih dahulu.", requireAuth: true }, { status: 401 });
+    const key = request.headers.get("idempotency-key")?.trim() || crypto.randomUUID();
+    if (key.length > 200) return NextResponse.json({ success: false, error: "Idempotency-Key tidak valid." }, { status: 400 });
+    const sql = ragSql();
+    const [doc] = await sql`select id,title,raw_text,content_language from public.documents where id=${id} and user_id=${session.user.id} and deleted_at is null`;
+    if (!doc) return NextResponse.json({ success: false, error: "Dokumen tidak ditemukan." }, { status: 404 });
+    if (!String(doc.raw_text ?? "").trim()) return NextResponse.json({ success: false, error: "Dokumen ini tidak memiliki teks materi untuk dianalisis." }, { status: 400 });
+    const eventKey = `quiz_extra:regenerate:${id}:${key}`;
+    const [existing] = await sql`select e.quiz_set_id, e.remaining_quota, qs.label, (select count(*) from public.quiz_questions q where q.quiz_set_id=e.quiz_set_id) question_count
+      from public.generation_quota_events e left join public.quiz_sets qs on qs.id=e.quiz_set_id
+      where e.user_id=${session.user.id} and e.event_key=${eventKey}`;
+    if (existing?.quiz_set_id) return NextResponse.json({ success: true, quizSet: { id: String(existing.quiz_set_id), label: String(existing.label ?? "Quiz Regenerate"), questionCount: Number(existing.question_count ?? 0) }, remainingToday: Number(existing.remaining_quota), message: "Soal quiz yang sama sudah tersedia." }, { status: 200 });
+    const ai = await generateQuizQuestions(String(doc.raw_text), doc.content_language ?? undefined);
+    const [saved] = await sql`select private.create_quiz_extra_generation(${session.user.id},${id},${"Quiz Regenerate"},${sql.json(ai.quiz as unknown as never)},${eventKey},${DAILY_LIMIT}) as value`;
+    const value = saved.value as { id: string; label: string; question_count: number; remaining: number; created: boolean };
+    return NextResponse.json({ success: true, quizSet: { id: value.id, label: value.label, questionCount: value.question_count }, remainingToday: value.remaining, message: `Soal baru berhasil dibuat (${value.label}).` }, { status: value.created ? 201 : 200 });
+  } catch (error) {
+    console.error("[quiz/regenerate]", error instanceof Error ? error.message : error);
+    if (error instanceof Error && error.message.includes("DAILY_LIMIT_REACHED")) return NextResponse.json({ success: false, error: "Limit harian sudah tercapai. Coba lagi besok.", limitReached: true, remainingToday: 0, dailyLimit: DAILY_LIMIT }, { status: 429 });
+    if (error instanceof Error && error.message.includes("DOCUMENT_NOT_FOUND")) return NextResponse.json({ success: false, error: "Dokumen tidak ditemukan." }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Gagal membuat quiz baru." }, { status: 500 });
+  }
+}

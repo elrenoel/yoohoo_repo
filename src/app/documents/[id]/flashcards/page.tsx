@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import ErrorState from "@/components/ui/ErrorState";
 import { useI18n } from "@/lib/i18n";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { MOCK_DOCUMENT } from "@/lib/mock-data";
 import Navbar from "@/components/layout/Navbar";
@@ -24,7 +24,9 @@ interface Flashcard {
   id: string;
   term: string;
   definition: string;
+  related_terms?: RelatedTerm[];
 }
+type RelatedTerm = { term: string; type: "linked" | "suggested"; flashcard_id?: string; source_chunk_id?: string; definition?: string };
 
 // ─── Loading skeleton ────────────────────────────────────────────────────────
 function CardSkeleton() {
@@ -62,6 +64,7 @@ async function fetchFlashcards(docId: string): Promise<FlashcardsApiResponse> {
 export default function FlashcardsPage() {
   const params = useParams();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { t } = useI18n();
   const docId = (params?.id as string) || "";
 
@@ -89,11 +92,16 @@ export default function FlashcardsPage() {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [activeRelated, setActiveRelated] = useState<RelatedTerm | null>(null);
+  const [hoveredRelated, setHoveredRelated] = useState<RelatedTerm | null>(null);
+  const [addingSuggested, setAddingSuggested] = useState(false);
+  const [suggestedError, setSuggestedError] = useState<string | null>(null);
 
   // Reset index when data changes
   useEffect(() => {
     setCurrentIndex(0);
     setIsFlipped(false);
+    setActiveRelated(null);
   }, [cards.length]);
 
   // ── Keyboard navigation ────────────────────────────────────────────────────
@@ -141,6 +149,49 @@ export default function FlashcardsPage() {
 
   const handleRetry = () => {
     refetch();
+  };
+
+  const handleRelatedClick = (related: RelatedTerm) => {
+    setSuggestedError(null);
+    if (related.type === "linked" && related.flashcard_id) {
+      const targetIndex = cards.findIndex(card => card.id === related.flashcard_id);
+      if (targetIndex >= 0) { setCurrentIndex(targetIndex); setIsFlipped(false); setActiveRelated(null); return; }
+    }
+    setActiveRelated(related);
+  };
+
+  const renderDefinition = (definition: string, related: RelatedTerm[]) => {
+    if (!related.length) return definition;
+    const terms = [...related].sort((a, b) => b.term.length - a.term.length).filter(item => item.term.trim());
+    const pattern = new RegExp(`(${terms.map(item => item.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
+    const parts = definition.split(pattern);
+    return parts.map((part, index) => {
+      const match = terms.find(item => item.term.toLocaleLowerCase() === part.toLocaleLowerCase());
+      if (!match) return <span key={index}>{part}</span>;
+      return <span key={index} className="relative inline-block" onMouseEnter={() => setHoveredRelated(match)} onMouseLeave={() => setHoveredRelated(null)}>
+        <button type="button" onClick={(event) => { event.stopPropagation(); handleRelatedClick(match); }} className="font-semibold text-amber-300 underline decoration-amber-400 decoration-2 underline-offset-4 hover:text-amber-200">{part}</button>
+        {hoveredRelated?.term === match.term && (
+          <span role="tooltip" className="pointer-events-none absolute z-30 bottom-full left-1/2 mb-3 w-64 -translate-x-1/2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-left text-xs leading-relaxed text-neutral-800 shadow-xl">
+            <span className="block font-semibold text-amber-700 mb-1">{match.term}</span>
+            {match.type === "suggested" ? "Istilah ini disebut di materi, tetapi belum menjadi flashcard." : (match.definition || "Klik untuk membuka flashcard terkait.")}
+            <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-white" />
+          </span>
+        )}
+      </span>;
+    });
+  };
+
+  const handleAddSuggested = async () => {
+    if (!activeRelated || activeRelated.type !== "suggested" || !activeRelated.source_chunk_id || addingSuggested) return;
+    setAddingSuggested(true); setSuggestedError(null);
+    try {
+      const response = await fetch(`/api/flashcards/${currentCard.id}/add-suggested`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ suggested_term: activeRelated.term, source_chunk_id: activeRelated.source_chunk_id }) });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.error || "Gagal menambahkan flashcard.");
+      setActiveRelated({ ...activeRelated, type: "linked", flashcard_id: body.flashcard?.id, definition: body.flashcard?.definition });
+      await queryClient.invalidateQueries({ queryKey: queryKeys.flashcards(docId) });
+    } catch (error) { setSuggestedError(error instanceof Error ? error.message : "Gagal menambahkan flashcard."); }
+    finally { setAddingSuggested(false); }
   };
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -264,8 +315,17 @@ export default function FlashcardsPage() {
 
                   <div className="text-center py-4 px-2">
                     <p className="text-base sm:text-lg text-neutral-100 leading-relaxed font-normal">
-                      {currentCard.definition}
+                      {renderDefinition(currentCard.definition, currentCard.related_terms ?? [])}
                     </p>
+                    {activeRelated && (currentCard.related_terms ?? []).some(item => item.term === activeRelated.term) && (
+                      <div className="mt-4 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3 py-2 text-left text-xs text-amber-100">
+                        {activeRelated.type === "suggested" ? <>
+                          <p>Istilah ini ada di materi, tetapi belum menjadi flashcard.</p>
+                          <Button size="sm" className="mt-2" onClick={handleAddSuggested} disabled={addingSuggested}>{addingSuggested ? "Membuat flashcard..." : "Tambahkan flashcard ini"}</Button>
+                        </> : <p><strong>{activeRelated.term}</strong>: {activeRelated.definition}</p>}
+                        {suggestedError && <p className="mt-2 text-rose-300">{suggestedError}</p>}
+                      </div>
+                    )}
                   </div>
 
                   <div className="text-center text-xs text-neutral-400 font-mono">

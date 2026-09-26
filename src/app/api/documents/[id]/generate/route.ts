@@ -15,7 +15,15 @@ function errorResponse(error: unknown) {
   if (message.includes("NO_KEYWORDS_SELECTED")) return NextResponse.json({ success: false, error: "Pilih setidaknya satu keyword terlebih dahulu." }, { status: 400 });
   if (message.includes("SELECTED_KEYWORD_MISSING_CHUNK")) return NextResponse.json({ success: false, error: "Ada keyword tanpa konteks sumber. Ubah pilihan keyword lalu coba lagi." }, { status: 400 });
   if (message.includes("GENERATION_IN_PROGRESS")) return NextResponse.json({ success: false, error: "Generasi dengan pilihan lain masih berjalan." }, { status: 409 });
-  if (message.includes("DAILY_LIMIT_REACHED")) return NextResponse.json({ success: false, error: "Batas generate harian sudah tercapai." }, { status: 429 });
+  if (message.includes("DAILY_LIMIT_REACHED")) {
+    return NextResponse.json({
+      success: false,
+      error: `Limit harian ${DAILY_LIMIT}x generate sudah tercapai. Coba lagi besok!`,
+      limitReached: true,
+      remainingToday: 0,
+      dailyLimit: DAILY_LIMIT,
+    }, { status: 429 });
+  }
   console.error("[documents/generate]", { errorType: error instanceof Error ? error.name : "Unknown" });
   return NextResponse.json({ success: false, error: "Gagal memulai pembuatan materi." }, { status: 500 });
 }
@@ -31,11 +39,11 @@ export async function POST(request: NextRequest, context: Context) {
     ) as job`;
     const job = row.job as { id: string; status: string; remaining_quota: number };
     if (job.status !== "completed") {
-      const chunks = await ragSql()`select i.chunk_id from public.generation_job_items i
+      const batches = await ragSql()`select i.id from public.generation_job_items i
         join public.generation_jobs j on j.id=i.job_id
         where j.id=${job.id} and j.document_id=${id} and j.user_id=${session.user.id}
-        order by i.created_at,i.id`;
-      await dispatchGeneration(job.id, id, session.user.id, chunks.map(chunk => String(chunk.chunk_id)));
+        order by i.batch_index,i.id`;
+      await dispatchGeneration(job.id, id, session.user.id, batches.map(batch => String(batch.id)));
     }
     return NextResponse.json({ success: true, documentId: id, jobId: job.id, status: job.status,
       remainingToday: job.remaining_quota }, { status: job.status === "completed" ? 200 : 202 });

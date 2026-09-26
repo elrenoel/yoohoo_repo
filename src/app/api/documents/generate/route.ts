@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
           limitReached: true,
           remainingToday: 0,
           resetDate: quota.today,
+          dailyLimit: DAILY_LIMIT,
         },
         { status: 429 }
       );
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
       p_questions: aiResult.quiz as unknown as Json, p_daily_limit: DAILY_LIMIT,
     });
     if (saved.error) {
-      if (isQuotaError(saved.error)) return NextResponse.json({success:false,error:`Limit harian ${DAILY_LIMIT}x generate sudah tercapai. Coba lagi besok!`,limitReached:true,remainingToday:0,resetDate:quota.today},{status:429});
+      if (isQuotaError(saved.error)) return NextResponse.json({success:false,error:`Limit harian ${DAILY_LIMIT}x generate sudah tercapai. Coba lagi besok!`,limitReached:true,remainingToday:0,dailyLimit:DAILY_LIMIT,resetDate:quota.today},{status:429});
       throw saved.error;
     }
     const result = saved.data as { id:string; created_at:string; new_count:number; remaining:number };
@@ -200,7 +201,7 @@ export async function GET(request: NextRequest) {
 
     const quota = await getUserQuota(session.user.id);
     if (!quota) {
-      return NextResponse.json({ remainingToday: DAILY_LIMIT });
+      return NextResponse.json({ remainingToday: DAILY_LIMIT, usedToday: 0, dailyLimit: DAILY_LIMIT });
     }
 
     return NextResponse.json({

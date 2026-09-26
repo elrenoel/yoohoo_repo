@@ -344,6 +344,7 @@
               "Fn::Sub": "arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:${AWS::StackName}-keywords"
             },
             "RAG_CHUNK_PAGES": "5",
+            "RAG_CHUNK_OVERLAP_PARAGRAPHS": "2",
             "SUPABASE_DATABASE_CA": {
               "Ref": "DatabaseCA"
             }
@@ -641,6 +642,12 @@
             },
             "RAG_BUCKET_NAME": {
               "Fn::Sub": "${AWS::StackName}-pdf-${AWS::AccountId}-${AWS::Region}"
+            },
+            "GEMINI_API_KEY": {
+              "Fn::Sub": "{{resolve:secretsmanager:${GeminiSecretName}:SecretString:GEMINI_API_KEY}}"
+            },
+            "GEMINI_MODEL": {
+              "Ref": "GeminiModel"
             },
             "SUPABASE_DATABASE_CA": {
               "Ref": "DatabaseCA"

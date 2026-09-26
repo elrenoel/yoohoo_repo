@@ -14,6 +14,7 @@ import {
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { ErrorStateLoadFailed } from "@/components/ui/ErrorState";
 
 type Keyword = {
@@ -70,6 +71,7 @@ export default function KeywordsPage({ params }: { params: Promise<{ id: string 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const [confirmLargeSelection, setConfirmLargeSelection] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -160,6 +162,15 @@ export default function KeywordsPage({ params }: { params: Promise<{ id: string 
       setError(saveError instanceof Error ? saveError.message : "Pilihan keyword gagal disimpan.");
       setSaving(false);
     }
+  }
+
+  function requestContinue() {
+    if (!selected.size || saving) return;
+    if (selected.size > 30) {
+      setConfirmLargeSelection(true);
+      return;
+    }
+    void saveAndContinue();
   }
 
   function retryLoad() {
@@ -336,7 +347,7 @@ export default function KeywordsPage({ params }: { params: Promise<{ id: string 
                 variant="success"
                 size="lg"
                 disabled={selected.size === 0 || saving}
-                onClick={saveAndContinue}
+                onClick={requestContinue}
                 className="w-full sm:w-auto"
               >
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
@@ -346,6 +357,17 @@ export default function KeywordsPage({ params }: { params: Promise<{ id: string 
           </div>
         )}
       </main>
+      {confirmLargeSelection && (
+        <ConfirmDialog
+          title="Buat materi untuk banyak keyword?"
+          message={`${selected.size} keyword akan dibuat dalam beberapa batch agar hemat kuota Gemini. Prosesnya dapat memerlukan beberapa menit.`}
+          confirmLabel="Lanjutkan generate"
+          confirmVariant="success"
+          icon={<Sparkles className="w-4 h-4" />}
+          onCancel={() => setConfirmLargeSelection(false)}
+          onConfirm={() => { setConfirmLargeSelection(false); void saveAndContinue(); }}
+        />
+      )}
     </>
   );
 }

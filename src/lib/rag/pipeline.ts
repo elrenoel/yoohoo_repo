@@ -1,11 +1,11 @@
 import { randomUUID } from "node:crypto";
 import { ragSql } from "./db";
-import { normalizeTerm, type Chunk, type Keyword } from "./core";
+import { isSnippetEcho, normalizeTerm, type Chunk, type Keyword } from "./core";
 
 export interface Job { documentId: string; userId: string }
 export interface ChunkJob extends Job { chunkId: string }
 export async function ownedDocument(job: Job) {
-  const [doc] = await ragSql()`select id,status,storage_path,file_size from public.documents
+  const [doc] = await ragSql()`select id,title,status,storage_path,file_size,document_summary from public.documents
     where id=${job.documentId} and user_id=${job.userId} and deleted_at is null and storage_path is not null`;
   return doc;
 }
@@ -13,7 +13,7 @@ export async function failDocument(job: Job, message: string) {
   await ragSql()`update public.documents set status='failed',error_message=${message}
     where id=${job.documentId} and user_id=${job.userId} and status not in ('ready_for_selection','failed') and deleted_at is null`;
 }
-export async function saveChunks(job: Job, pageCount: number, chunks: Chunk[]) {
+export async function saveChunks(job: Job, pageCount: number, chunks: Chunk[], documentSummary: string) {
   return ragSql().begin(async sql => {
     const [doc] = await sql`select id,status from public.documents where id=${job.documentId} and user_id=${job.userId} and deleted_at is null for update`;
     if (!doc || doc.status === "failed" || doc.status === "ready_for_selection") return [];
@@ -25,12 +25,12 @@ export async function saveChunks(job: Job, pageCount: number, chunks: Chunk[]) {
     for (let offset = 0; offset < rows.length; offset += 100) {
       await sql`insert into public.document_chunks ${sql(rows.slice(offset, offset + 100), "id", "document_id", "chunk_index", "page_start", "page_end", "content", "scan_pages")}`;
     }
-    await sql`update public.documents set page_count=${pageCount},status='indexing',error_message=null where id=${job.documentId} and user_id=${job.userId}`;
+    await sql`update public.documents set page_count=${pageCount},document_summary=${documentSummary},status='indexing',error_message=null where id=${job.documentId} and user_id=${job.userId}`;
     return rows.map(c => c.id);
   });
 }
 export async function loadChunk(job: ChunkJob) {
-  const [chunk] = await ragSql()`select c.*,d.storage_path from public.document_chunks c join public.documents d on d.id=c.document_id
+  const [chunk] = await ragSql()`select c.*,d.storage_path,d.document_summary from public.document_chunks c join public.documents d on d.id=c.document_id
     where c.id=${job.chunkId} and d.id=${job.documentId} and d.user_id=${job.userId} and d.deleted_at is null and d.status='indexing'`;
   return chunk;
 }
@@ -56,13 +56,18 @@ export async function finalizeDocument(job: Job) {
     const [progress] = await sql`select count(*)::int as total,count(processed_at)::int as completed,
       count(*) filter(where processing_error is not null)::int as skipped from public.document_chunks where document_id=${job.documentId}`;
     if (!progress.total || progress.total !== progress.completed) throw new Error("Chunks have not all completed");
-    const keywords = await sql`select id,term from public.candidate_keywords where document_id=${job.documentId} order by created_at,id`;
-    const seen = new Set<string>(), duplicates: string[] = [];
+    const keywords = await sql`select id,term,snippet from public.candidate_keywords where document_id=${job.documentId} order by created_at,id`;
+    const seen = new Set<string>(), discarded: string[] = [], echoed: string[] = [];
     for (const row of keywords) {
       const key = normalizeTerm(row.term);
-      if (seen.has(key)) duplicates.push(row.id); else seen.add(key);
+      if (isSnippetEcho(String(row.term), String(row.snippet ?? ""))) {
+        discarded.push(row.id); echoed.push(row.id);
+      } else if (seen.has(key)) discarded.push(row.id); else seen.add(key);
     }
-    if (duplicates.length) await sql`delete from public.candidate_keywords where document_id=${job.documentId} and id=any(${sql.array(duplicates)}::uuid[])`;
+    if (discarded.length) await sql`delete from public.candidate_keywords where document_id=${job.documentId} and id=any(${sql.array(discarded)}::uuid[])`;
+    if (echoed.length) console.warn("[RAG finalizer] discarded low-quality keyword snippets", {
+      documentId: job.documentId, discardedCount: echoed.length,
+    });
     const message = !seen.size ? "Tidak ada keyword yang berhasil diekstrak. Coba PDF lain atau unggah ulang."
       : progress.skipped ? `${progress.skipped} dari ${progress.total} chunk gagal diproses. Hasil yang tersedia ditampilkan.` : null;
     await sql`update public.documents set status=${seen.size ? "ready_for_selection" : "failed"},error_message=${message}

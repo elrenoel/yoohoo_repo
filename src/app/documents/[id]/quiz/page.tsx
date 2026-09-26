@@ -25,7 +25,10 @@ interface QuizQuestion {
   id: string;
   question: string;
   options: string[];
+  difficulty?: "easy" | "medium" | "hard";
 }
+type QuizMode = "normal" | "time_attack";
+const TIME_ATTACK_QUESTION_MS = 25_000;
 
 interface QuizSetOption {
   id: string;
@@ -73,6 +76,7 @@ function QuizContent({
   documentTitle,
   isDemo,
   selectedSetId,
+  mode,
   onSubmitted,
   onProgressChange,
 }: {
@@ -81,6 +85,7 @@ function QuizContent({
   documentTitle: string;
   isDemo: boolean;
   selectedSetId: string | null;
+  mode: QuizMode;
   onSubmitted: () => void;
   onProgressChange: (p: { answeredCount: number; total: number; progressPercent: number }) => void;
 }) {
@@ -89,6 +94,9 @@ function QuizContent({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [answerMeta, setAnswerMeta] = useState<Record<string, { selectedIndex: number | null; status: "answered" | "skipped" | "timeout"; timeTakenMs: number }>>({});
+  const [questionStartedAt, setQuestionStartedAt] = useState(() => Date.now());
+  const [remainingMs, setRemainingMs] = useState(TIME_ATTACK_QUESTION_MS);
 
   const { t } = useI18n();
   const queryClient = useQueryClient();
@@ -104,6 +112,31 @@ function QuizContent({
     ? selectedAnswers[currentQuestion.id]
     : undefined;
 
+  useEffect(() => {
+    setQuestionStartedAt(Date.now());
+    setRemainingMs(TIME_ATTACK_QUESTION_MS);
+  }, [currentIndex, currentQuestion?.id]);
+
+  useEffect(() => {
+    if (mode !== "time_attack" || !currentQuestion || isSubmitting || answerMeta[currentQuestion.id]) return;
+    const timer = window.setInterval(() => {
+      const elapsed = Date.now() - questionStartedAt;
+      const next = Math.max(0, TIME_ATTACK_QUESTION_MS - elapsed);
+      setRemainingMs(next);
+      if (next === 0) {
+        setAnswerMeta(prev => ({ ...prev, [currentQuestion.id]: { selectedIndex: null, status: "timeout", timeTakenMs: TIME_ATTACK_QUESTION_MS } }));
+        if (currentIndex < questions.length - 1) setCurrentIndex(prev => prev + 1);
+      }
+    }, 250);
+    return () => window.clearInterval(timer);
+  }, [mode, currentQuestion, currentIndex, questionStartedAt, answerMeta, isSubmitting]);
+
+  useEffect(() => {
+    if (mode === "time_attack" && currentIndex === questions.length - 1 && currentQuestion && answerMeta[currentQuestion.id]?.status === "timeout") {
+      void handleSubmitQuiz();
+    }
+  }, [mode, currentIndex, questions.length, currentQuestion, answerMeta]);
+
   // Report progress to parent on every change
   useEffect(() => {
     onProgressChange({ answeredCount, total: questions.length, progressPercent });
@@ -112,6 +145,7 @@ function QuizContent({
   const handleSelectOption = (optionIndex: number) => {
     if (!currentQuestion) return;
     setSelectedAnswers((prev) => ({ ...prev, [currentQuestion.id]: optionIndex }));
+    setAnswerMeta(prev => ({ ...prev, [currentQuestion.id]: { selectedIndex: optionIndex, status: "answered", timeTakenMs: Math.max(0, Date.now() - questionStartedAt) } }));
   };
 
   const handleNext = () => {
@@ -148,6 +182,8 @@ function QuizContent({
       });
 
       const resultPayload = {
+        attemptId: undefined,
+        quizId: selectedSetId,
         score: correctCount,
         total: mockQuestions.length,
         percentage: Math.round((correctCount / mockQuestions.length) * 100),
@@ -167,15 +203,17 @@ function QuizContent({
 
     try {
       const sessionId = getOrCreateSessionId();
+      if (!selectedSetId) throw new Error("Set quiz tidak ditemukan.");
 
-      const answers = Object.entries(selectedAnswers).map(
-        ([questionId, selectedIndex]) => ({ questionId, selectedIndex })
-      );
+      const answers = questions.map(question => {
+        const meta = answerMeta[question.id];
+        return { question_id: question.id, selected_index: meta?.selectedIndex ?? selectedAnswers[question.id] ?? null, status: meta?.status ?? "skipped", time_taken_ms: meta?.timeTakenMs ?? Math.max(0, Date.now() - questionStartedAt) };
+      });
 
-      const res = await fetch(`/api/quiz/${docId}/submit`, {
+      const res = await fetch(`/api/quiz/${selectedSetId}/attempts`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers, sessionId, quizSetId: selectedSetId }),
+        body: JSON.stringify({ answers, session_id: sessionId, mode }),
       });
 
       if (!res.ok) {
@@ -186,11 +224,13 @@ function QuizContent({
       const data = await res.json();
 
       const resultPayload = {
+        attemptId: data.attemptId,
+        quizId: data.quizId || selectedSetId,
         score: data.score,
         total: data.total,
-        percentage: data.percentage,
+        percentage: data.percentage ?? (data.total ? Math.round((data.score / data.total) * 100) : 0),
         documentTitle: data.documentTitle || documentTitle,
-        review: data.review,
+        review: data.review.map((item: { selectedIndex: number | null }) => ({ ...item, selectedIndex: item.selectedIndex ?? -1 })),
         createdAt: data.createdAt,
       };
       sessionStorage.setItem(
@@ -234,15 +274,17 @@ function QuizContent({
         </span> 
         </div>
         <span className="text-xs text-neutral-400 font-mono">
-          {t("quiz.pickOne")}
+          {mode === "time_attack" ? `Time Attack · ${Math.ceil(remainingMs / 1000)}s` : t("quiz.pickOne")}
         </span>
       </div>
+      {mode === "time_attack" && <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-neutral-200"><div className={`h-full transition-all ${remainingMs < 5_000 ? "bg-rose-500" : "bg-emerald-600"}`} style={{ width: `${(remainingMs / TIME_ATTACK_QUESTION_MS) * 100}%` }} /></div>}
 
       {/* Question Card */}
       <div className="bg-white border border-neutral-200 rounded-2xl p-6 sm:p-8 shadow-xs mb-6">
         <h2 className="text-lg sm:text-xl font-semibold text-neutral-900 leading-relaxed mb-6">
           {currentQuestion.question}
         </h2>
+        {currentQuestion.difficulty && <span className="inline-flex mb-4 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-neutral-600">{currentQuestion.difficulty}</span>}
 
         {/* 4 Options */}
         <div className="space-y-3">
@@ -351,6 +393,9 @@ export default function QuizPage() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const [regenerateMessage, setRegenerateMessage] = useState<string | null>(null);
+  const [regenerateLimitReached, setRegenerateLimitReached] = useState(false);
+  const [mode, setMode] = useState<QuizMode>("normal");
+  const [started, setStarted] = useState(false);
 
   const [quizProgress, setQuizProgress] = useState({
     answeredCount: 0,
@@ -384,6 +429,8 @@ export default function QuizPage() {
 
   const selectedSetLabel = isDemo ? null : quizData?.quizSetLabel || null;
 
+  useEffect(() => { if (isDemo) setStarted(true); }, [isDemo]);
+
   const handleRetry = () => {
     refetch();
   };
@@ -397,13 +444,17 @@ export default function QuizPage() {
 
   // ── Regenerate quiz set ──────────────────────────────────────────────────
   const handleRegenerate = async () => {
+    if (regenerateLimitReached) return;
     setIsRegenerating(true);
     setRegenerateError(null);
     setRegenerateMessage(null);
     try {
+      const storageKey = `yoohoo:quiz-regenerate:${docId}`;
+      const idempotencyKey = sessionStorage.getItem(storageKey) || crypto.randomUUID();
+      sessionStorage.setItem(storageKey, idempotencyKey);
       const res = await fetch(`/api/documents/${docId}/quiz/regenerate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Idempotency-Key": idempotencyKey },
         body: JSON.stringify({}),
       });
 
@@ -416,12 +467,14 @@ export default function QuizPage() {
           );
           return;
         }
+        if (res.status === 429 || body.limitReached) { setRegenerateLimitReached(true); throw new Error(body.error || "Limit harian sudah tercapai. Coba lagi besok."); }
         throw new Error(body.error || t("quiz.newSetError"));
       }
 
       const data = await res.json();
 
       setManualSetId(data.quizSet?.id || null);
+      sessionStorage.removeItem(`yoohoo:quiz-regenerate:${docId}`);
       queryClient.invalidateQueries({ queryKey: queryKeys.quiz(docId) });
       setRegenerateMessage(data.message || t("quiz.newSetSuccess"));
     } catch (err: unknown) {
@@ -515,7 +568,7 @@ export default function QuizPage() {
 
               <button
                 onClick={handleRegenerate}
-                disabled={isRegenerating}
+                disabled={isRegenerating || regenerateLimitReached}
                 className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 {isRegenerating ? (
@@ -534,12 +587,12 @@ export default function QuizPage() {
                 <p className="text-xs text-neutral-700 font-medium">
                   {regenerateError}
                 </p>
-                <button
+                {!regenerateLimitReached && <button
                   onClick={handleRegenerate}
                   className="mt-2 text-xs text-neutral-900 font-medium underline underline-offset-2 hover:text-neutral-600 transition cursor-pointer"
                 >
                   {t("error.retry")}
-                </button>
+                </button>}
               </div>
             )}
 
@@ -552,8 +605,24 @@ export default function QuizPage() {
           </div>
         )}
 
+        {!isLoading && !error && !isDemo && questions.length > 0 && !started && (
+          <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-xs mb-6">
+            <h2 className="text-lg font-semibold text-neutral-900">Pilih mode pengerjaan</h2>
+            <p className="mt-2 text-sm text-neutral-600">Time Attack memberi waktu {TIME_ATTACK_QUESTION_MS / 1000} detik untuk setiap soal.</p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {(["normal", "time_attack"] as QuizMode[]).map(value => (
+                <button key={value} type="button" onClick={() => setMode(value)} className={`rounded-xl border p-4 text-left transition ${mode === value ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-neutral-50 hover:border-neutral-400"}`}>
+                  <span className="block text-sm font-semibold">{value === "normal" ? "Normal" : "Time Attack"}</span>
+                  <span className={`mt-1 block text-xs ${mode === value ? "text-neutral-300" : "text-neutral-500"}`}>{value === "normal" ? "Tanpa batas waktu per soal" : `${TIME_ATTACK_QUESTION_MS / 1000} detik per soal`}</span>
+                </button>
+              ))}
+            </div>
+            <Button className="mt-5 w-full" size="lg" variant="success" onClick={() => setStarted(true)}>Mulai Quiz</Button>
+          </div>
+        )}
+
         {/* Quiz – keyed so child state resets when set or question count changes */}
-        {!isLoading && !error && questions.length > 0 && (
+        {!isLoading && !error && questions.length > 0 && (isDemo || started) && (
           <QuizContent
             key={`${selectedSetId}-${questions.length}`}
             questions={questions}
@@ -561,6 +630,7 @@ export default function QuizPage() {
             documentTitle={documentTitle}
             isDemo={isDemo}
             selectedSetId={selectedSetId}
+            mode={mode}
             onSubmitted={() => router.push(`/documents/${docId}/quiz/results`)}
             onProgressChange={setQuizProgress}
           />
