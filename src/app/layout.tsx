@@ -5,7 +5,6 @@ import { LanguageProvider } from "@/lib/i18n";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import QueryProvider from "@/lib/query-provider";
 import { SessionProvider } from "@/lib/session-provider";
-import Footer from "@/components/layout/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -40,7 +39,6 @@ export default function RootLayout({
             <SessionProvider>
               <LanguageProvider>
                 {children}
-                <Footer />
               </LanguageProvider>
             </SessionProvider>
           </QueryProvider>

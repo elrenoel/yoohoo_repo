@@ -5,12 +5,19 @@ import { finishChunk, loadChunk, type ChunkJob } from "../src/lib/rag/pipeline";
 import type { Keyword } from "../src/lib/rag/core";
 import { generateSelectedFlashcards } from "../src/lib/rag/materials";
 import { finishGenerationBatch, loadGenerationBatch, type GenerationBatchJob } from "../src/lib/rag/generation";
+import { classifyCoreKeywordsForDocument } from "../src/lib/rag/core-keywords";
 
-function isGenerationBatchJob(job: ChunkJob | GenerationBatchJob): job is GenerationBatchJob {
+interface CoreClassificationJob { mode: "classify-core"; documentId: string; userId: string }
+
+function isGenerationBatchJob(job: ChunkJob | GenerationBatchJob | CoreClassificationJob): job is GenerationBatchJob {
   return "mode" in job && job.mode === "generate";
 }
 
-export async function handler(job: ChunkJob | GenerationBatchJob) {
+export async function handler(job: ChunkJob | GenerationBatchJob | CoreClassificationJob) {
+  if ("mode" in job && job.mode === "classify-core") {
+    const results = await classifyCoreKeywordsForDocument(job.documentId, job.userId);
+    return { done: true, decks: results };
+  }
   if (isGenerationBatchJob(job)) {
     const item = await loadGenerationBatch(job);
     if (!item || item.status === "completed") return { done: true };

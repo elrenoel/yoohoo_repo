@@ -5,6 +5,7 @@ import { chunkPages, isSnippetEcho, parseKeywords } from "../src/lib/rag/core";
 import { extractChunks, renderScanPages } from "../src/lib/rag/pdf";
 import { pdfKey } from "../src/lib/rag/storage";
 import { parseGeneratedFlashcards, parseRepresentativeQuiz, representativeQuizCount } from "../src/lib/rag/materials";
+import { coreSelectionCount, parseCoreKeywordClassifications } from "../src/lib/rag/core-keywords";
 import { samplePdf } from "./rag-fixture";
 
 test("all text after 8000 words survives chunking, including last partial chunk", () => {
@@ -63,6 +64,21 @@ test("workflow bounds concurrency, discards worker payloads, and handles failed 
   assert.equal(asl.States.GenerateSelected.ItemsPath, "$.batchIds");
   assert.equal(asl.States.GenerateSelected.ItemProcessor.States.GenerateChunkMaterials.Next, "WaitBeforeNextBatch");
   assert.equal(asl.States.GenerateSelected.ItemProcessor.States.GenerateChunkMaterials.Catch[0].Next, "RecordGenerationFailure");
+  assert.equal(asl.States.Finalize.Next, "ClassifyCoreKeywords");
+  assert.equal(asl.States.ClassifyCoreKeywords.Parameters.Payload.mode, "classify-core");
+  assert.equal(asl.States.ClassifyCoreKeywords.Catch[0].Next, "ClassificationSkipped");
+});
+test("core keyword classification is strict and top-K stays proportional and bounded", () => {
+  assert.equal(coreSelectionCount(0), 0);
+  assert.equal(coreSelectionCount(3), 3);
+  assert.equal(coreSelectionCount(10), 5);
+  assert.equal(coreSelectionCount(20), 7);
+  assert.equal(coreSelectionCount(100), 12);
+  const valid = [{ keyword_id: "k1", topic_label: "Scrum Roles", content_type: "konsep", importance_score: 92, why_important: "Konsep ini menjadi dasar pembagian tanggung jawab tim." }];
+  assert.deepEqual(parseCoreKeywordClassifications(valid, ["k1"]), valid);
+  assert.throws(() => parseCoreKeywordClassifications([], ["k1"]));
+  assert.throws(() => parseCoreKeywordClassifications([...valid, ...valid], ["k1"]));
+  assert.throws(() => parseCoreKeywordClassifications([{ ...valid[0], content_type: "trivia" }], ["k1"]));
 });
 test("selected flashcard parsing keeps valid batch items and skips malformed ones", () => {
   const selected = [{ id: "keyword-1", term: "Paging", snippet: "Memory pages", chunk_id: "chunk-1" }, { id: "keyword-2", term: "TLB", snippet: "Translation cache", chunk_id: "chunk-2" }];

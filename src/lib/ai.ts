@@ -1,4 +1,5 @@
-import { GoogleGenAI, type SchemaUnion } from "@google/genai";
+import { type SchemaUnion } from "@google/genai";
+import { generateWithGemini } from "@/lib/llm/provider";
 
 export interface GeneratedFlashcard {
   term: string;
@@ -59,14 +60,6 @@ FORMAT OUTPUT:
 Balas HANYA dengan JSON valid sesuai struktur schema tanpa pengantar teks apapun.`;
 
 const MAX_WORDS_LIMIT = 8000;
-
-// Daftar model tier berurutan: dimulai dari model ultra-cepat (flash-lite ~4s)
-// kemudian fallback ke flash flagship jika diperlukan saat 503/429
-const DEFAULT_MODEL_TIERS = [
-  "gemini-3.5-flash-lite",
-  "gemini-3.6-flash",
-  "gemini-3.5-flash",
-];
 
 const FULL_RESPONSE_SCHEMA: SchemaUnion = {
   type: "object",
@@ -136,10 +129,6 @@ const QUIZ_RESPONSE_SCHEMA: SchemaUnion = {
   },
   required: ["quiz"],
 };
-
-async function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /**
  * Memvalidasi dan membersihkan data flashcards & quiz dari AI
@@ -216,10 +205,29 @@ interface AiCallResult {
 }
 
 /**
- * Core AI caller: potong teks ke maks 8000 kata, coba beberapa model Gemini
- * secara berurutan (fallback 503/429), lalu parse respons JSON.
+ * Core AI caller: potong teks ke maks 8000 kata, lalu gunakan provider Gemini
+ * bersama dengan structured output dan retry pada model yang sama.
  */
-async function callAiWithFallback(params: AiCallParams): Promise<AiCallResult> {
+async function callAi(params: AiCallParams): Promise<AiCallResult> {
+  const words = params.rawText.trim().split(/\s+/).filter(Boolean);
+  const isTruncated = words.length > MAX_WORDS_LIMIT;
+  const processedText = isTruncated ? words.slice(0, MAX_WORDS_LIMIT).join(" ") : params.rawText;
+  const result = await generateWithGemini<unknown>({
+    stage: "legacy-study-materials",
+    contents: `Berikut adalah materi pembelajaran yang harus dianalisis:\n\n---\n${processedText}\n---\n\n${params.promptSuffix}`,
+    systemInstruction: params.systemInstruction,
+    responseSchema: params.responseSchema,
+    temperature: 0.2,
+    maxOutputTokens: 3072,
+  });
+  return {
+    parsed: result.value,
+    rawWordCount: words.length,
+    isTruncated,
+    usedModel: result.model,
+    latencyMs: result.latencyMs,
+  };
+  /* Historical multi-model implementation retained in git history.
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey.trim() === "") {
     throw new Error(
@@ -315,11 +323,12 @@ async function callAiWithFallback(params: AiCallParams): Promise<AiCallResult> {
   throw lastError instanceof Error
     ? lastError
     : new Error("Gagal memproses materi dengan seluruh kandidat Gemini model.");
+  */
 }
 
 /**
  * Generate flashcards & quiz questions dari teks materi menggunakan Google Gemini API
- * dengan prompt berkualitas tinggi, multi-model fallback & sanitasi ketat.
+ * dengan prompt berkualitas tinggi, retry model yang sama & sanitasi ketat.
  */
 const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
   id: "\n\nPERHATIAN: Seluruh output flashcard (term & definition) DAN quiz (question & options) WAJIB dalam Bahasa Indonesia, terlepas dari bahasa asli materi sumber.",
@@ -334,7 +343,7 @@ export async function generateStudyMaterials(
     ? LANGUAGE_INSTRUCTIONS[contentLanguage] || ""
     : "";
 
-  const result = await callAiWithFallback({
+  const result = await callAi({
     systemInstruction: SYSTEM_INSTRUCTION,
     responseSchema: FULL_RESPONSE_SCHEMA,
     promptSuffix:
@@ -363,7 +372,7 @@ export async function generateStudyMaterials(
 
 /**
  * Generate HANYA quiz questions baru (untuk fitur regenerate quiz per set).
- * Prompt khusus quiz, multi-model fallback & sanitasi ketat.
+ * Prompt khusus quiz, retry model yang sama & sanitasi ketat.
  */
 export async function generateQuizQuestions(
   rawText: string,
@@ -373,7 +382,7 @@ export async function generateQuizQuestions(
     ? LANGUAGE_INSTRUCTIONS[contentLanguage] || ""
     : "";
 
-  const result = await callAiWithFallback({
+  const result = await callAi({
     systemInstruction: QUIZ_ONLY_SYSTEM_INSTRUCTION,
     responseSchema: QUIZ_RESPONSE_SCHEMA,
     promptSuffix:

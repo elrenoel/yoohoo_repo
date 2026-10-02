@@ -27,6 +27,7 @@ export async function jsonBody(request: Request) {
 }
 export function ragResponseError(error: unknown) {
   if (error instanceof RagError) return Response.json({ error: error.message }, { status: error.status });
-  console.error("[RAG API]", error instanceof Error ? error.name : "Unknown error");
+  if (error instanceof Error) console.error("[RAG API]", { errorType: error.name, message: error.message, code: (error as { code?: string }).code, detail: (error as { detail?: string }).detail });
+  else console.error("[RAG API]", error);
   return Response.json({ error: "Pemrosesan gagal. Coba lagi beberapa saat lagi." }, { status: 500 });
 }

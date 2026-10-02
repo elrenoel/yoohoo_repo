@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { MOCK_DOCUMENT } from "@/lib/mock-data";
 import {
@@ -13,7 +12,6 @@ import {
 } from "lucide-react";
 import ErrorState from "@/components/ui/ErrorState";
 import { useI18n } from "@/lib/i18n";
-import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
@@ -491,8 +489,9 @@ export default function QuizPage() {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
+      {/*
       <Navbar
-        backHref={`/documents/${docId}/flashcards`}
+        backHref={`/desk/${docId}/flashcards`}
         title={isLoading ? undefined : documentTitle}
         subtitle={
           <>
@@ -520,6 +519,12 @@ export default function QuizPage() {
           </div>
         }
       />
+      */}
+
+      <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-6 pt-6 text-xs text-neutral-500">
+        <span className="shrink-0 font-mono">{answeredCount} / {totalQuestions} terjawab</span>
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200"><div className="h-full bg-neutral-900 transition-all" style={{ width: `${progressPercent}%` }} /></div>
+      </div>
 
       {/* Main Quiz Container */}
       <main className="max-w-2xl mx-auto px-6 py-10 flex-1 w-full flex flex-col justify-center">
@@ -631,7 +636,7 @@ export default function QuizPage() {
             isDemo={isDemo}
             selectedSetId={selectedSetId}
             mode={mode}
-            onSubmitted={() => router.push(`/documents/${docId}/quiz/results`)}
+            onSubmitted={() => router.push(`/desk/${docId}/quiz/results`)}
             onProgressChange={setQuizProgress}
           />
         )}

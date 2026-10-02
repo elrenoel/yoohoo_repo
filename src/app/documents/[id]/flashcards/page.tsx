@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   ArrowRight,
   RotateCw,
@@ -16,7 +16,6 @@ import { useI18n } from "@/lib/i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { MOCK_DOCUMENT } from "@/lib/mock-data";
-import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -63,7 +62,6 @@ async function fetchFlashcards(docId: string): Promise<FlashcardsApiResponse> {
 // ─── Main Page ───────────────────────────────────────────────────────────────
 export default function FlashcardsPage() {
   const params = useParams();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const { t } = useI18n();
   const docId = (params?.id as string) || "";
@@ -86,9 +84,6 @@ export default function FlashcardsPage() {
   const cards: Flashcard[] = isDemo
     ? (MOCK_DOCUMENT.flashcards as Flashcard[])
     : flashcardsData?.flashcards || [];
-  const documentTitle = isDemo
-    ? MOCK_DOCUMENT.title
-    : flashcardsData?.documentTitle || "";
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
@@ -197,9 +192,14 @@ export default function FlashcardsPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
-      <Navbar
-        backHref="/"
-        title={isLoading ? undefined : documentTitle}
+      <>
+        <div className="mb-6 h-1 w-full overflow-hidden rounded-full bg-neutral-200"><div className="h-full bg-neutral-900 transition-all" style={{ width: `${progressPercent}%` }} /></div>
+        <div className="mb-4 flex w-full justify-end">
+          <Link href={`/desk/${docId}/quiz`} className="inline-flex items-center gap-1.5 rounded-xl bg-neutral-900 px-4 py-2 text-xs font-medium text-white hover:bg-neutral-800"><span>{t("flashcards.startQuiz")}</span><ArrowRight className="h-3.5 w-3.5" /></Link>
+        </div>
+      </>
+      {/* Legacy header content removed; workspace layout owns the document header. */}
+      {/*
         subtitle={
           <>
             Flashcards
@@ -208,7 +208,7 @@ export default function FlashcardsPage() {
         }
         rightContent={
           <Link
-            href={`/documents/${docId}/quiz`}
+            href={`/desk/${docId}/quiz`}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 transition active:scale-[0.98] shadow-xs"
           >
             <span>{t("flashcards.startQuiz")}</span>
@@ -224,6 +224,7 @@ export default function FlashcardsPage() {
           </div>
         }
       />
+      */}
 
       {/* Main Content */}
       <main className="max-w-xl mx-auto px-6 py-10 flex-1 w-full flex flex-col items-center justify-center">
@@ -260,7 +261,7 @@ export default function FlashcardsPage() {
                   {t("flashcards.kartu")} {currentIndex + 1} {t("flashcards.of")} {cards.length}
                 </span>
                 <Link
-                  href={`/documents/${docId}/quiz`}
+                  href={`/desk/${docId}/quiz`}
                   className="inline-flex sm:hidden items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 transition active:scale-[0.98] shadow-xs"
                 >
                   <span>{t("flashcards.startQuiz")}</span>
@@ -376,7 +377,7 @@ export default function FlashcardsPage() {
                   🎉 {t("flashcards.endMessage")}
                 </p>
                 <Link
-                  href={`/documents/${docId}/quiz`}
+                  href={`/desk/${docId}/quiz`}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-700 text-white hover:bg-emerald-800 transition"
                 >
                   <span>{t("flashcards.startQuizButton")}</span>

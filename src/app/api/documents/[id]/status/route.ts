@@ -10,7 +10,7 @@ export async function GET(request: Request, context: Context) {
   try {
     const userId = await sessionUser(request);
     const id = documentId((await context.params).id);
-    const [document] = await ragSql()`select id,status,error_message as "errorMessage"
+    const [document] = await ragSql()`select id,title,page_count,status,error_message as "errorMessage"
       from public.documents
       where id=${id}
         and user_id=${userId}
@@ -22,6 +22,8 @@ export async function GET(request: Request, context: Context) {
     return Response.json(
       {
         documentId: document.id,
+        title: document.title,
+        pageCount: document.page_count,
         status: document.status,
         errorMessage: document.errorMessage,
       },

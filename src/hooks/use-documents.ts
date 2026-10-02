@@ -17,6 +17,10 @@ export interface UserDocument {
   isStarred: boolean;
   starredAt?: string | null;
   lastAttempt?: { score: number; total: number; createdAt: string } | null;
+  updatedAt?: string;
+  materialCount?: number;
+  elementCount?: number;
+  processingCount?: number;
 }
 
 // ── API functions ────────────────────────────────────────────────────────────

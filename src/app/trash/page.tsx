@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import ErrorState from "@/components/ui/ErrorState";
 import { useI18n } from "@/lib/i18n";
-import Navbar from "@/components/layout/Navbar";
+import AppShell from "@/components/layout/AppShell";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -107,8 +107,8 @@ export default function TrashPage() {
   };
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
-      <Navbar />
 
       {/* Main Content */}
       <main className="max-w-3xl mx-auto px-6 py-12 flex-1 w-full">
@@ -294,5 +294,6 @@ export default function TrashPage() {
         />
       )}
     </div>
+    </AppShell>
   );
 }

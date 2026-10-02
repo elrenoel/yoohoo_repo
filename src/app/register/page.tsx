@@ -103,8 +103,8 @@ function RegisterForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/app",
-        newUserCallbackURL: "/app",
+        callbackURL: "/desk",
+        newUserCallbackURL: "/desk",
         requestSignUp: true,
         errorCallbackURL: "/login",
       });
@@ -183,7 +183,7 @@ function RegisterForm() {
               const saveData = await saveRes.json();
               localStorage.removeItem("yoohoo_trial_data");
               localStorage.removeItem("yoohoo_has_used_trial");
-              router.push(`/documents/${saveData.documentId}/flashcards`);
+              router.push(`/desk/${saveData.documentId}/flashcards`);
               router.refresh();
               return;
             }
@@ -194,7 +194,7 @@ function RegisterForm() {
       }
 
       invalidateSession();
-      router.push("/app");
+      router.push("/desk");
       router.refresh();
     } catch (err: unknown) {
       setErrorMessage(

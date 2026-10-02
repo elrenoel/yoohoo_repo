@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   FileText,
   Clock,
@@ -23,14 +24,15 @@ import { formatDateTime } from "@/lib/format-date";
 import { useDocuments } from "@/hooks/use-documents";
 import { useLanguage } from "@/hooks/use-language";
 import { useSession } from "@/lib/session-provider";
-import Navbar from "@/components/layout/Navbar";
+import AppShell from "@/components/layout/AppShell";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import ErrorState from "@/components/ui/ErrorState";
 import Card from "@/components/ui/Card";
 
 export default function HistoryPage() {
   const { t } = useLanguage();
-  const [filter, setFilter] = useState<"all" | "starred">("all");
+  const searchParams = useSearchParams();
+  const [filter, setFilter] = useState<"all" | "starred">(searchParams.get("filter") === "starred" ? "starred" : "all");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const { data: session, isPending: isSessionPending } = useSession();
   const {
@@ -60,11 +62,11 @@ export default function HistoryPage() {
   const showEmptyState = isLoggedIn && !isLoading && !error && visibleDocuments.length === 0;
 
   return (
+    <AppShell>
     <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
-      <Navbar />
 
       {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-6 py-12 flex-1 w-full">
+      <main className="max-w-5xl mx-auto px-6 py-12 pb-24 lg:pb-12 flex-1 w-full lg:pl-8">
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
@@ -77,7 +79,7 @@ export default function HistoryPage() {
           </div>
 
           <Link
-            href="/app"
+            href="/desk"
             className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 transition shadow-xs self-start sm:self-auto"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -155,7 +157,7 @@ export default function HistoryPage() {
         {!isLoading && visibleDocuments.length > 0 && (
           <div className="grid gap-4 md:grid-cols-2">
             {visibleDocuments.map((doc) => {
-              const flashcardHref = `/documents/${doc.id}/${doc.isRagDocument && !doc.hasFlashcards ? "keywords" : "flashcards"}`;
+              const flashcardHref = `/desk/${doc.id}/${doc.isRagDocument && !doc.hasFlashcards ? "keywords" : "flashcards"}`;
               return (
               <article
                 key={doc.id}
@@ -287,7 +289,7 @@ export default function HistoryPage() {
                     <span>{doc.hasFlashcards ? t("history.viewFlashcards") : t("history.chooseKeywords")}</span>
                   </Link>
                   <Link
-                    href={`/documents/${doc.id}/quiz`}
+                    href={`/desk/${doc.id}/quiz`}
                     className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-2 text-xs font-medium text-white hover:bg-neutral-800 transition"
                   >
                     <ClipboardCheck className="w-3.5 h-3.5" />
@@ -313,7 +315,7 @@ export default function HistoryPage() {
               {t("history.emptyDesc")}
             </p>
             <Link
-              href="/app"
+              href="/desk"
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition shadow-2xs"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -334,5 +336,6 @@ export default function HistoryPage() {
         />
       )}
     </div>
+    </AppShell>
   );
 }

@@ -1,4 +1,5 @@
-import { GoogleGenAI, type SchemaUnion } from "@google/genai";
+import { type SchemaUnion } from "@google/genai";
+import { generateWithGemini } from "@/lib/llm/provider";
 
 export interface SelectedKeyword { id: string; term: string; snippet: string | null; chunk_id: string }
 export interface SourceChunk { chunk_id: string; content: string }
@@ -71,48 +72,16 @@ export function parseRepresentativeQuiz(raw: string, expectedCount: number, fall
   return questions;
 }
 
-function statusCode(error: unknown) {
-  if (!error || typeof error !== "object") return undefined;
-  const value = error as { status?: unknown; code?: unknown; $metadata?: { httpStatusCode?: unknown } };
-  const candidate = value.status ?? value.code ?? value.$metadata?.httpStatusCode;
-  if (typeof candidate === "number") return candidate;
-  if (typeof candidate === "string" && /^\d{3}$/.test(candidate)) return Number(candidate);
-  return undefined;
-}
-
-async function retryAfterRateLimit<T>(operation: () => Promise<T>, model: string, stage: "flashcard" | "quiz") {
-  let lastError: unknown;
-  for (let attempt = 0; attempt < 4; attempt++) {
-    try { return await operation(); } catch (error) {
-      lastError = error;
-      if (statusCode(error) !== 429 || attempt === 3) throw error;
-      const delay = Math.min(2_000 * 2 ** attempt + Math.floor(Math.random() * 500), 15_000);
-      console.warn("[RAG generation] Gemini rate limited; retrying", { stage, model, attempt: attempt + 1, delayMs: delay });
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-  }
-  throw lastError;
-}
-
 async function generateJson(prompt: string, schema: SchemaUnion, systemInstruction: string, stage: "flashcard" | "quiz") {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is required");
-  const ai = new GoogleGenAI({ apiKey });
-  const models = [...new Set([process.env.GEMINI_MODEL, "gemini-3.5-flash-lite", "gemini-3.6-flash", "gemini-3.5-flash"].filter((value): value is string => Boolean(value?.trim())))];
-  let lastError: unknown;
-  for (let index = 0; index < models.length; index++) {
-    try {
-      const result = await retryAfterRateLimit(() => ai.models.generateContent({ model: models[index], contents: prompt, config: {
-        systemInstruction, temperature: 0.2, maxOutputTokens: 8192, responseMimeType: "application/json", responseSchema: schema, httpOptions: { timeout: 65000 },
-      } }), models[index], stage);
-      return result.text ?? "";
-    } catch (error) {
-      lastError = error;
-      console.warn("[RAG generation] Gemini attempt failed", { stage, model: models[index], errorType: error instanceof Error ? error.name : "Unknown" });
-      if (index + 1 < models.length) await new Promise(resolve => setTimeout(resolve, 500));
-    }
-  }
-  throw lastError;
+  const result = await generateWithGemini<unknown>({
+    stage,
+    contents: prompt,
+    responseSchema: schema,
+    systemInstruction,
+    temperature: 0.2,
+    maxOutputTokens: 8192,
+  });
+  return JSON.stringify(result.value);
 }
 
 export async function generateSelectedFlashcards(sourceChunks: SourceChunk[], selected: SelectedKeyword[], contentLanguage = "auto") {

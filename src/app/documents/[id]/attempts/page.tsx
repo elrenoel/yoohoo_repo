@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   ClipboardList,
   ChevronRight,
@@ -12,7 +12,6 @@ import { t as st } from "@/lib/t";
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { formatDateTime } from "@/lib/format-date";
-import Navbar from "@/components/layout/Navbar";
 import Card from "@/components/ui/Card";
 
 interface QuizAttempt {
@@ -55,7 +54,6 @@ async function fetchAttempts(docId: string): Promise<AttemptsApiResponse> {
 
 export default function DocumentAttemptsPage() {
   const params = useParams();
-  const router = useRouter();
   const { t } = useI18n();
   const docId = (params?.id as string) || "";
 
@@ -71,7 +69,6 @@ export default function DocumentAttemptsPage() {
     staleTime: 5 * 60 * 1000, // 5 minutes — avoid re-fetch when navigating back
   });
 
-  const documentTitle = data?.document?.title || "";
   const attempts = data?.attempts || [];
 
   const handleRetry = () => {
@@ -80,6 +77,7 @@ export default function DocumentAttemptsPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
+      {/*
       <Navbar
         backHref="/history"
         title={isLoading ? undefined : documentTitle}
@@ -90,6 +88,7 @@ export default function DocumentAttemptsPage() {
           </>
         }
       />
+      */}
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-6 py-10 flex-1 w-full">
@@ -152,7 +151,7 @@ export default function DocumentAttemptsPage() {
               return (
                 <Link
                   key={attempt.id}
-                  href={`/documents/${docId}/attempts/${attempt.id}`}
+                  href={`/desk/${docId}/attempts/${attempt.id}`}
                   className="group bg-white border border-neutral-200 hover:border-neutral-400 rounded-xl p-5 shadow-2xs transition flex items-center justify-between gap-4 block cursor-pointer"
                 >
                   <div className="flex items-start gap-3.5 min-w-0 flex-1">
@@ -208,7 +207,7 @@ export default function DocumentAttemptsPage() {
               {t("attempts.emptyMessage")}
             </p>
             <Link
-              href={`/documents/${docId}/quiz`}
+              href={`/desk/${docId}/quiz`}
               className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition shadow-2xs"
             >
               {t("attempts.startQuiz")}

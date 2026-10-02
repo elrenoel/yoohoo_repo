@@ -21,6 +21,8 @@
     "rag:test": "tsx --test scripts/rag.test.ts",
     "rag:aws:e2e": "tsx scripts/rag-aws-e2e.ts",
     "rag:smoke": "tsx scripts/rag-smoke.ts",
+    "rag:backfill-embeddings": "tsx scripts/backfill-keyword-embeddings.ts",
+    "rag:backfill-core-keywords": "tsx scripts/backfill-core-keywords.ts",
     "api:test": "tsx scripts/test-suite.ts",
     "test": "tsx scripts/test-suite.ts"
   },

@@ -14,6 +14,7 @@ import {
 import { useSession } from "@/lib/session-provider";
 import { useI18n } from "@/lib/i18n";
 import Navbar from "@/components/layout/Navbar";
+import Footer from "@/components/layout/Footer";
 
 /**
  * Landing page — shown to unauthenticated visitors.
@@ -32,7 +33,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (!isPending && session?.user) {
-      router.replace("/app");
+      router.replace("/desk");
     }
   }, [session, isPending, router]);
 
@@ -69,7 +70,7 @@ export default function LandingPage() {
 
         {/* Pill tag */}
         <Link
-          href="/documents/demo-os-memory/flashcards"
+          href="/desk/demo"
           className={`relative z-10 inline-flex items-center gap-1.5 px-4 py-1.5 mb-8 text-[13px] font-medium text-neutral-600 bg-neutral-100 rounded-full hover:bg-neutral-200 transition-all duration-500 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
           }`}
@@ -104,7 +105,7 @@ export default function LandingPage() {
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
-            href="/documents/demo-os-memory/flashcards"
+            href="/desk/demo"
             className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-medium rounded-full border backdrop-blur-md transition hover:bg-white/40"
             style={{ borderColor: '#013528', color: '#013528', backgroundColor: 'rgba(255,255,255,0.2)' }}
           >
@@ -275,6 +276,7 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 }

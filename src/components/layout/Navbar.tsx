@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useRef, useState, useCallback } from "react";
 import {
   ChevronLeft,
-  Languages,
   User as UserIcon,
   LogOut,
   EllipsisVertical,
@@ -14,8 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { useNavbar } from "@/hooks/use-navbar";
-import { useLanguage } from "@/hooks/use-language";
-import type { Lang } from "@/lib/i18n";
+import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 
 interface NavbarProps {
   centerContent?: React.ReactNode;
@@ -42,8 +40,6 @@ export default function Navbar({
     isLoggingOut,
     navLinks,
   } = useNavbar();
-  const { lang, setLang } = useLanguage();
-
   const isLoggedIn = !isSessionPending && !!session?.user;
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -119,45 +115,7 @@ export default function Navbar({
   }, []);
 
   // ── Language toggle (desktop) ──────────────────────────────────────────
-  const languageToggle = (
-    <div className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#FDF7EB] text-xs font-medium transition"
-      title="Bahasa / Language"
-      style={{ color: '#041914' }}
-    >
-      <Languages className="w-3.5 h-3.5 shrink-0" style={{ color: '#041914' }} />
-      <select
-        value={lang}
-        onChange={(e) => setLang(e.target.value as Lang)}
-        aria-label="Bahasa / Language"
-        className="bg-transparent text-xs font-medium focus:outline-none cursor-pointer"
-        style={{ color: '#041914' }}
-      >
-        <option value="id" className="bg-[#FDF7EB]" style={{ color: '#041914' }}>ID</option>
-        <option value="en" className="bg-[#FDF7EB]" style={{ color: '#041914' }}>EN</option>
-      </select>
-    </div>
-  );
-
   // ── Language toggle (mobile — full width) ──────────────────────────────
-  const languageToggleMobile = (
-    <div className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-[#FDF7EB] text-xs font-medium transition w-full"
-      title="Bahasa / Language"
-      style={{ color: '#041914' }}
-    >
-      <Languages className="w-4 h-4 shrink-0" style={{ color: '#041914' }} />
-      <select
-        value={lang}
-        onChange={(e) => setLang(e.target.value as Lang)}
-        aria-label="Bahasa / Language"
-        className="bg-transparent text-xs font-medium focus:outline-none cursor-pointer flex-1"
-        style={{ color: '#041914' }}
-      >
-        <option value="id" className="bg-[#FDF7EB]" style={{ color: '#041914' }}>Bahasa Indonesia</option>
-        <option value="en" className="bg-[#FDF7EB]" style={{ color: '#041914' }}>English</option>
-      </select>
-    </div>
-  );
-
   // ── User menu dropdown (desktop) ───────────────────────────────────────
   const userMenu = !isSessionPending && session?.user && (
     <div className="relative" ref={menuRef}>
@@ -280,7 +238,7 @@ export default function Navbar({
       )}
     </div>
   ) : (
-    <Link href={isLoggedIn ? "/app" : "/"} className="flex items-center gap-2.5 group shrink-0">
+    <Link href={isLoggedIn ? "/desk" : "/"} className="flex items-center gap-2.5 group shrink-0">
       <img
         src="/logo_yoohoo.png"
         alt="Yoohoo logo"
@@ -343,7 +301,7 @@ export default function Navbar({
           {/* Desktop right section */}
           <div className="hidden sm:flex items-center gap-3">
             {rightContent}
-            {languageToggle}
+            <LanguageSwitcher />
             {authSection}
           </div>
 
@@ -395,7 +353,7 @@ export default function Navbar({
             )}
 
             {/* Language toggle */}
-            <div className="px-4 py-1">{languageToggleMobile}</div>
+            <div className="px-4 py-1"><LanguageSwitcher mobile /></div>
 
             {/* Auth section for logged-in users */}
             {session?.user ? (

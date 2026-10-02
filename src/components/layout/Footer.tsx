@@ -32,12 +32,12 @@ export default function Footer() {
                 </h4>
                 <ul className="space-y-2">
                   <li>
-                    <Link href="/app" className="text-sm transition-colors" style={{ color: '#FDF7EB' }}>
+                    <Link href="/desk" className="text-sm transition-colors" style={{ color: '#FDF7EB' }}>
                       {t("footer.linkUpload")}
                     </Link>
                   </li>
                   <li>
-                    <Link href="/documents/demo-os-memory/flashcards" className="text-sm transition-colors" style={{ color: '#FDF7EB' }}>
+                    <Link href="/desk/demo" className="text-sm transition-colors" style={{ color: '#FDF7EB' }}>
                       {t("footer.linkDemo")}
                     </Link>
                   </li>

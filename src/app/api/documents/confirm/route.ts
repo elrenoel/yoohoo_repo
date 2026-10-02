@@ -19,11 +19,16 @@ export async function POST(request: Request) {
       doc = await sql.begin(async tx => {
         const [event] = await tx`select id from public.generation_quota_events where user_id=${userId} and event_key=${`document:${id}`} for update`;
         if (!event) {
-          const [quota] = await tx`select * from private.consume_generation_quota_event(${userId},${`document:${id}`},'document_pipeline',${DAILY_LIMIT},${id})`;
+          // The document row does not exist yet, so keep the nullable FK empty
+          // while consuming the event; it is linked immediately after insert.
+          const [quota] = await tx`select * from private.consume_generation_quota_event(${userId},${`document:${id}`},'document_pipeline',${DAILY_LIMIT},${null})`;
           void quota;
         }
         await tx`insert into public.documents (id,user_id,title,raw_text,content_language,storage_path,file_size,status)
           values (${id},${userId},${title},'',${contentLanguage},${key},${size},'uploaded') on conflict (id) do nothing`;
+        await tx`insert into public.decks (id,user_id,title) values (${id},${userId},${title}) on conflict (id) do update set title=excluded.title,updated_at=now()`;
+        await tx`insert into public.deck_documents (deck_id,document_id) values (${id},${id}) on conflict do nothing`;
+        await tx`update public.generation_quota_events set document_id=${id} where user_id=${userId} and event_key=${`document:${id}`} and document_id is null`;
         const [row] = await tx`select id,status from public.documents where id=${id} and user_id=${userId} and storage_path=${key} and deleted_at is null`;
         return row;
       }) as { id: string; status: string } | undefined;

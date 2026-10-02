@@ -62,7 +62,7 @@ Upload PDF  -->  AI Analysis  -->  Flashcards  -->  Quiz  -->  Score & Review
 |  | - Definitions    |    | - Correct answer |                              |
 |  +------------------+    +------------------+                              |
 |                                                                             |
-|  > Multi-model fallback: gemini-3.5-flash-lite -> 3.6-flash -> 3.5-flash  |
+|  > Exponential retry tetap memakai GEMINI_MODEL yang sama                 |
 |  > If language selected: AI generates in target language                   |
 +-----------------------------------+-----------------------------------------+
                                     |

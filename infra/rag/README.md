@@ -7,7 +7,7 @@ of flashcards and quiz. Embedding dedupe remains deferred.
 
 `/app` -> authenticated presign -> browser PUT PDF -> authenticated confirm ->
 commit document -> PUT `ready/<documentId>.json` -> S3 ObjectCreated -> orchestrator
--> Step Functions Map (1 keyword worker, bounded to respect Gemini free-tier rate limits) -> workers -> finalizer -> polling/selection UI
+-> Step Functions Map (1 keyword worker, bounded to respect Gemini free-tier rate limits) -> workers -> finalizer -> batched core-keyword classifier -> polling/selection UI
 -> generation Map (one keyword batch at a time, three-second spacing) -> atomic publish -> flashcards -> quiz.
 
 The confirmation marker is deliberate: a PDF ObjectCreated notification may arrive
@@ -22,7 +22,7 @@ object after it has been validated. The signed length must match the browser Blo
 | Handler | Trigger | Timeout | Environment |
 | --- | --- | --- | --- |
 | `lambdas/orchestrator.ts` | ObjectCreated on `ready/*.json` | 900s | `SUPABASE_DATABASE_URL`, `RAG_BUCKET_NAME`, `RAG_STATE_MACHINE_ARN`, `RAG_CHUNK_PAGES` |
-| `lambdas/worker.ts` | Step Functions per chunk | 300s | `SUPABASE_DATABASE_URL`, `RAG_BUCKET_NAME`, `GEMINI_API_KEY`, `GEMINI_MODEL` |
+| `lambdas/worker.ts` | Step Functions per chunk/core classification | 300s | `SUPABASE_DATABASE_URL`, `RAG_BUCKET_NAME`, `GEMINI_API_KEY`, `GEMINI_MODEL` |
 | `lambdas/finalizer.ts` | Map completion, skipped worker, failed orchestrator, terminal workflow failure | 60s | `SUPABASE_DATABASE_URL`, `RAG_BUCKET_NAME` |
 
 `AWS_REGION` and temporary credentials are supplied by Lambda automatically.
@@ -41,6 +41,13 @@ Existing non-RAG endpoints still use supabase-js; this does not migrate the whol
 RLS remains default-deny for clients. Server connections must have table privileges
 and BYPASSRLS. Every API read/write checks ownership from the validated session.
 Workers also join the document owner, status and soft-delete state.
+
+After finalization, the workflow invokes the worker in `classify-core` mode. It
+classifies uncached keywords in batches, stores topic/type/importance reasoning,
+and recomputes proportional top-K core items without touching rows manually
+overridden by a user. Classification failure is non-terminal: extracted keywords
+remain ready and can be retried with `POST /api/decks/:id/classify-core` or
+`npm run rag:backfill-core-keywords -- --deck-id=<uuid>`.
 
 ## Database
 

@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AlertCircle, Loader2, RefreshCw, Sparkles } from "lucide-react";
-import Navbar from "@/components/layout/Navbar";
 import Card from "@/components/ui/Card";
 
 type Job = { id: string; status: "queued" | "processing" | "completed" | "failed"; errorMessage?: string | null; flashcardCount: number; quizCount: number };
@@ -34,7 +33,7 @@ export default function GenerateFlashcardsPage() {
     }
     if (body.job.status === "completed") {
       localStorage.removeItem(storageKey);
-      router.replace(`/documents/${id}/flashcards`);
+      router.replace(`/desk/${id}/flashcards`);
     }
     return body.job as Job;
   }, [id, router, storageKey]);
@@ -51,7 +50,7 @@ export default function GenerateFlashcardsPage() {
     }
     localStorage.setItem(storageKey, body.jobId);
     window.history.replaceState(null, "", `/documents/${id}/generate-flashcards?jobId=${body.jobId}`);
-    if (body.status === "completed") router.replace(`/documents/${id}/flashcards`);
+    if (body.status === "completed") router.replace(`/desk/${id}/flashcards`);
     else await readJob(body.jobId);
   }, [id, readJob, router, storageKey]);
 
@@ -80,20 +79,19 @@ export default function GenerateFlashcardsPage() {
     return () => window.clearInterval(timer);
   }, [activeJobId, activeJobStatus, readJob]);
 
-  return <>
-    <Navbar backHref={`/documents/${id}/keywords`} title="Membuat materi" />
-    <main className="w-full max-w-xl mx-auto px-4 sm:px-6 py-12 flex-1">
-      <Card variant="centered">
+  return <main className="min-h-screen w-full bg-[#F5F6F3] px-4 py-12 pb-28 text-[#16241D] sm:px-6">
+      <div className="mx-auto w-full max-w-xl">
+      <Card variant="centered" className="border-[#D8DCD3] bg-white shadow-none">
         {error ? <>
           <AlertCircle className="mx-auto h-10 w-10 text-rose-600" />
           <h1 className="mt-4 text-xl font-semibold">Materi belum berhasil dibuat</h1>
           <p className="mt-2 text-sm text-neutral-600">{error}</p>
           <div className="mt-6 flex justify-center gap-3">
-            <Link href={`/documents/${id}/keywords`} className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-medium">Ubah pilihan</Link>
+            <Link href={`/desk/${id}/keywords`} className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-medium">Ubah pilihan</Link>
             {!limitReached ? (
               <button onClick={() => start().catch(cause => setError(cause instanceof Error ? cause.message : "Terjadi kesalahan."))} className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Coba lagi</button>
             ) : (
-              <Link href="/app" className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Kembali</Link>
+              <Link href="/desk" className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Kembali</Link>
             )}
           </div>
         </> : <>
@@ -108,6 +106,6 @@ export default function GenerateFlashcardsPage() {
           {takingLong && job && <button onClick={() => { setTakingLong(false); readJob(job.id).catch(cause => setError(cause instanceof Error ? cause.message : "Terjadi kesalahan.")); }} className="mt-6 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Periksa sekarang</button>}
         </>}
       </Card>
-    </main>
-  </>;
+      </div>
+    </main>;
 }

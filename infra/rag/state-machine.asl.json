@@ -26,8 +26,16 @@
     "Finalize": {
       "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${FinalizerArn}", "Payload.$": "$" }, "ResultPath": null,
       "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }],
-      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MarkFailed" }], "End": true, "TimeoutSeconds": 70
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "MarkFailed" }], "Next": "ClassifyCoreKeywords", "TimeoutSeconds": 70
     },
+    "ClassifyCoreKeywords": {
+      "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": { "FunctionName": "${WorkerArn}", "Payload": { "mode": "classify-core", "documentId.$": "$.documentId", "userId.$": "$.userId" } },
+      "ResultPath": null,
+      "Catch": [{ "ErrorEquals": ["States.ALL"], "ResultPath": null, "Next": "ClassificationSkipped" }],
+      "End": true, "TimeoutSeconds": 310
+    },
+    "ClassificationSkipped": { "Type": "Succeed" },
     "MarkFailed": {
       "Type": "Task", "Resource": "arn:aws:states:::lambda:invoke", "Parameters": { "FunctionName": "${FinalizerArn}", "Payload": { "documentId.$": "$.documentId", "userId.$": "$.userId", "failed": true } },
       "Retry": [{ "ErrorEquals": ["States.ALL"], "IntervalSeconds": 2, "MaxAttempts": 2, "JitterStrategy": "FULL" }], "End": true, "TimeoutSeconds": 70

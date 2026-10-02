@@ -13,7 +13,6 @@ import {
   Trophy,
   Minus,
 } from "lucide-react";
-import Navbar from "@/components/layout/Navbar";
 import Card from "@/components/ui/Card";
 import { formatDateTime } from "@/lib/format-date";
 
@@ -207,7 +206,7 @@ export default function QuizResultsPage() {
           router.replace("/");
         }
       } else {
-        router.replace(`/documents/${docId}/quiz`);
+        router.replace(`/desk/${docId}/quiz`);
       }
     }
   }, [docId, router]);
@@ -236,7 +235,7 @@ export default function QuizResultsPage() {
       const body = await response.json().catch(() => ({}));
       if (!response.ok) { if (response.status === 429 || body.limitReached) setLevelUpLimitReached(true); throw new Error(body.error || "Level up gagal."); }
       sessionStorage.removeItem(storageKey);
-      router.push(`/documents/${docId}/quiz?setId=${body.quizSet.id}`);
+      router.push(`/desk/${docId}/quiz?setId=${body.quizSet.id}`);
     } catch (error) {
       setLevelUpError(error instanceof Error ? error.message : "Level up gagal.");
       setLevelingUp(false);
@@ -257,11 +256,13 @@ export default function QuizResultsPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
+      {/*
       <Navbar
         backHref="/"
         title={result.documentTitle}
         subtitle="Hasil Kuis"
       />
+      */}
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-6 py-10 flex-1 w-full">
@@ -322,7 +323,7 @@ export default function QuizResultsPage() {
               <p className="text-sm font-medium text-amber-950">{summary.suggestion.message}</p>
               {summary.suggestion.type === "review_or_continue" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => setReviewExpanded(true)} className="rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-medium text-amber-900 hover:bg-amber-100">Ya, review dulu</button><button type="button" onClick={() => setSuggestionHidden(true)} className="rounded-lg border border-transparent px-3 py-2 text-xs font-medium text-amber-800 hover:bg-amber-100">Lanjut aja</button></div>}
               {summary.suggestion.type === "level_up" && <button type="button" onClick={handleLevelUp} disabled={levelingUp || levelUpLimitReached} className="mt-3 rounded-lg bg-neutral-900 px-4 py-2 text-xs font-medium text-white disabled:opacity-50">{levelingUp ? "Menyiapkan level..." : levelUpLimitReached ? "Limit harian tercapai" : "Coba level lebih susah"}</button>}
-              {summary.suggestion.type === "review_material" && <Link href={`/documents/${docId}/flashcards`} className="mt-3 inline-flex rounded-lg bg-neutral-900 px-4 py-2 text-xs font-medium text-white">Kembali ke flashcard</Link>}
+              {summary.suggestion.type === "review_material" && <Link href={`/desk/${docId}/flashcards`} className="mt-3 inline-flex rounded-lg bg-neutral-900 px-4 py-2 text-xs font-medium text-white">Kembali ke flashcard</Link>}
               {summary.suggestion.type === "review_material" && <button type="button" onClick={handleStarMaterial} disabled={starSaving || starredFromResult} className="mt-3 ml-2 inline-flex rounded-lg border border-amber-300 bg-white px-4 py-2 text-xs font-medium text-amber-800 disabled:opacity-60">{starredFromResult ? "Materi ditandai" : starSaving ? "Menandai..." : "Tandai untuk dipelajari lagi"}</button>}
               {levelUpError && <p className="mt-2 text-xs text-rose-700">{levelUpError}</p>}
             </div>
@@ -339,21 +340,21 @@ export default function QuizResultsPage() {
         {/* CTA Buttons */}
         <div className="flex flex-col sm:flex-row gap-3 mb-8">
           <Link
-            href={`/documents/${docId}/quiz`}
+            href={`/desk/${docId}/quiz`}
             className="flex-1 py-3 px-4 text-sm font-medium rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 transition text-center flex items-center justify-center gap-2 shadow-xs"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Ulangi Kuis</span>
           </Link>
           <Link
-            href={`/documents/${docId}/flashcards`}
+            href={`/desk/${docId}/flashcards`}
             className="flex-1 py-3 px-4 text-sm font-medium rounded-xl bg-white border border-neutral-200 text-neutral-800 hover:bg-neutral-50 transition text-center flex items-center justify-center gap-2"
           >
             <BookOpen className="w-4 h-4" />
             <span>Pelajari Flashcard Lagi</span>
           </Link>
           <Link
-            href="/app"
+            href="/desk"
             className="flex-1 py-3 px-4 text-sm font-medium rounded-xl bg-white border border-neutral-200 text-neutral-800 hover:bg-neutral-50 transition text-center flex items-center justify-center gap-2"
           >
             <Home className="w-4 h-4" />
@@ -475,7 +476,7 @@ export default function QuizResultsPage() {
             Ingin belajar materi yang berbeda?
           </p>
           <Link
-            href="/app"
+            href="/desk"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-900 underline underline-offset-4 hover:text-neutral-600 transition"
           >
             Upload PDF baru <ArrowRight className="w-3 h-3" />

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -10,7 +10,6 @@ import {
   Trophy,
 } from "lucide-react";
 import ErrorState from "@/components/ui/ErrorState";
-import Navbar from "@/components/layout/Navbar";
 import Card from "@/components/ui/Card";
 import { useI18n } from "@/lib/i18n";
 import { t as st } from "@/lib/t";
@@ -80,7 +79,6 @@ async function fetchQuizQuestions(docId: string, setId: string): Promise<{ quiz:
 
 export default function AttemptDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { t } = useI18n();
   const docId = (params?.id as string) || "";
   const attemptId = (params?.attemptId as string) || "";
@@ -101,7 +99,6 @@ export default function AttemptDetailPage() {
   const attempt = attemptsData?.attempts?.find(
     (a: QuizAttempt) => a.id === attemptId
   );
-  const documentTitle = attemptsData?.document?.title || "";
 
   // ── Step 2: Fetch quiz questions for this attempt's set (if available) ─────
   const quizSetId = attempt?.quizSetId;
@@ -129,7 +126,7 @@ export default function AttemptDetailPage() {
           title={t("attempt.notFoundTitle")}
           message={attemptsError?.message || t("attempt.notFound")}
           actions={[
-            { label: t("attempt.backToAttempts"), href: `/documents/${docId}/attempts`, variant: "secondary" },
+            { label: t("attempt.backToAttempts"), href: `/desk/${docId}/attempts`, variant: "secondary" },
           ]}
         />
       </div>
@@ -167,11 +164,13 @@ export default function AttemptDetailPage() {
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
+      {/*
       <Navbar
-        backHref={`/documents/${docId}/attempts`}
+        backHref={`/desk/${docId}/attempts`}
         title={documentTitle}
         subtitle={t("attempt.reviewTitle")}
       />
+      */}
 
       {/* Main Content */}
       <main className="max-w-2xl mx-auto px-6 py-10 flex-1 w-full">
@@ -347,7 +346,7 @@ export default function AttemptDetailPage() {
         {/* Bottom CTA */}
         <div className="mt-10 pt-8 border-t border-neutral-200 text-center">
           <Link
-            href={`/documents/${docId}/attempts`}
+            href={`/desk/${docId}/attempts`}
             className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-900 underline underline-offset-4 hover:text-neutral-600 transition"
           >
             <ArrowLeft className="w-3 h-3" /> {t("attempt.backToAttempts")}
