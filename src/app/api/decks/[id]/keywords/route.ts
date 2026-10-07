@@ -1,47 +1,102 @@
 import { ragSql } from "@/lib/rag/db";
-import { documentId, jsonBody, ragResponseError, sessionUser } from "@/lib/rag/http";
+import { RagError, UUID } from "@/lib/rag/core";
+import { documentId, ragResponseError, sessionUser } from "@/lib/rag/http";
 
 export const runtime = "nodejs";
 
+interface KeywordRow {
+  id: string;
+  document_id: string;
+  term: string;
+  snippet: string | null;
+}
+
+/** Istilah ternormalisasi: dasar penggabungan istilah kembar lintas materi. */
+function normalizedTerm(term: string) {
+  return term.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/**
+ * GET /api/decks/:deckId/keywords?documentIds=a,b,c
+ * Keyword per materi terpilih, dengan flag alreadyHasFlashcard di deck ini
+ * dan info istilah kembar (kemunculan istilah ternormalisasi yang sama di
+ * lebih dari satu materi terpilih) supaya UI bisa menggabungkannya.
+ */
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   try {
     const userId = await sessionUser(request);
-    const id = documentId((await context.params).id);
-    const sql = ragSql();
-    const [owned] = await sql`select id from public.decks where id=${id} and user_id=${userId}`;
-    if (!owned) return Response.json({ error: "Meja kerja tidak ditemukan." }, { status: 404 });
-    const rows = await sql`select k.id,k.document_id,k.term,k.snippet,k.is_selected,k.chunk_id,
-        k.content_type,k.is_core,k.importance_score,k.why_important,k.topic_label,k.core_overridden_by_user
-      from public.candidate_keywords k join public.deck_documents dd on dd.document_id=k.document_id
-      join public.documents d on d.id=dd.document_id
-      where dd.deck_id=${id} and d.user_id=${userId} and d.deleted_at is null order by lower(k.term),k.id`;
-    return Response.json({ classificationPending: rows.some(k => !k.topic_label || !k.content_type || k.importance_score === null || !k.why_important), keywords: rows.map(k => ({
-      id: String(k.id), documentId: String(k.document_id), term: String(k.term),
-      snippet: k.snippet as string | null, isSelected: Boolean(k.is_selected),
-      chunkId: k.chunk_id ? String(k.chunk_id) : null,
-      contentType: k.content_type as string | null, isCore: Boolean(k.is_core),
-      importanceScore: k.importance_score === null ? null : Number(k.importance_score),
-      whyImportant: k.why_important as string | null, topicLabel: k.topic_label as string | null,
-      coreOverriddenByUser: Boolean(k.core_overridden_by_user),
-    })) });
-  } catch (error) { return ragResponseError(error); }
-}
+    const deckId = documentId((await context.params).id);
+    const raw = new URL(request.url).searchParams.get("documentIds") ?? "";
+    const documentIds = [...new Set(raw.split(",").map(v => v.trim()).filter(Boolean))];
+    if (!documentIds.length) throw new RagError("Pilih setidaknya satu materi terlebih dahulu.");
+    if (documentIds.length > 50) throw new RagError("Terlalu banyak materi dalam satu permintaan.");
+    if (!documentIds.every(id => UUID.test(id))) throw new RagError("ID materi tidak valid.");
 
-export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
-  try {
-    const userId = await sessionUser(request);
-    const id = documentId((await context.params).id);
-    const body = await jsonBody(request);
-    if (!Array.isArray(body.selectedIds) || body.selectedIds.some((value: unknown) => typeof value !== "string")) return Response.json({ error: "selectedIds harus berupa array." }, { status: 400 });
     const sql = ragSql();
-    const [owned] = await sql`select id from public.decks where id=${id} and user_id=${userId}`;
-    if (!owned) return Response.json({ error: "Meja kerja tidak ditemukan." }, { status: 404 });
-    const selectedIds = body.selectedIds as string[];
-    await sql.begin(async tx => {
-      await tx`update public.candidate_keywords k set is_selected=false where k.id in (select ck.id from public.candidate_keywords ck join public.deck_documents dd on dd.document_id=ck.document_id where dd.deck_id=${id})`;
-      if (selectedIds.length) await tx`update public.candidate_keywords set is_selected=true where id=any(${tx.array(selectedIds)}::uuid[]) and document_id in (select document_id from public.deck_documents where deck_id=${id})`;
-      await tx`update public.decks set updated_at=now() where id=${id}`;
-    });
-    return Response.json({ success: true, selectedIds });
-  } catch (error) { return ragResponseError(error); }
+    const [deck] = await sql`select id from public.decks where id=${deckId} and user_id=${userId}`;
+    if (!deck) throw new RagError("Meja kerja tidak ditemukan.", 404);
+
+    const idArray = sql.array(documentIds);
+    // Kepemilikan: materi harus ada di deck ini dan milik user.
+    const owned = await sql`
+      select d.id from public.deck_documents dd
+      join public.documents d on d.id = dd.document_id
+      where dd.deck_id = ${deckId} and d.user_id = ${userId} and d.deleted_at is null
+        and d.id = any(${idArray}::uuid[])`;
+    if (owned.length !== documentIds.length) throw new RagError("Ada materi yang bukan bagian meja kerja ini.", 403);
+
+    const keywords = await sql<KeywordRow[]>`
+      select k.id, k.document_id, k.term, k.snippet
+      from public.candidate_keywords k
+      where k.document_id = any(${idArray}::uuid[])
+      order by lower(k.term), k.id`;
+
+    // Keyword yang sudah punya flashcard di deck ini (link eksplisit via keyword_id,
+    // atau fallback istilah untuk kartu lama yang belum punya keyword_id).
+    const withFlashcard = await sql`
+      select k.id from public.candidate_keywords k
+      join public.flashcards f
+        on f.deck_id = ${deckId}
+       and (f.keyword_id = k.id or (
+            f.keyword_id is null and f.document_id = k.document_id
+            and lower(btrim(f.term)) = lower(btrim(k.term))))
+      where k.document_id = any(${idArray}::uuid[])`;
+    const flashcardKeywordIds = new Set(withFlashcard.map(r => String(r.id)));
+
+    // Grup kembar: istilah ternormalisasi yang muncul di >1 materi terpilih.
+    const byNormalized = new Map<string, string[]>();
+    for (const row of keywords) {
+      const key = normalizedTerm(row.term);
+      byNormalized.set(key, [...(byNormalized.get(key) ?? []), String(row.id)]);
+    }
+
+    const documents = await sql`
+      select id, title from public.documents
+      where id = any(${idArray}::uuid[]) order by lower(title)`;
+
+    return Response.json({
+      documents: documents.map(doc => ({
+        id: String(doc.id),
+        title: String(doc.title),
+        keywords: keywords
+          .filter(row => String(row.document_id) === String(doc.id))
+          .map(row => {
+            const key = normalizedTerm(row.term);
+            const twinIds = (byNormalized.get(key) ?? []).filter(id => id !== String(row.id));
+            return {
+              id: String(row.id),
+              documentId: String(row.document_id),
+              term: String(row.term),
+              snippet: row.snippet as string | null,
+              normalizedTerm: key,
+              alreadyHasFlashcard: flashcardKeywordIds.has(String(row.id)),
+              // Kembar di materi lain (untuk digabung UI): id lain dengan istilah sama.
+              twinIds,
+            };
+          }),
+      })),
+    }, { headers: { "Cache-Control": "no-store" } });
+  } catch (error) {
+    return ragResponseError(error);
+  }
 }

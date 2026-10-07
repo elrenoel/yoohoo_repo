@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, type ReactNode } from "react";
-import { Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 interface ConfirmDialogProps {
   /** Dialog title text. */
@@ -12,6 +12,8 @@ interface ConfirmDialogProps {
   confirmLabel: string;
   /** Visual variant of the confirm button. */
   confirmVariant?: "danger" | "success";
+  /** Shows a spinner on the confirm button and blocks double submits. */
+  loading?: boolean;
   /** Called when the user clicks cancel or the backdrop. */
   onCancel: () => void;
   /** Called when the user clicks the confirm button. */
@@ -26,7 +28,7 @@ interface ConfirmDialogProps {
  * Used for:
  * - Delete document (history page)
  * - Permanent delete (trash page)
- * - Any destructive or important action requiring confirmation
+ * - Delete deck (Your Desk)
  *
  * Closes on Escape key and backdrop click.
  */
@@ -35,6 +37,7 @@ export default function ConfirmDialog({
   message,
   confirmLabel,
   confirmVariant = "danger",
+  loading = false,
   onCancel,
   onConfirm,
   icon,
@@ -72,15 +75,18 @@ export default function ConfirmDialog({
           <button
             autoFocus
             onClick={onCancel}
-            className="py-2.5 px-5 rounded-xl bg-white border border-neutral-200 text-xs sm:text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition cursor-pointer"
+            disabled={loading}
+            className="py-2.5 px-5 rounded-xl bg-white border border-neutral-200 text-xs sm:text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Batal
           </button>
           <button
             onClick={onConfirm}
-            className={`py-2.5 px-5 rounded-xl ${confirmColorClass} text-white text-xs sm:text-sm font-medium transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-[0.98]`}
+            disabled={loading}
+            aria-busy={loading}
+            className={`py-2.5 px-5 rounded-xl ${confirmColorClass} text-white text-xs sm:text-sm font-medium transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100`}
           >
-            {icon ?? <Trash2 className="w-4 h-4" />}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : icon ?? <Trash2 className="w-4 h-4" />}
             <span>{confirmLabel}</span>
           </button>
         </div>

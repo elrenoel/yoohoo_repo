@@ -1,20 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/i18n";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import QueryProvider from "@/lib/query-provider";
 import { SessionProvider } from "@/lib/session-provider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { AppToaster } from "@/lib/toast";
+import "katex/dist/katex.min.css";
 
 export const metadata: Metadata = {
   title: "Yoohoo — AI Flashcard & Quiz Generator",
@@ -32,13 +23,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="id" className="h-full antialiased">
       <body className="min-h-full bg-neutral-50 text-neutral-900 font-sans flex flex-col selection:bg-neutral-900 selection:text-white">
         <ErrorBoundary>
           <QueryProvider>
             <SessionProvider>
               <LanguageProvider>
                 {children}
+                <AppToaster />
               </LanguageProvider>
             </SessionProvider>
           </QueryProvider>

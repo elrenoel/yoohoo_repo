@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { ragSql } from "@/lib/rag/db";
 import { UUID } from "@/lib/rag/core";
-import { generateHardQuiz, type GeneratedQuizQuestion } from "@/lib/rag/materials";
+import { generateHardQuiz } from "@/lib/rag/materials";
 import { DAILY_LIMIT } from "@/lib/daily-limit";
+import { recordCompletedQuizGeneration } from "@/lib/jobs";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
@@ -23,20 +25,47 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     const eventKey = `quiz_extra:level-up:${quizId}:${idempotencyKey}`;
     const [existing] = await sql`select e.quiz_set_id,e.remaining_quota,qs.label,(select count(*) from public.quiz_questions q where q.quiz_set_id=e.quiz_set_id) question_count
       from public.generation_quota_events e left join public.quiz_sets qs on qs.id=e.quiz_set_id where e.user_id=${session.user.id} and e.event_key=${eventKey}`;
-    if (existing?.quiz_set_id) return NextResponse.json({ success: true, quizSet: { id: String(existing.quiz_set_id), label: String(existing.label ?? "Level Up - Hard"), questionCount: Number(existing.question_count ?? 0) }, generatedAdditional: 0, remainingToday: Number(existing.remaining_quota) }, { status: 200 });
-    const hard = await ragSql()`select question,options,correct_index,explanation,difficulty
-      from public.quiz_questions where quiz_set_id=${quizId} and document_id=${quiz.document_id} and difficulty='hard' order by id`;
-    let additional: GeneratedQuizQuestion[] = [];
-    if (hard.length < 3) {
-      const cards = await ragSql()`select term,definition from public.flashcards where document_id=${quiz.document_id} order by id`;
-      if (!cards.length) return NextResponse.json({ success: false, error: "Flashcard belum tersedia sebagai konteks materi." }, { status: 409 });
-      additional = await generateHardQuiz(cards.map(card => ({ term: String(card.term), definition: String(card.definition) })), 3 - hard.length, String(quiz.content_language ?? "auto"));
+    if (existing?.quiz_set_id) {
+      const existingSet = { id: String(existing.quiz_set_id), label: String(existing.label ?? "Lebih Sulit"), questionCount: Number(existing.question_count ?? 0) };
+      await recordCompletedQuizGeneration({
+        userId: session.user.id,
+        documentId: String(quiz.document_id),
+        quizSetId: existingSet.id,
+        quizSetLabel: existingSet.label,
+        questionCount: existingSet.questionCount,
+        remainingQuota: Number(existing.remaining_quota),
+        idempotencyKey: eventKey,
+        variant: "harder",
+        sourceQuizSetId: quizId,
+      });
+      return NextResponse.json({ success: true, quizSet: existingSet, generatedAdditional: 0, remainingToday: Number(existing.remaining_quota) }, { status: 200 });
     }
-    const allQuestions = [...hard.map(question => ({ question: String(question.question), options: question.options, correct_index: Number(question.correct_index), explanation: String(question.explanation ?? ""), difficulty: "hard" as const })), ...additional];
+    const baseQuestions = await sql`select question from public.quiz_questions where quiz_set_id=${quizId} and document_id=${quiz.document_id} order by id`;
+    const previous = await sql`select question from public.quiz_questions where document_id=${quiz.document_id} order by id`;
+    const cards = await sql`select term,definition from public.flashcards where document_id=${quiz.document_id} order by id`;
+    if (!cards.length) return NextResponse.json({ success: false, error: "Flashcard belum tersedia sebagai konteks materi." }, { status: 409 });
+    const targetCount = Math.max(5, Math.min(20, baseQuestions.length || 5));
+    const allQuestions = await generateHardQuiz(
+      cards.map(card => ({ term: String(card.term), definition: String(card.definition) })),
+      targetCount,
+      String(quiz.content_language ?? "auto"),
+      previous.map(item => String(item.question)),
+    );
     const [result] = await sql`select private.create_quiz_extra_generation(
-      ${session.user.id},${String(quiz.document_id)},'Level Up - Hard',${sql.json(allQuestions as unknown as never)},${eventKey},${DAILY_LIMIT}) as value`;
+      ${session.user.id},${String(quiz.document_id)},'Lebih Sulit',${sql.json(allQuestions as unknown as never)},${eventKey},${DAILY_LIMIT}) as value`;
     const value = result?.value as { id: string; label: string; question_count: number; remaining: number; created: boolean };
-    return NextResponse.json({ success: true, quizSet: { id: value.id, label: value.label, questionCount: value.question_count }, generatedAdditional: value.created ? additional.length : 0, remainingToday: value.remaining }, { status: value.created ? 201 : 200 });
+    await recordCompletedQuizGeneration({
+      userId: session.user.id,
+      documentId: String(quiz.document_id),
+      quizSetId: value.id,
+      quizSetLabel: value.label,
+      questionCount: value.question_count,
+      remainingQuota: value.remaining,
+      idempotencyKey: eventKey,
+      variant: "harder",
+      sourceQuizSetId: quizId,
+    });
+    return NextResponse.json({ success: true, quizSet: { id: value.id, label: value.label, questionCount: value.question_count }, generatedAdditional: value.created ? allQuestions.length : 0, remainingToday: value.remaining, message: `Set quiz lebih sulit berhasil dibuat (${value.label}).` }, { status: value.created ? 201 : 200 });
   } catch (error) {
     if (error instanceof Error && error.message.includes("DAILY_LIMIT_REACHED")) return NextResponse.json({ success: false, error: "Limit harian sudah tercapai. Coba lagi besok.", limitReached: true, remainingToday: 0, dailyLimit: DAILY_LIMIT }, { status: 429 });
     console.error("[quiz/level-up]", { errorType: error instanceof Error ? error.name : "Unknown" });

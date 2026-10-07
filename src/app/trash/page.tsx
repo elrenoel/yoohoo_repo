@@ -1,299 +1,243 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/session-provider";
-import { formatDateTime } from "@/lib/format-date";
-import {
-  ArrowLeft,
-  Trash2,
-  RotateCcw,
-  Loader2,
-  AlertTriangle,
-  Info,
-  User as UserIcon,
-} from "lucide-react";
-import ErrorState from "@/components/ui/ErrorState";
-import { useI18n } from "@/lib/i18n";
+import { useEffect, useRef, useState } from "react";
+import { RefreshCw, Trash2, User as UserIcon } from "lucide-react";
 import AppShell from "@/components/layout/AppShell";
-import ConfirmDialog from "@/components/ui/ConfirmDialog";
-import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import DeckCardSkeleton from "@/components/desk/DeckCardSkeleton";
+import TrashDeckCard, { type TrashDeckSummary } from "@/components/desk/TrashDeckCard";
+import { useSession } from "@/lib/session-provider";
+import { useToast } from "@/lib/toast";
 
-interface TrashDocument {
-  id: string;
-  title: string;
-  createdAt: string;
-  deletedAt: string;
-}
+const SKELETON_COUNT = 6;
 
-async function fetchTrashDocuments(): Promise<TrashDocument[]> {
-  const res = await fetch("/api/documents/trash");
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || "Failed to fetch trash");
+export default function DeckTrashPage() {
+  const toast = useToast();
+  const t = toast.t;
+  const { data: session, isPending: sessionPending } = useSession();
+  const [decks, setDecks] = useState<TrashDeckSummary[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [confirmDeck, setConfirmDeck] = useState<TrashDeckSummary | null>(null);
+  const [confirmEmpty, setConfirmEmpty] = useState(false);
+  const [actionInProgress, setActionInProgress] = useState(false);
+  const [busyIds, setBusyIds] = useState<Set<string>>(new Set());
+  const [removingIds, setRemovingIds] = useState<Set<string>>(new Set());
+
+  const mountedRef = useRef(true);
+  const actionInProgressRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  useEffect(() => {
+    if (sessionPending || !session?.user) return;
+    let cancelled = false;
+    fetch("/api/decks/trash", { cache: "no-store" })
+      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "Trash tidak dapat dimuat."); return body.decks as TrashDeckSummary[]; })
+      .then(list => { if (!cancelled) { setDecks(list); setError(""); } })
+      .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Trash tidak dapat dimuat."); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [session, sessionPending, reloadKey]);
+
+  function retryLoad() {
+    setError("");
+    setLoading(true);
+    setReloadKey(key => key + 1);
   }
-  const data = await res.json();
-  return data.documents || [];
-}
 
-export default function TrashPage() {
-  const router = useRouter();
-  const { t } = useI18n();
-  const queryClient = useQueryClient();
-  const {
-    data: session,
-    isPending: isSessionPending,
-  } = useSession();
+  function markBusy(id: string, on: boolean) {
+    setBusyIds(current => {
+      const next = new Set(current);
+      if (on) next.add(id); else next.delete(id);
+      return next;
+    });
+  }
 
-  // ── Confirm dialog state ─────────────────────────────────────────────────
-  const [permanentDeleteTarget, setPermanentDeleteTarget] =
-    useState<TrashDocument | null>(null);
+  // Optimistic removal: card fades out immediately, rolls back on failure.
+  function removeOptimistically(id: string) {
+    setRemovingIds(current => new Set(current).add(id));
+    window.setTimeout(() => {
+      if (!mountedRef.current) return;
+      setDecks(current => current.filter(item => item.id !== id));
+      setRemovingIds(current => { const next = new Set(current); next.delete(id); return next; });
+    }, 200);
+  }
 
-  // ── Fetch trash documents ────────────────────────────────────────────────
-  const { data: trashDocs = [], isLoading, error } = useQuery({
-    queryKey: queryKeys.trash,
-    queryFn: fetchTrashDocuments,
-    enabled: !isSessionPending && !!session?.user,
-  });
+  // Rollback: put the card back if the request failed.
+  function rollback(deck: TrashDeckSummary) {
+    if (!mountedRef.current) return;
+    setRemovingIds(current => { const next = new Set(current); next.delete(deck.id); return next; });
+    setDecks(current => current.some(item => item.id === deck.id) ? current : [...current, deck]);
+  }
 
-  // ── Restore mutation ─────────────────────────────────────────────────────
-  const restoreMutation = useMutation({
-    mutationFn: async (docId: string) => {
-      const res = await fetch(`/api/documents/${docId}/restore`, {
-        method: "POST",
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to restore");
+  async function restoreDeck(deck: TrashDeckSummary) {
+    if (busyIds.has(deck.id)) return;
+    markBusy(deck.id, true);
+    const toastId = toast.loading(t("trash.restoring"));
+    try {
+      const response = await fetch(`/api/decks/${deck.id}/restore`, { method: "POST" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || t("trash.restoreError"));
       }
-      return res.json();
-    },
-    onSuccess: (_data, docId) => {
-      queryClient.setQueryData<TrashDocument[]>(
-        queryKeys.trash,
-        (old) => old?.filter((d) => d.id !== docId) ?? []
-      );
-      queryClient.invalidateQueries({ queryKey: queryKeys.documents });
-    },
-  });
-
-  // ── Permanent delete mutation ────────────────────────────────────────────
-  const permanentDeleteMutation = useMutation({
-    mutationFn: async (docId: string) => {
-      const res = await fetch(`/api/documents/${docId}/permanent`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to permanently delete");
+      removeOptimistically(deck.id);
+      if (mountedRef.current) {
+        toast.success(t("trash.restoreSuccess"), { id: toastId });
+      } else {
+        toast.dismiss(toastId);
       }
-      return res.json();
-    },
-    onSuccess: (_data, docId) => {
-      queryClient.setQueryData<TrashDocument[]>(
-        queryKeys.trash,
-        (old) => old?.filter((d) => d.id !== docId) ?? []
-      );
-      setPermanentDeleteTarget(null);
-    },
-  });
+    } catch (cause) {
+      const message = cause instanceof Error && cause.message ? cause.message : t("trash.restoreError");
+      if (mountedRef.current) {
+        rollback(deck);
+        toast.error(message, { id: toastId, action: { label: t("toast.retry"), onClick: () => void restoreDeck(deck) } });
+      } else {
+        toast.dismiss(toastId);
+      }
+    } finally {
+      markBusy(deck.id, false);
+    }
+  }
 
-  const handleRetry = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.trash });
-  };
+  async function deletePermanently(deck: TrashDeckSummary) {
+    if (busyIds.has(deck.id)) return;
+    markBusy(deck.id, true);
+    actionInProgressRef.current = true;
+    setActionInProgress(true);
+    const toastId = toast.loading(t("trash.deletingPermanent"));
+    try {
+      const response = await fetch(`/api/decks/${deck.id}/permanent`, { method: "DELETE" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || t("trash.permanentDeleteError"));
+      }
+      removeOptimistically(deck.id);
+      if (mountedRef.current) {
+        toast.success(t("trash.permanentDeleteSuccess"), { id: toastId });
+      } else {
+        toast.dismiss(toastId);
+      }
+    } catch (cause) {
+      const message = cause instanceof Error && cause.message ? cause.message : t("trash.permanentDeleteError");
+      if (mountedRef.current) {
+        rollback(deck);
+        toast.error(message, { id: toastId, action: { label: t("toast.retry"), onClick: () => void deletePermanently(deck) } });
+      } else {
+        toast.dismiss(toastId);
+      }
+    } finally {
+      actionInProgressRef.current = false;
+      setActionInProgress(false);
+      markBusy(deck.id, false);
+    }
+  }
+
+  async function emptyTrash() {
+    if (actionInProgressRef.current) return;
+    actionInProgressRef.current = true;
+    setActionInProgress(true);
+    const snapshot = decks;
+    const toastId = toast.loading(t("trash.emptying"));
+    try {
+      const response = await fetch("/api/decks/trash", { method: "DELETE" });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || t("trash.emptyTrashError"));
+      }
+      if (mountedRef.current) {
+        setDecks([]);
+        toast.success(t("trash.emptyTrashSuccess"), { id: toastId });
+      } else {
+        toast.dismiss(toastId);
+      }
+    } catch (cause) {
+      const message = cause instanceof Error && cause.message ? cause.message : t("trash.emptyTrashError");
+      if (mountedRef.current) {
+        setDecks(snapshot);
+        toast.error(message, { id: toastId, action: { label: t("toast.retry"), onClick: () => void emptyTrash() } });
+      } else {
+        toast.dismiss(toastId);
+      }
+    } finally {
+      actionInProgressRef.current = false;
+      setActionInProgress(false);
+    }
+  }
+
+  const skeletonGrid = (
+    <div role="status" aria-busy="true" className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+      <span className="sr-only">{t("toast.desk.loading")}</span>
+      {Array.from({ length: SKELETON_COUNT }, (_, index) => <DeckCardSkeleton key={index} />)}
+    </div>
+  );
+
+  const emptyState = (
+    <Card variant="centered" className="rotate-[-1deg]">
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[#D8DCD3] bg-[#F5F6F3]">
+        <Trash2 className="h-6 w-6 text-[#7A8780]" />
+      </div>
+      <p className="font-serif text-xl font-semibold">Trash kosong</p>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[#7A8780]">{t("trash.emptyDesc")}</p>
+      <Link href="/desk" className="mt-5 inline-flex rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]">Kembali ke Your Desk</Link>
+    </Card>
+  );
 
   return (
     <AppShell>
-    <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
-
-      {/* Main Content */}
-      <main className="max-w-3xl mx-auto px-6 py-12 flex-1 w-full">
-        {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 mb-1">
-              {t("trash.pageTitle")}
-            </h1>
-            <p className="text-xs sm:text-sm text-neutral-500">
-              {t("trash.pageDesc")}
-            </p>
-          </div>
-
-          <Link
-            href="/history"
-            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 transition shadow-xs self-start sm:self-auto"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            <span>{t("trash.backToHistory")}</span>
-          </Link>
-        </div>
-
-        {/* Auto-delete info banner */}
-        <div className="mb-6 flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-          <p className="text-xs text-blue-800 leading-relaxed">
-            {t("trash.autoDeleteInfo")}
-          </p>
-        </div>
-
-        {/* Not logged in */}
-        {!isSessionPending && !session?.user && (
-          <Card variant="centered">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4 text-neutral-600">
-              <UserIcon className="w-6 h-6" />
+      <main className="min-h-screen bg-[#F5F6F3] px-5 py-10 pb-28 text-[#16241D] sm:px-8">
+        <div className="mx-auto max-w-6xl">
+          <header className="mb-8 flex items-start justify-between gap-4">
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5B6B62]">TRASH</p>
+              <h1 className="mt-1 font-serif text-4xl font-semibold tracking-tight">{t("trash.pageTitle")}</h1>
+              <p className="mt-1 text-sm text-[#5B6B62]">{t("trash.pageDesc")}</p>
             </div>
-            <h2 className="text-base font-semibold text-neutral-900 mb-1.5">
-              {t("history.loginTitle")}
-            </h2>
-            <p className="text-xs text-neutral-500 max-w-sm mx-auto mb-6">
-              {t("history.loginDesc")}
-            </p>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition shadow-2xs"
-            >
-              <span>{t("history.loginButton")}</span>
-            </Link>
-          </Card>
-        )}
-
-        {/* Loading Skeleton */}
-        {isLoading && (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Card
-                key={i}
-                variant="compact"
-                className="animate-pulse flex items-center justify-between"
+            {decks.length > 0 && session?.user && (
+              <button
+                type="button"
+                onClick={() => setConfirmEmpty(true)}
+                disabled={actionInProgress}
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#D8DCD3] bg-white px-4 py-2.5 text-sm font-medium text-[#16241D] transition hover:border-[#AAB7AB] hover:bg-[#F5F6F3] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-neutral-100 rounded w-1/2" />
-                  <div className="h-3 bg-neutral-100 rounded w-1/4" />
-                </div>                  <div className="flex gap-2">
-                  <div className="w-8 h-8 bg-neutral-100 rounded-lg" />
-                  <div className="w-8 h-8 bg-neutral-100 rounded-lg" />
-                </div>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Error */}
-        {error && (
-          <div className="mb-6">
-            <ErrorState
-              title={t("history.loadErrorTitle")}
-              message={t("history.loadErrorMessage")}
-              compact
-              actions={[
-                {
-                  label: t("error.retry"),
-                  onClick: handleRetry,
-                  variant: "primary",
-                },
-              ]}
-            />
-          </div>
-        )}
-
-        {/* Trash List */}
-        {!isLoading && session?.user && (
-          <>
-            {trashDocs.length > 0 ? (
-              <div className="space-y-3">
-                {trashDocs.map((doc) => (
-                  <div
-                    key={doc.id}
-                    className="group bg-white border border-neutral-200 rounded-xl p-5 shadow-2xs transition flex items-center justify-between gap-4"
-                  >
-                    <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-rose-50 flex items-center justify-center text-rose-500 shrink-0">
-                        <Trash2 className="w-5 h-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <h2 className="text-sm font-semibold text-neutral-900 tracking-tight truncate">
-                          {doc.title}
-                        </h2>
-                        <p className="text-xs text-neutral-400 mt-1 font-mono">
-                          {t("trash.trashedAt", {
-                            date: formatDateTime(doc.deletedAt),
-                          })}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => restoreMutation.mutate(doc.id)}
-                        disabled={restoreMutation.isPending}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700 transition disabled:opacity-50 cursor-pointer"
-                      >
-                        {restoreMutation.isPending ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                          <RotateCcw className="w-3.5 h-3.5" />
-                        )}
-                        <span className="hidden sm:inline">{t("trash.restore")}</span>
-                      </button>
-
-                      <button
-                        onClick={() => setPermanentDeleteTarget(doc)}
-                        disabled={permanentDeleteMutation.isPending}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-rose-200 text-xs font-medium text-rose-700 hover:bg-rose-50 transition disabled:opacity-50 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{t("trash.permanentDelete")}</span>
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              /* Empty State */
-              <Card variant="centered" className="p-12">
-                <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4 text-neutral-500">
-                  <Trash2 className="w-6 h-6" />
-                </div>
-                <h2 className="text-base font-semibold text-neutral-900 mb-1">
-                  {t("trash.emptyTitle")}
-                </h2>
-                <p className="text-xs text-neutral-500 max-w-sm mx-auto mb-6">
-                  {t("trash.emptyDesc")}
-                </p>
-                <Link
-                  href="/history"
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition shadow-2xs"
-                >
-                  <ArrowLeft className="w-3.5 h-3.5" />
-                  <span>{t("trash.backToHistory")}</span>
-                </Link>
-              </Card>
+                <Trash2 className="h-4 w-4" />
+                {t("trash.emptyTrash")}
+              </button>
             )}
-          </>
-        )}
+          </header>
+
+          {!sessionPending && !session?.user
+            ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-[#5B6B62]" /><h2 className="font-semibold">Masuk untuk melihat trash</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-[#013528] px-4 py-2 text-sm font-medium text-white">Masuk sekarang</Link></Card>
+            : loading ? skeletonGrid
+            : error ? <Card variant="centered"><p className="text-sm text-red-600">{error}</p><button type="button" onClick={retryLoad} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><RefreshCw className="h-4 w-4" />{t("toast.retry")}</button></Card>
+            : decks.length === 0 ? emptyState
+            : <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">{decks.map(deck => <TrashDeckCard key={deck.id} deck={deck} busy={busyIds.has(deck.id)} removing={removingIds.has(deck.id)} onRequestRestore={restoreDeck} onRequestPermanentDelete={setConfirmDeck} />)}</div>}
+        </div>
       </main>
 
-      {/* Permanent Delete Confirmation Dialog */}
-      {permanentDeleteTarget && (
-        <ConfirmDialog
-          title={t("trash.permanentDeleteTitle")}
-          message={t("trash.permanentDeleteConfirm", {
-            title: permanentDeleteTarget.title,
-          })}
-          confirmLabel={t("trash.permanentDelete")}
-          onCancel={() => setPermanentDeleteTarget(null)}
-          onConfirm={() => {
-            if (permanentDeleteTarget) {
-              permanentDeleteMutation.mutate(permanentDeleteTarget.id);
-            }
-          }}
-        />
-      )}
-    </div>
+      {confirmDeck && <ConfirmDialog
+        title={t("trash.permanentDeleteTitle")}
+        message={t("trash.permanentDeleteConfirm", { title: confirmDeck.title })}
+        confirmLabel={t("trash.permanentDelete")}
+        loading={actionInProgress}
+        onCancel={() => { if (!actionInProgress) setConfirmDeck(null); }}
+        onConfirm={() => { const deck = confirmDeck; setConfirmDeck(null); void deletePermanently(deck); }}
+      />}
+
+      {confirmEmpty && <ConfirmDialog
+        title={t("trash.emptyTrashTitle")}
+        message={t("trash.emptyTrashConfirm")}
+        confirmLabel={t("trash.emptyTrash")}
+        loading={actionInProgress}
+        onCancel={() => { if (!actionInProgress) setConfirmEmpty(false); }}
+        onConfirm={() => { setConfirmEmpty(false); void emptyTrash(); }}
+      />}
     </AppShell>
   );
 }

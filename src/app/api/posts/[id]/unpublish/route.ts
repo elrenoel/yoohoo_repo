@@ -1,0 +1,2 @@
+import { ragSql } from "@/lib/rag/db";import { ragResponseError,sessionUser } from "@/lib/rag/http";
+export async function POST(request:Request,{params}:{params:Promise<{id:string}>}){try{const userId=await sessionUser(request),{id}=await params,sql=ragSql();const rows=await sql`update public.posts set status='draft' where id=${id} and author_id=${userId} and deleted_at is null returning id,slug,status`;if(!rows[0])return Response.json({error:"Post tidak ditemukan."},{status:404});return Response.json({post:rows[0]})}catch(error){return ragResponseError(error)}}

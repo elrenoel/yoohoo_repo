@@ -1,5 +1,5 @@
 import { type Part, type SchemaUnion } from "@google/genai";
-import { embedWithGemini, generateWithGemini } from "@/lib/llm/provider";
+import { generateWithGemini } from "@/lib/llm/provider";
 import { parseKeywords } from "./core";
 
 const schema: SchemaUnion = {
@@ -82,9 +82,4 @@ Jika potongan tidak memiliki konsep pembelajaran substansial, hasilkan kurang da
     validate: value => parseKeywords(JSON.stringify(value)),
   });
   return result.value;
-}
-
-/** Embed keyword text in one request. Gemini returns vectors in input order. */
-export async function embedKeywordTexts(texts: string[]) {
-  return embedWithGemini(texts, "keyword-embedding");
 }

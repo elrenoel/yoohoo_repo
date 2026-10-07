@@ -30,7 +30,6 @@ export function useNavbar(): UseNavbarReturn {
 
   const navLinks: NavbarNavLink[] = [
     { href: "/desk", label: "Your Desk", isActive: pathname === "/desk" },
-    { href: "/history", label: t("nav.history"), isActive: pathname === "/history" },
   ];
 
   return {

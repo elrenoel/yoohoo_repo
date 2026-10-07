@@ -8,7 +8,6 @@ import {
   LogOut,
   EllipsisVertical,
   Trash2,
-  Clock,
   Menu,
   X,
 } from "lucide-react";
@@ -153,15 +152,6 @@ export default function Navbar({
 
         {/* Menu items */}
         <div className="py-1.5">
-          <Link
-            href="/history"
-            onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-[#EDEABF] transition-colors"
-            style={{ color: '#041914' }}
-          >
-            <Clock className="w-4 h-4" style={{ color: '#041914' }} />
-            {t("nav.history")}
-          </Link>
           <Link
             href="/trash"
             onClick={() => setMenuOpen(false)}
@@ -377,15 +367,6 @@ export default function Navbar({
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <Link
-                      href="/history"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-white/5 transition"
-                      style={{ color: '#FDF7EB' }}
-                    >
-                      <Clock className="w-4 h-4" />
-                      {t("nav.history")}
-                    </Link>
                     <Link
                       href="/trash"
                       onClick={() => setMobileMenuOpen(false)}

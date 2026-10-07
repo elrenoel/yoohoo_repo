@@ -271,7 +271,7 @@ menguji S3, Lambda, Step Functions, atau frontend.
 ## 7. Flashcards
 
 ### TC-FC-01: View flashcards
-- **Steps**: Buka `/documents/{id}/flashcards`
+- **Steps**: Buka `/desk/{id}/flashcards`
 - **Expected**: Flashcards ditampilkan dengan term & progress counter
 
 ### TC-FC-02: Flip card
@@ -311,7 +311,7 @@ menguji S3, Lambda, Step Functions, atau frontend.
 ## 8. Quiz
 
 ### TC-QUIZ-01: Start quiz
-- **Steps**: Buka `/documents/{id}/quiz`
+- **Steps**: Buka `/desk/{id}/quiz`
 - **Expected**: Quiz questions ditampilkan, set selector muncul
 
 ### TC-QUIZ-02: Select answer
@@ -396,7 +396,7 @@ menguji S3, Lambda, Step Functions, atau frontend.
 
 ### TC-HIST-05: View exam history
 - **Steps**: Di history, klik tombol exam history (ikon clipboard)
-- **Expected**: Redirect ke `/documents/{id}/attempts`
+- **Expected**: Redirect ke `/desk/{id}/attempts`
 
 ### TC-HIST-06: View attempt detail
 - **Steps**: Di attempts page, klik salah satu attempt

@@ -1,5 +1,5 @@
 import { ragSql } from "@/lib/rag/db";
-import { RagError } from "@/lib/rag/core";
+import { RagError, UUID } from "@/lib/rag/core";
 import { documentId, jsonBody, ragResponseError, sessionUser } from "@/lib/rag/http";
 import { deletePdf, dispatchDocument, pdfKey, verifyPdf } from "@/lib/rag/storage";
 import { DAILY_LIMIT } from "@/lib/daily-limit";
@@ -13,10 +13,20 @@ export async function POST(request: Request) {
     const contentLanguage = typeof body.contentLanguage === "string" && ["auto", "id", "en"].includes(body.contentLanguage)
       ? body.contentLanguage
       : "auto";
+    // Optional: attach the new material to an existing deck instead of creating its own.
+    let deckId: string | null = null;
+    if (typeof body.deckId === "string" && body.deckId) {
+      if (!UUID.test(body.deckId)) throw new RagError("Deck tidak valid.");
+      deckId = body.deckId;
+    }
     const key = pdfKey(userId, id), size = await verifyPdf(key), sql = ragSql();
     let doc: { id: string; status: string } | undefined;
     try {
       doc = await sql.begin(async tx => {
+        if (deckId) {
+          const [deck] = await tx`select id from public.decks where id=${deckId} and user_id=${userId} for update`;
+          if (!deck) throw new RagError("Meja kerja tidak ditemukan.", 404);
+        }
         const [event] = await tx`select id from public.generation_quota_events where user_id=${userId} and event_key=${`document:${id}`} for update`;
         if (!event) {
           // The document row does not exist yet, so keep the nullable FK empty
@@ -26,8 +36,18 @@ export async function POST(request: Request) {
         }
         await tx`insert into public.documents (id,user_id,title,raw_text,content_language,storage_path,file_size,status)
           values (${id},${userId},${title},'',${contentLanguage},${key},${size},'uploaded') on conflict (id) do nothing`;
-        await tx`insert into public.decks (id,user_id,title) values (${id},${userId},${title}) on conflict (id) do update set title=excluded.title,updated_at=now()`;
-        await tx`insert into public.deck_documents (deck_id,document_id) values (${id},${id}) on conflict do nothing`;
+        if (deckId) {
+          await tx`insert into public.deck_documents (deck_id,document_id) values (${deckId},${id}) on conflict do nothing`;
+        } else {
+          await tx`insert into public.decks (id,user_id,title) values (${id},${userId},${title}) on conflict (id) do update set title=excluded.title,updated_at=now()`;
+          await tx`insert into public.deck_documents (deck_id,document_id) values (${id},${id}) on conflict do nothing`;
+          await tx`insert into public.notifications (user_id,type,severity,title,body,link,dedupe_key)
+            values (${userId},'deck_created','success','Deck berhasil dibuat',${`Deck "${title}" siap digunakan.`},${`/desk/${id}`},${`deck:${id}:created`})
+            on conflict (dedupe_key) do nothing`;
+        }
+        await tx`insert into public.notifications (user_id,type,severity,title,body,link,dedupe_key)
+          values (${userId},'upload_started','info','Upload materi diterima',${`Materi "${title}" sedang diproses untuk mengekstrak keyword.`},${`/desk/${deckId ?? id}`},${`document:${id}:upload_started`})
+          on conflict (dedupe_key) do nothing`;
         await tx`update public.generation_quota_events set document_id=${id} where user_id=${userId} and event_key=${`document:${id}`} and document_id is null`;
         const [row] = await tx`select id,status from public.documents where id=${id} and user_id=${userId} and storage_path=${key} and deleted_at is null`;
         return row;
@@ -42,6 +62,6 @@ export async function POST(request: Request) {
     if (!doc) throw new RagError("Dokumen tidak ditemukan.", 404);
     // Retrying confirm republishes the marker if dispatch failed after the DB commit.
     if (doc.status === "uploaded" || doc.status === "chunking" || doc.status === "indexing") await dispatchDocument(id, userId);
-    return Response.json({ documentId: id, status: doc.status }, { status: 202 });
+    return Response.json({ documentId: id, deckId: deckId ?? id, status: doc.status }, { status: 202 });
   } catch (error) { return ragResponseError(error); }
 }

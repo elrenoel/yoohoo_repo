@@ -47,11 +47,12 @@ export function parseGeneratedFlashcards(raw: string, selected: SelectedKeyword[
   return { flashcards };
 }
 
-export function parseRepresentativeQuiz(raw: string, expectedCount: number, fallbackDifficulty: QuizDifficulty = "medium"): GeneratedQuizQuestion[] {
+export function parseRepresentativeQuiz(raw: string, expectedCount: number, fallbackDifficulty: QuizDifficulty = "medium", previousQuestions: string[] = []): GeneratedQuizQuestion[] {
   const parsed: unknown = JSON.parse(raw);
   if (!Array.isArray(parsed)) throw new Error("AI quiz output must be an array");
   const questions: GeneratedQuizQuestion[] = [];
   const seen = new Set<string>();
+  const previous = new Set(previousQuestions.map(question => question.trim().replace(/\s+/g, " ").toLocaleLowerCase()));
   for (const value of parsed) {
     if (!value || typeof value !== "object") { console.warn("[RAG generation] skipped non-object quiz item"); continue; }
     const item = value as Record<string, unknown>;
@@ -60,9 +61,9 @@ export function parseRepresentativeQuiz(raw: string, expectedCount: number, fall
     const explanation = typeof item.explanation === "string" ? item.explanation.trim() : "";
     const difficulty = item.difficulty === "easy" || item.difficulty === "medium" || item.difficulty === "hard" ? item.difficulty : fallbackDifficulty;
     const correctIndex = item.correct_index;
-    const key = question.toLocaleLowerCase();
+    const key = question.replace(/\s+/g, " ").toLocaleLowerCase();
     if (question.length < 6 || options.length !== 4 || new Set(options.map(option => option.toLocaleLowerCase())).size !== 4
-      || !Number.isInteger(correctIndex) || Number(correctIndex) < 0 || Number(correctIndex) > 3 || explanation.length < 4 || seen.has(key)) {
+      || !Number.isInteger(correctIndex) || Number(correctIndex) < 0 || Number(correctIndex) > 3 || explanation.length < 4 || seen.has(key) || previous.has(key)) {
       console.warn("[RAG generation] skipped invalid or duplicate quiz item"); continue;
     }
     seen.add(key);
@@ -92,19 +93,19 @@ export async function generateSelectedFlashcards(sourceChunks: SourceChunk[], se
   return parseGeneratedFlashcards(raw, selected);
 }
 
-export async function generateRepresentativeQuiz(flashcards: { term: string; definition: string }[], expectedCount: number, contentLanguage = "auto") {
+export async function generateRepresentativeQuiz(flashcards: { term: string; definition: string }[], expectedCount: number, contentLanguage = "auto", previousQuestions: string[] = []) {
   if (!flashcards.length) throw new Error("Cannot generate quiz without flashcards");
   if (expectedCount < 5 || expectedCount > 20) throw new Error("Representative quiz must contain 5-20 questions");
-  const prompt = JSON.stringify({ target_question_count: expectedCount, flashcards: flashcards.map(card => ({ term: card.term, definition: card.definition.slice(0, 1_000) })) });
+  const prompt = JSON.stringify({ target_question_count: expectedCount, flashcards: flashcards.map(card => ({ term: card.term, definition: card.definition.slice(0, 1_000) })), avoid_questions: previousQuestions.slice(0, 100) });
   const language = contentLanguage === "id" ? "Semua pertanyaan, opsi, dan penjelasan wajib dalam Bahasa Indonesia." : contentLanguage === "en" ? "All questions, options, and explanations must be in English." : "Gunakan bahasa utama flashcard.";
-  const raw = await generateJson(prompt, quizResponseSchema, `Gunakan flashcards sebagai satu-satunya sumber fakta. Buat tepat ${expectedCount} pertanyaan pilihan ganda konseptual yang representatif terhadap SELURUH cakupan materi, bukan satu pertanyaan berurutan untuk setiap flashcard. Usahakan proporsi sekitar 40% easy, 40% medium, 20% hard. Untuk tiap soal, tentukan difficulty: easy untuk definisi/fakta langsung, medium untuk perbandingan/aplikasi konsep, hard untuk analisis kasus atau skenario yang menggabungkan beberapa konsep. Setiap pertanyaan wajib memiliki tepat empat opsi, correct_index 0-3, difficulty valid, dan explanation singkat yang menjelaskan jawaban benar berdasarkan flashcard. Jangan menambah fakta di luar definisi yang diberikan. Bila flashcard hanya sedikit, buat variasi yang bermakna dari sudut pandang, aplikasi, hubungan, atau tingkat kesulitan berbeda. ${language} Balas array JSON saja.`, "quiz");
-  return parseRepresentativeQuiz(raw, expectedCount);
+  const raw = await generateJson(prompt, quizResponseSchema, `Gunakan flashcards sebagai satu-satunya sumber fakta. Buat tepat ${expectedCount} pertanyaan pilihan ganda konseptual yang representatif terhadap SELURUH cakupan materi, bukan satu pertanyaan berurutan untuk setiap flashcard. Pertanyaan baru tidak boleh mengulang atau hanya memparafrasekan pertanyaan pada avoid_questions. Usahakan proporsi sekitar 40% easy, 40% medium, 20% hard. Untuk tiap soal, tentukan difficulty: easy untuk definisi/fakta langsung, medium untuk perbandingan/aplikasi konsep, hard untuk analisis kasus atau skenario yang menggabungkan beberapa konsep. Setiap pertanyaan wajib memiliki tepat empat opsi, correct_index 0-3, difficulty valid, dan explanation singkat yang menjelaskan jawaban benar berdasarkan flashcard. Jangan menambah fakta di luar definisi yang diberikan. Bila flashcard hanya sedikit, buat variasi yang bermakna dari sudut pandang, aplikasi, hubungan, atau tingkat kesulitan berbeda. ${language} Balas array JSON saja.`, "quiz");
+  return parseRepresentativeQuiz(raw, expectedCount, "medium", previousQuestions);
 }
 
-export async function generateHardQuiz(flashcards: { term: string; definition: string }[], expectedCount: number, contentLanguage = "auto") {
+export async function generateHardQuiz(flashcards: { term: string; definition: string }[], expectedCount: number, contentLanguage = "auto", previousQuestions: string[] = []) {
   if (!flashcards.length || expectedCount < 1 || expectedCount > 20) throw new Error("Invalid hard quiz request");
-  const prompt = JSON.stringify({ target_question_count: expectedCount, flashcards: flashcards.map(card => ({ term: card.term, definition: card.definition.slice(0, 1_000) })) });
+  const prompt = JSON.stringify({ target_question_count: expectedCount, flashcards: flashcards.map(card => ({ term: card.term, definition: card.definition.slice(0, 1_000) })), avoid_questions: previousQuestions.slice(0, 100) });
   const language = contentLanguage === "id" ? "Semua pertanyaan, opsi, dan penjelasan wajib dalam Bahasa Indonesia." : contentLanguage === "en" ? "All questions, options, and explanations must be in English." : "Gunakan bahasa utama flashcard.";
-  const raw = await generateJson(prompt, quizResponseSchema, `Gunakan flashcards sebagai satu-satunya sumber fakta. Buat tepat ${expectedCount} soal pilihan ganda dengan difficulty hard. Buat soal yang lebih sulit dari sebelumnya, fokus pada analisis kasus dan skenario yang menggabungkan beberapa konsep. Setiap soal wajib memiliki empat opsi, correct_index 0-3, difficulty hard, dan explanation. Jangan menambah fakta di luar flashcard. ${language} Balas array JSON saja.`, "quiz");
-  return parseRepresentativeQuiz(raw, expectedCount, "hard");
+  const raw = await generateJson(prompt, quizResponseSchema, `Gunakan flashcards sebagai satu-satunya sumber fakta. Buat tepat ${expectedCount} soal pilihan ganda dengan difficulty hard. Buat soal yang lebih sulit dari sebelumnya, fokus pada analisis kasus dan skenario yang menggabungkan beberapa konsep. Pertanyaan baru tidak boleh mengulang atau hanya memparafrasekan pertanyaan pada avoid_questions. Setiap soal wajib memiliki empat opsi, correct_index 0-3, difficulty hard, dan explanation. Jangan menambah fakta di luar flashcard. ${language} Balas array JSON saja.`, "quiz");
+  return parseRepresentativeQuiz(raw, expectedCount, "hard", previousQuestions);
 }

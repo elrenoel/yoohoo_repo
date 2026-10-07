@@ -107,26 +107,3 @@ export async function generateWithGemini<T = string>(options: GenerateOptions<T>
   });
   return { value, model, latencyMs: Date.now() - startedAt };
 }
-
-/** Embedding gateway with the same transient retry policy. */
-export async function embedWithGemini(texts: string[], stage = "embedding") {
-  if (!texts.length) return [] as number[][];
-  const model = process.env.GEMINI_EMBEDDING_MODEL?.trim() || "gemini-embedding-001";
-  const client = new GoogleGenAI({ apiKey: apiKey() });
-  return withRetry(stage, model, async () => {
-    const response = await client.models.embedContent({
-      model,
-      contents: texts,
-      config: {
-        taskType: "RETRIEVAL_DOCUMENT",
-        outputDimensionality: 768,
-        httpOptions: { timeout: DEFAULT_TIMEOUT_MS },
-      },
-    });
-    const vectors = response.embeddings?.map(embedding => embedding.values ?? []) ?? [];
-    if (vectors.length !== texts.length || vectors.some(vector => vector.length !== 768)) {
-      throw new Error("Gemini returned an invalid embedding response");
-    }
-    return vectors;
-  });
-}

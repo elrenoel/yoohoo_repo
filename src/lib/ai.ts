@@ -376,7 +376,8 @@ export async function generateStudyMaterials(
  */
 export async function generateQuizQuestions(
   rawText: string,
-  contentLanguage?: string
+  contentLanguage?: string,
+  previousQuestions: string[] = []
 ): Promise<QuizOnlyResult> {
   const langSuffix = contentLanguage && contentLanguage !== "auto"
     ? LANGUAGE_INSTRUCTIONS[contentLanguage] || ""
@@ -386,18 +387,20 @@ export async function generateQuizQuestions(
     systemInstruction: QUIZ_ONLY_SYSTEM_INSTRUCTION,
     responseSchema: QUIZ_RESPONSE_SCHEMA,
     promptSuffix:
-      `Buat soal pilihan ganda bermutu yang BARU dari materi di atas dalam format JSON (hanya array quiz).${langSuffix}`,
+      `Buat soal pilihan ganda bermutu yang BARU dari materi di atas dalam format JSON (hanya array quiz). Jangan mengulang atau hanya memparafrasekan pertanyaan lama berikut: ${JSON.stringify(previousQuestions.slice(0, 100))}.${langSuffix}`,
     rawText,
   });
 
   const sanitized = sanitizeAiOutput(result.parsed as { quiz?: unknown[] });
+  const previous = new Set(previousQuestions.map(question => question.trim().replace(/\s+/g, " ").toLocaleLowerCase()));
+  const uniqueQuiz = sanitized.quiz.filter(item => !previous.has(item.question.replace(/\s+/g, " ").toLocaleLowerCase()));
 
-  if (sanitized.quiz.length === 0) {
+  if (uniqueQuiz.length === 0 || uniqueQuiz.length !== sanitized.quiz.length) {
     throw new Error("AI tidak berhasil menghasilkan soal kuis baru.");
   }
 
   return {
-    quiz: sanitized.quiz,
+    quiz: uniqueQuiz,
     rawWordCount: result.rawWordCount,
     isTruncated: result.isTruncated,
     usedModel: result.usedModel,

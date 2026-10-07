@@ -11,14 +11,15 @@ type Props = {
   documentId: string;
   title: string;
   pageCount: number | null;
+  backHref?: string;
 };
 
 function getBackHref(pathname: string, documentId: string) {
-  if (pathname.endsWith("/keywords")) return "/history";
+  if (pathname.endsWith("/keywords")) return "/desk";
   if (pathname.endsWith("/generate-flashcards")) return `/desk/${documentId}/keywords`;
   if (pathname.endsWith("/quiz")) return `/desk/${documentId}/flashcards`;
   if (pathname.includes("/attempts/")) return `/desk/${documentId}/attempts`;
-  return "/history";
+  return "/desk";
 }
 
 function getSectionLabel(pathname: string) {
@@ -32,12 +33,12 @@ function getSectionLabel(pathname: string) {
   return "Materi";
 }
 
-export default function DocumentWorkspaceHeader({ documentId, title, pageCount }: Props) {
+export default function DocumentWorkspaceHeader({ documentId, title, pageCount, backHref: backHrefOverride }: Props) {
   const pathname = usePathname();
   const { session, handleLogout, isLoggingOut } = useAccountActions();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const backHref = getBackHref(pathname, documentId);
+  const backHref = backHrefOverride ?? getBackHref(pathname, documentId);
   const sectionLabel = getSectionLabel(pathname);
 
   useEffect(() => {

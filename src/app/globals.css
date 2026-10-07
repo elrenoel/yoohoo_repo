@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 :root {
@@ -38,3 +39,39 @@ body {
   transform: rotateY(180deg);
 }
 
+
+/* Toasts (sonner) — token-aligned, crisp border instead of a generic soft shadow */
+[data-sonner-toast] {
+  font-family: var(--font-sans) !important;
+  border: 1px solid #D8DCD3;
+  box-shadow: 0 10px 28px rgba(22, 36, 29, 0.16) !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-size: 14px;
+}
+
+[data-sonner-toast] [data-description] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+[data-sonner-toast] [data-button] {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Respect reduced motion for toasts, skeleton pulse, and reorder fades */
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toast],
+  [data-sonner-toast] * {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .animate-pulse {
+    animation: none !important;
+  }
+}

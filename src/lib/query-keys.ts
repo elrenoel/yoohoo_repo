@@ -19,9 +19,13 @@ export const queryKeys = {
   /** Attempt list for a specific document */
   attempts: (docId: string) => ["attempts", docId] as const,
 
-  /** Trashed documents (trash page) */
-  trash: ["trash"] as const,
-
   /** Daily generation quota */
   quota: ["quota"] as const,
+
+  /** Notifications */
+  notifications: (
+    filter?: "all" | "unread",
+    limit?: number,
+    offset?: number
+  ) => ["notifications", filter ?? "all", limit ?? 20, offset ?? 0] as const,
 } as const;

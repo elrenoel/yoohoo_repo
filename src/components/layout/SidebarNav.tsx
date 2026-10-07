@@ -15,14 +15,16 @@ import {
   LogOut,
   MoreHorizontal,
   Settings,
-  Star,
   Trash2,
   User,
   X,
 } from "lucide-react";
+
+import NotificationBell from "./NotificationBell";
 import { useAccountActions } from "@/hooks/use-account-actions";
 import { useLanguage } from "@/hooks/use-language";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
+import { useOwnProfile } from "@/hooks/use-own-profile";
 
 type NavigationItem = { href: string; label: string; icon: LucideIcon };
 
@@ -33,14 +35,8 @@ const discovery: NavigationItem[] = [
 
 const workspace: NavigationItem[] = [
   { href: "/desk", label: "Your Desk", icon: FilePlus2 },
-  { href: "/history", label: "Riwayat", icon: History },
   { href: "/saved", label: "Tersimpan", icon: BookMarked },
-  { href: "/starred", label: "Ditandai", icon: Star },
-];
-
-const identity: NavigationItem[] = [
-  { href: "/notifications", label: "Notifikasi", icon: Bell },
-  { href: "/profile", label: "Profil", icon: User },
+  { href: "/history", label: "Riwayat", icon: History },
 ];
 
 function NavItem({
@@ -73,7 +69,7 @@ function NavItem({
 
 const moreItems: NavigationItem[] = [
   ...workspace.slice(2),
-  identity[0],
+  { href: "/notifications", label: "Notifikasi", icon: Bell },
   { href: "/settings", label: "Pengaturan", icon: Settings },
   { href: "/trash", label: "Sampah", icon: Trash2 },
 ];
@@ -83,6 +79,7 @@ export default function SidebarNav() {
   const { t } = useLanguage();
   const [moreOpen, setMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  const { data: profileData } = useOwnProfile();
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -106,6 +103,12 @@ export default function SidebarNav() {
   if (!session?.user) return null;
 
   const userName = session.user.name || session.user.email;
+  const profileHref = profileData?.profile?.username
+    ? `/u/${profileData.profile.username}`
+    : "/onboarding/username";
+  const identity: NavigationItem[] = [
+    { href: profileHref, label: "Profil", icon: User },
+  ];
 
   return (
     <>
@@ -132,13 +135,14 @@ export default function SidebarNav() {
             <NavItem key={item.href} item={item} />
           ))}
           <div className="my-4 h-px bg-neutral-200" />
+          <NotificationBell />
           {identity.map((item) => (
             <NavItem key={item.href} item={item} />
           ))}
 
           <div className="mt-auto border-t border-neutral-200 pt-4">
             <Link
-              href="/profile"
+              href={profileHref}
               className="mb-3 flex items-center gap-3 rounded-xl px-2 py-1 transition hover:bg-neutral-100"
             >
               <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e4f0e8] text-[#013528]">
@@ -184,7 +188,7 @@ export default function SidebarNav() {
         className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-neutral-200 bg-white px-2 py-2 lg:hidden"
         aria-label="Navigasi mobile"
       >
-        {[...discovery, workspace[0], workspace[1], identity[1]].map((item) => (
+        {[...discovery, workspace[0], workspace[1], identity[0]].map((item) => (
           <NavItem key={item.href} item={item} compact />
         ))}
         <div ref={moreRef} className="relative">

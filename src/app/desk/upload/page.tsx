@@ -293,7 +293,7 @@ export default function RagUploadPage() {
             <div className="flex flex-col sm:flex-row gap-3">
               {pollTimedOut && !processingFailed && <Button onClick={resumePolling} size="lg"><RefreshCw className="w-4 h-4" />Periksa lagi</Button>}
               {processingFailed && <Button onClick={resetUpload} size="lg"><RefreshCw className="w-4 h-4" />Coba lagi</Button>}
-              <Link href="/history" className="inline-flex items-center justify-center rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">Lihat riwayat</Link>
+              <Link href="/desk" className="inline-flex items-center justify-center rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">Kembali ke Your Desk</Link>
             </div>
           </Card>
         ) : (

@@ -1,2 +1,8 @@
-import ComingSoon from "@/components/layout/ComingSoon";
-export default function HomePage() { return <ComingSoon title="Beranda" description="Feed belajar dari orang yang kamu ikuti dan rekomendasi deck pilihan." />; }
+import HomeFeed from "@/components/feed/HomeFeed";
+import { getSocialViewer } from "@/lib/social-guard";
+import { redirect } from "next/navigation";
+export default async function HomePage() {
+  const {session}=await getSocialViewer();
+  if(!session)redirect("/login");
+  return <HomeFeed />;
+}

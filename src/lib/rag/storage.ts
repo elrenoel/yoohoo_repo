@@ -41,6 +41,10 @@ export async function readPdf(key: string) {
   if (!result.ContentLength || result.ContentLength > MAX_PDF_BYTES) throw new Error("Invalid PDF size");
   return result.Body!.transformToByteArray();
 }
+export function postImageKey(userId:string,id:string){return `post-images/${createHash("sha256").update(userId).digest("hex")}/${id}.webp`}
+export async function putPostImage(key:string,bytes:Uint8Array){await s3().send(new PutObjectCommand({Bucket:bucket(),Key:key,Body:bytes,ContentType:"image/webp",CacheControl:"public,max-age=31536000,immutable"}))}
+export async function readStoredObject(key:string){const result=await s3().send(new GetObjectCommand({Bucket:bucket(),Key:key}));return result.Body!.transformToByteArray()}
+export async function deleteStoredObject(key:string){try{await s3().send(new DeleteObjectCommand({Bucket:bucket(),Key:key}))}catch(error){console.warn("[storage] cleanup failed",error instanceof Error?error.message:error)}}
 export async function dispatchDocument(documentId: string, userId: string) {
   // Only the trusted backend can write ready/*; browsers can PUT only their signed PDF key.
   // This ObjectCreated event happens AFTER the document transaction commits.

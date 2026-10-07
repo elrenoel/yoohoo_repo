@@ -18,13 +18,45 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
     if (sets.error) throw sets.error;
     if (!sets.data.length) return NextResponse.json({ success: true, documentId: id, documentTitle: doc.data.title, sets: [], quizSetId: null, quizSetLabel: null, total: 0, quiz: [] });
     const requested = new URL(request.url).searchParams.get("setId");
-    const selected = requested ? sets.data.find(x => x.id === requested) : sets.data[0];
+    const selected = requested ? sets.data.find(x => x.id === requested) : sets.data.at(-1);
     if (!selected) return NextResponse.json({ success: false, error: "Set kuis tidak ditemukan." }, { status: 400 });
     const all = await db.from("quiz_questions").select("id,quiz_set_id,question,options,difficulty").eq("document_id", id);
     if (all.error) throw all.error;
-    const counts: Record<string, number> = {};
-    for (const question of all.data) counts[question.quiz_set_id] = (counts[question.quiz_set_id] ?? 0) + 1;
+    const stats: Record<string, { questionCount: number; easy: number; medium: number; hard: number }> = {};
+    for (const question of all.data) {
+      const current = stats[question.quiz_set_id] ?? { questionCount: 0, easy: 0, medium: 0, hard: 0 };
+      current.questionCount += 1;
+      if (question.difficulty === "easy" || question.difficulty === "medium" || question.difficulty === "hard") {
+        current[question.difficulty] += 1;
+      }
+      stats[question.quiz_set_id] = current;
+    }
     const quiz = all.data.filter(question => question.quiz_set_id === selected.id).map(({ id: questionId, question, options, difficulty }) => ({ id: questionId, question, options, difficulty }));
-    return NextResponse.json({ success: true, documentId: id, documentTitle: doc.data.title, sets: sets.data.map(x => ({ id: x.id, label: x.label, questionCount: counts[x.id] ?? 0 })), quizSetId: selected.id, quizSetLabel: selected.label, total: quiz.length, quiz });
+    return NextResponse.json({
+      success: true,
+      documentId: id,
+      documentTitle: doc.data.title,
+      sets: sets.data.map((set, index) => {
+        const normalizedLabel = set.label.toLocaleLowerCase();
+        const variant = normalizedLabel.includes("level up") || normalizedLabel.includes("lebih sulit")
+          ? "harder"
+          : normalizedLabel.includes("regenerate") || normalizedLabel.includes("berbeda")
+            ? "different"
+            : index === 0 ? "original" : "different";
+        const setStats = stats[set.id] ?? { questionCount: 0, easy: 0, medium: 0, hard: 0 };
+        return {
+          id: set.id,
+          label: set.label,
+          createdAt: set.created_at,
+          variant,
+          questionCount: setStats.questionCount,
+          difficultyCounts: { easy: setStats.easy, medium: setStats.medium, hard: setStats.hard },
+        };
+      }),
+      quizSetId: selected.id,
+      quizSetLabel: selected.label,
+      total: quiz.length,
+      quiz,
+    });
   } catch (error) { return handleApiError(error, "GET /api/documents/:id/quiz"); }
 }
