@@ -67,9 +67,9 @@ export default function ProfileForm({ initial, mode, onSaved }: {
       const data = await response.json() as { profile?: { username: string }; error?: string };
       if (!response.ok || !data.profile) throw new Error(data.error || t("profile.saveFailed"));
       toast.success(t(mode === "create" ? "profile.created" : "profile.updated"), { id: loadingId });
-      await queryClient.invalidateQueries({ queryKey: ["own-profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["profile"] });
       onSaved?.();
-      router.push(`/u/${data.profile.username}`);
+      router.push(`/profile/${data.profile.username}`);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t("profile.saveFailed"), { id: loadingId });

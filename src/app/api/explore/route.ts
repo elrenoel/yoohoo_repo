@@ -45,8 +45,9 @@ export async function GET(request: Request) {
           coalesce(s.completion_count, 0)::int completion_count, s.average_score,
           (d.fork_count * 3 + coalesce(s.attempts_30d, 0) + d.view_count * 0.1)::float8 popularity
         from public.public_decks d join public.profiles p on p.user_id=d.owner_id
+        left join public.decks source on source.id=d.source_deck_id
         left join deck_stats s on s.public_deck_id=d.id
-        where d.status='published'
+        where d.status='published' and (d.source_deck_id is null or (source.visibility='public' and source.deleted_at is null))
           and not exists(select 1 from public.posts px where px.embedded_public_deck_id=d.id and px.status='published' and px.deleted_at is null)
           and ${parsed.tab === "all" || parsed.tab === "deck"}
           and (${!q} or d.search_vector @@ ${query} or lower(d.title) % ${q})

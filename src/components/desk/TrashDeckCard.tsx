@@ -68,7 +68,7 @@ export default function TrashDeckCard({ deck, onRequestRestore, onRequestPermane
             <div ref={menuRef} className="relative">
               <button
                 type="button"
-                aria-label="Menu deck di trash"
+                aria-label="Trash deck menu"
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
                 aria-busy={busy}
@@ -89,7 +89,7 @@ export default function TrashDeckCard({ deck, onRequestRestore, onRequestPermane
                     className="flex w-full items-center gap-2 px-3 py-2 text-left text-[#16241D] transition hover:bg-[#F1F3EE] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <RotateCcw className="h-4 w-4 text-[#2F7651]" />
-                    Pulihkan deck
+                    Restore deck
                   </button>
                   <button
                     type="button"
@@ -99,7 +99,7 @@ export default function TrashDeckCard({ deck, onRequestRestore, onRequestPermane
                     className="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-[#C24A3D] transition hover:bg-[#FBEDEB] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Hapus permanen
+                    Delete permanently
                   </button>
                 </div>
               )}
@@ -108,7 +108,7 @@ export default function TrashDeckCard({ deck, onRequestRestore, onRequestPermane
         </div>
 
         <div className="mt-4 flex justify-end">
-          <span className="rounded-md bg-[#F5F6F3] px-2 py-1 text-[11px] font-medium text-[#7A8780]">Di trash</span>
+          <span className="rounded-md bg-[#F5F6F3] px-2 py-1 text-[11px] font-medium text-[#7A8780]">In Trash</span>
         </div>
       </div>
 

@@ -14,7 +14,10 @@ export default function QueryProvider({
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 2 * 60 * 1000, // 2 minutes
+            staleTime: 60_000,
+            // Keep inactive route data around so Back/Forward navigation can
+            // paint immediately instead of rebuilding the same requests.
+            gcTime: 30 * 60_000,
             refetchOnWindowFocus: false,
             retry: 1,
           },

@@ -56,9 +56,9 @@ export default function YourDeskLanding() {
     if (sessionPending || !session?.user) return;
     let cancelled = false;
     fetch("/api/decks", { cache: "no-store" })
-      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "Meja kerja tidak dapat dimuat."); return body.decks as DeskSummary[]; })
+      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "Your Desk could not be loaded."); return body.decks as DeskSummary[]; })
       .then(list => { if (!cancelled) { setDesks(sortDesks(list)); setError(""); } })
-      .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Meja kerja tidak dapat dimuat."); })
+      .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Your Desk could not be loaded."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [session, sessionPending, reloadKey]);
@@ -175,17 +175,17 @@ export default function YourDeskLanding() {
   function reloadDesks() { setLoading(true); setReloadKey(key => key + 1); }
   async function refreshSnapshot(deck: DeskSummary) {
     if (!deck.publicDeck) return;
-    setBusyIds(current=>new Set(current).add(deck.id)); const id=toast.loading("Memperbarui snapshot…");
-    try { const response=await fetch(`/api/public-decks/${deck.publicDeck.id}/refresh`,{method:"POST"}); const body=await response.json(); if(!response.ok)throw new Error(body.error||"Snapshot gagal diperbarui."); toast.success(`Snapshot versi ${body.publicDeck.version} siap.`,{id}); reloadDesks(); }
-    catch(error){toast.error(error instanceof Error?error.message:"Snapshot gagal diperbarui.",{id});} finally{setBusyIds(current=>{const next=new Set(current);next.delete(deck.id);return next})}
+    setBusyIds(current=>new Set(current).add(deck.id)); const id=toast.loading("Refreshing snapshot...");
+    try { const response=await fetch(`/api/public-decks/${deck.publicDeck.id}/refresh`,{method:"POST"}); const body=await response.json(); if(!response.ok)throw new Error(body.error||"Snapshot could not be refreshed."); toast.success(`Snapshot version ${body.publicDeck.version} is ready.`,{id}); reloadDesks(); }
+    catch(error){toast.error(error instanceof Error?error.message:"Snapshot could not be refreshed.",{id});} finally{setBusyIds(current=>{const next=new Set(current);next.delete(deck.id);return next})}
   }
   async function unpublish(deck: DeskSummary) {
     if (!deck.publicDeck) return;
-    setBusyIds(current=>new Set(current).add(deck.id)); const id=toast.loading("Membatalkan publikasi…");
-    try { const response=await fetch(`/api/public-decks/${deck.publicDeck.id}/unpublish`,{method:"POST"}); const body=await response.json(); if(!response.ok)throw new Error(body.error||"Publikasi gagal dibatalkan."); toast.success("Deck tidak lagi tampil publik.",{id}); reloadDesks(); }
-    catch(error){toast.error(error instanceof Error?error.message:"Publikasi gagal dibatalkan.",{id});} finally{setBusyIds(current=>{const next=new Set(current);next.delete(deck.id);return next})}
+    setBusyIds(current=>new Set(current).add(deck.id)); const id=toast.loading("Unpublishing...");
+    try { const response=await fetch(`/api/public-decks/${deck.publicDeck.id}/unpublish`,{method:"POST"}); const body=await response.json(); if(!response.ok)throw new Error(body.error||"The deck could not be unpublished."); toast.success("The deck is no longer public.",{id}); reloadDesks(); }
+    catch(error){toast.error(error instanceof Error?error.message:"The deck could not be unpublished.",{id});} finally{setBusyIds(current=>{const next=new Set(current);next.delete(deck.id);return next})}
   }
-  function handlePublish(deck:DeskSummary){if(deck.publicDeck?.status==="published")router.push(`/d/${deck.publicDeck.slug}`);else if(deck.publicDeck)void refreshSnapshot(deck);else setPublishDeck(deck)}
+  function handlePublish(deck:DeskSummary){setPublishDeck(deck)}
 
   const skeletonGrid = (
     <div role="status" aria-busy="true" className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -196,8 +196,8 @@ export default function YourDeskLanding() {
 
   const emptyState = (
     <Card variant="centered">
-      <p className="font-serif text-xl font-semibold">Belum ada meja kerja — buat yang pertama</p>
-      <button type="button" onClick={openNewDesk} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><Plus className="h-4 w-4" />Meja baru</button>
+      <p className="font-serif text-xl font-semibold">No study desk yet — create your first one</p>
+      <button type="button" onClick={openNewDesk} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><Plus className="h-4 w-4" />New desk</button>
     </Card>
   );
 
@@ -207,10 +207,10 @@ export default function YourDeskLanding() {
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 flex items-center justify-between gap-4">
             <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5B6B62]">WORKSPACE</p><h1 className="mt-1 font-serif text-4xl font-semibold tracking-tight">Your Desk</h1></div>
-            <button type="button" onClick={openNewDesk} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><Plus className="h-4 w-4" />Meja baru</button>
+            <button type="button" onClick={openNewDesk} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><Plus className="h-4 w-4" />New desk</button>
           </header>
 
-          {!sessionPending && !session?.user ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-[#5B6B62]" /><h2 className="font-semibold">Masuk untuk melihat meja kerja</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-[#013528] px-4 py-2 text-sm font-medium text-white">Masuk sekarang</Link></Card>
+          {!sessionPending && !session?.user ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-[#5B6B62]" /><h2 className="font-semibold">Log in to view Your Desk</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-[#013528] px-4 py-2 text-sm font-medium text-white">Log in now</Link></Card>
             : loading ? skeletonGrid
             : error ? <Card variant="centered"><p className="text-sm text-red-600">{error}</p><button type="button" onClick={retryLoad} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><RefreshCw className="h-4 w-4" />{t("toast.retry")}</button></Card>
             : desks.length === 0 ? emptyState
@@ -225,9 +225,9 @@ export default function YourDeskLanding() {
       {publishDeck && <PublishDeckDialog deck={publishDeck} onClose={()=>setPublishDeck(null)} onDone={reloadDesks}/>} 
 
       {confirmDeck && <ConfirmDialog
-        title="Pindahkan deck ke Trash?"
-        message={`Deck "${confirmDeck.title}" akan dihapus dari daftar dan pindah ke Trash. Masih bisa dipulihkan selama 30 hari dari halaman Trash.`}
-        confirmLabel="Hapus deck"
+        title="Move deck to Trash?"
+        message={`Deck "${confirmDeck.title}" will be removed from the list and moved to Trash. You can restore it from Trash for 30 days.`}
+        confirmLabel="Delete deck"
         onCancel={() => setConfirmDeck(null)}
         onConfirm={() => { const desk = confirmDeck; setConfirmDeck(null); startDelete(desk); }}
       />}

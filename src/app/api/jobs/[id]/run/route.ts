@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { ragSql } from "@/lib/rag/db";
 import { RagError, UUID } from "@/lib/rag/core";
 import { ragResponseError, sessionUser } from "@/lib/rag/http";
@@ -17,6 +18,14 @@ export const maxDuration = 300;
 
 const BATCH_SIZE = 10;
 const PARALLEL_BATCHES = 3;
+
+function nextBlobVariant(previous?: number) {
+  let variant = randomInt(1, 6);
+  while (previous !== undefined && variant === previous) {
+    variant = randomInt(1, 6);
+  }
+  return variant;
+}
 
 interface JobKeywordRow {
   keyword_id: string;
@@ -165,16 +174,22 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     // 4. SATU transaksi: insert semua flashcard + tandai job succeeded.
     const deckId = String(job.deck_id);
+    let previousBlobVariant: number | undefined;
     const cards = (outcomes as { batch: Batch; result: GeneratedFlashcardMaterials }[])
       .flatMap(({ batch, result }) =>
-        result.flashcards.map(card => ({
-          document_id: batch.documentId,
-          deck_id: deckId,
-          keyword_id: card.keyword_id,
-          job_id: rawId,
-          term: card.term.slice(0, 250),
-          definition: card.definition.slice(0, 4000),
-        }))
+        result.flashcards.map(card => {
+          const blobVariant = nextBlobVariant(previousBlobVariant);
+          previousBlobVariant = blobVariant;
+          return {
+            document_id: batch.documentId,
+            deck_id: deckId,
+            keyword_id: card.keyword_id,
+            job_id: rawId,
+            term: card.term.slice(0, 250),
+            definition: card.definition.slice(0, 4000),
+            blob_variant: blobVariant,
+          };
+        })
       );
     // Keyword di luar job ini (AI tidak boleh mengeluarkannya, tapi disaring lagi).
     const allowedKeywordIds = new Set(rows.map(r => String(r.keyword_id)));
@@ -228,14 +243,29 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const inserted = await sql.begin(async tx => {
       let count = 0;
+      const [schema] = await tx<{ hasBlobVariant: boolean }[]>`
+        select exists (
+          select 1 from information_schema.columns
+          where table_schema='public' and table_name='flashcards'
+            and column_name='blob_variant'
+        ) as "hasBlobVariant"`;
       for (let offset = 0; offset < validCards.length; offset += 100) {
         const chunk = validCards.slice(offset, offset + 100);
-        const rowsInserted = await tx`
-          insert into public.flashcards ${tx(
-            chunk, "document_id", "deck_id", "keyword_id", "job_id", "term", "definition"
-          )}
-          on conflict (deck_id, keyword_id) do nothing
-          returning id`;
+        const rowsInserted = schema?.hasBlobVariant
+          ? await tx`
+              insert into public.flashcards ${tx(
+                chunk, "document_id", "deck_id", "keyword_id", "job_id",
+                "term", "definition", "blob_variant"
+              )}
+              on conflict (deck_id, keyword_id) do nothing
+              returning id`
+          : await tx`
+              insert into public.flashcards ${tx(
+                chunk, "document_id", "deck_id", "keyword_id", "job_id",
+                "term", "definition"
+              )}
+              on conflict (deck_id, keyword_id) do nothing
+              returning id`;
         count += rowsInserted.length;
       }
 

@@ -13,7 +13,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ att
     if (!session?.user) return NextResponse.json({ success: false, error: "Silakan login terlebih dahulu.", requireAuth: true }, { status: 401 });
     const [attempt] = await ragSql()`select a.id,a.document_id,a.quiz_set_id,a.score,a.total,a.created_at,d.title
       from public.quiz_attempts a join public.documents d on d.id=a.document_id
-      where a.id=${attemptId} and d.user_id=${session.user.id} and d.deleted_at is null`;
+      where a.id=${attemptId} and a.user_id=${session.user.id} and d.deleted_at is null`;
     if (!attempt) return NextResponse.json({ success: false, error: "Attempt tidak ditemukan." }, { status: 404 });
 
     const [metrics] = await ragSql()`with question_stats as (

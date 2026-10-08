@@ -46,8 +46,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       const rows = parsed.map(answer => ({ ...answer, isCorrect: answer.status === "answered" && answer.selectedIndex === byId.get(answer.questionId) }));
       const score = rows.filter(answer => answer.isCorrect).length;
       const totalTimeMs = rows.reduce((sum, answer) => sum + (answer.timeTakenMs ?? 0), 0);
-      const [attempt] = await sql`insert into public.quiz_attempts(document_id,session_id,score,total,answers,quiz_set_id,mode,total_time_ms)
-        values (${quiz.document_id},${typeof body?.session_id === "string" ? body.session_id : null},${score},${questions.length},${sql.json(rows.map(answer => ({ questionId: answer.questionId, selectedIndex: answer.selectedIndex, isCorrect: answer.isCorrect, timeTakenMs: answer.timeTakenMs, status: answer.status })) )},${quizId},${mode},${totalTimeMs})
+      const [attempt] = await sql`insert into public.quiz_attempts(document_id,user_id,session_id,score,total,answers,quiz_set_id,mode,total_time_ms)
+        values (${quiz.document_id},${session.user.id},${typeof body?.session_id === "string" ? body.session_id : null},${score},${questions.length},${sql.json(rows.map(answer => ({ questionId: answer.questionId, selectedIndex: answer.selectedIndex, isCorrect: answer.isCorrect, timeTakenMs: answer.timeTakenMs, status: answer.status })) )},${quizId},${mode},${totalTimeMs})
         returning id,created_at`;
       await sql`insert into public.quiz_attempt_answers ${sql(rows.map(answer => ({ attempt_id: attempt.id, question_id: answer.questionId, selected_index: answer.selectedIndex, is_correct: answer.isCorrect, time_taken_ms: answer.timeTakenMs, status: answer.status })), "attempt_id", "question_id", "selected_index", "is_correct", "time_taken_ms", "status")}`;
       const review = rows.map(answer => {

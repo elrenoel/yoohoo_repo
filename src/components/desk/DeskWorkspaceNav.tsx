@@ -13,13 +13,13 @@ function backHref(pathname: string, id: string, deckId: string | null) {
 }
 
 function section(pathname: string) {
-  if (pathname.endsWith("/generate-flashcards")) return "Membuat materi";
+  if (pathname.endsWith("/generate-flashcards")) return "Creating materials";
   if (pathname.endsWith("/flashcards")) return "Flashcards";
-  if (pathname.endsWith("/quiz/results")) return "Hasil kuis";
+  if (pathname.endsWith("/quiz/results")) return "Quiz results";
   if (pathname.endsWith("/quiz")) return "Quiz";
-  if (pathname.includes("/attempts/")) return "Pembahasan jawaban";
-  if (pathname.endsWith("/attempts")) return "Riwayat quiz";
-  return "Materi";
+  if (pathname.includes("/attempts/")) return "Answer review";
+  if (pathname.endsWith("/attempts")) return "Quiz history";
+  return "Materials";
 }
 
 export default function DeskWorkspaceNav({ deckId }: { deckId: string }) {
@@ -40,5 +40,5 @@ export default function DeskWorkspaceNav({ deckId }: { deckId: string }) {
     return () => { cancelled = true; };
   }, [deckId]);
 
-  return <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 pb-2 pt-5 sm:px-6"><Link href={backHref(pathname, deckId, parentDeckId)} aria-label="Kembali" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#D8DCD3] bg-white text-[#013528] transition hover:bg-[#EAF2E8]"><ChevronLeft className="h-4 w-4" /></Link><div className="min-w-0"><p className="truncate text-sm font-semibold text-[#16241D] sm:text-base">{title}</p><p className="truncate text-[11px] text-[#5B6B62] sm:text-xs">{section(pathname)}</p></div></div>;
+  return <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 pb-2 pt-5 sm:px-6"><Link href={backHref(pathname, deckId, parentDeckId)} aria-label="Back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#D8DCD3] bg-white text-[#013528] transition hover:bg-[#EAF2E8]"><ChevronLeft className="h-4 w-4" /></Link><div className="min-w-0"><p className="truncate text-sm font-semibold text-[#16241D] sm:text-base">{title}</p><p className="truncate text-[11px] text-[#5B6B62] sm:text-xs">{section(pathname)}</p></div></div>;
 }

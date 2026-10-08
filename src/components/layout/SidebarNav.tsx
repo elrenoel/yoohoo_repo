@@ -8,12 +8,13 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bell,
   BookMarked,
+  ChevronDown,
   Compass,
   FilePlus2,
   Home,
-  History,
   LogOut,
   MoreHorizontal,
+  PenLine,
   Settings,
   Trash2,
   User,
@@ -29,14 +30,13 @@ import { useOwnProfile } from "@/hooks/use-own-profile";
 type NavigationItem = { href: string; label: string; icon: LucideIcon };
 
 const discovery: NavigationItem[] = [
-  { href: "/home", label: "Beranda", icon: Home },
-  { href: "/explore", label: "Jelajah", icon: Compass },
+  { href: "/home", label: "Home", icon: Home },
+  { href: "/explore", label: "Explore", icon: Compass },
 ];
 
 const workspace: NavigationItem[] = [
   { href: "/desk", label: "Your Desk", icon: FilePlus2 },
-  { href: "/saved", label: "Tersimpan", icon: BookMarked },
-  { href: "/history", label: "Riwayat", icon: History },
+  { href: "/saved", label: "Saved", icon: BookMarked },
 ];
 
 function NavItem({
@@ -59,134 +59,113 @@ function NavItem({
       href={item.href}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className={`flex rounded-xl transition ${compact ? "flex-col items-center gap-0.5 px-2 py-1 text-[10px]" : "items-center gap-3 px-3 py-2.5 text-sm"} ${active ? "bg-[#e4f0e8] font-semibold text-[#013528]" : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"}`}
+      className={`flex transition ${compact ? "flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px]" : "items-center gap-4 px-3 py-3 text-[15px]"} ${active ? "font-bold text-[#16241D]" : "font-medium text-[#7A837E] hover:text-[#16241D]"}`}
     >
-      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <Icon className={compact ? "h-4 w-4 shrink-0" : "h-5 w-5 shrink-0"} aria-hidden="true" />
       <span>{item.label}</span>
     </Link>
   );
 }
 
 const moreItems: NavigationItem[] = [
-  ...workspace.slice(2),
-  { href: "/notifications", label: "Notifikasi", icon: Bell },
-  { href: "/settings", label: "Pengaturan", icon: Settings },
-  { href: "/trash", label: "Sampah", icon: Trash2 },
+  { href: "/notifications", label: "Notifications", icon: Bell },
+  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/trash", label: "Trash", icon: Trash2 },
 ];
 
 export default function SidebarNav() {
   const { session, handleLogout, isLoggingOut } = useAccountActions();
   const { t } = useLanguage();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [desktopMoreOpen, setDesktopMoreOpen] = useState(false);
   const moreRef = useRef<HTMLDivElement>(null);
+  const createRef = useRef<HTMLDivElement>(null);
+  const desktopMoreRef = useRef<HTMLDivElement>(null);
   const { data: profileData } = useOwnProfile();
 
   useEffect(() => {
-    if (!moreOpen) return;
+    if (!moreOpen && !createOpen && !desktopMoreOpen) return;
     const onPointerDown = (event: MouseEvent) => {
       if (moreRef.current && !moreRef.current.contains(event.target as Node))
         setMoreOpen(false);
+      if (createRef.current && !createRef.current.contains(event.target as Node)) setCreateOpen(false);
+      if (desktopMoreRef.current && !desktopMoreRef.current.contains(event.target as Node)) setDesktopMoreOpen(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMoreOpen(false);
+      if (event.key === "Escape") { setMoreOpen(false); setCreateOpen(false); setDesktopMoreOpen(false); }
     };
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
-    document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = "";
     };
-  }, [moreOpen]);
+  }, [moreOpen, createOpen, desktopMoreOpen]);
 
   if (!session?.user) return null;
 
-  const userName = session.user.name || session.user.email;
   const profileHref = profileData?.profile?.username
-    ? `/u/${profileData.profile.username}`
+    ? `/profile/${profileData.profile.username}`
     : "/onboarding/username";
   const identity: NavigationItem[] = [
-    { href: profileHref, label: "Profil", icon: User },
+    { href: profileHref, label: "Profile", icon: User },
   ];
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-neutral-200 bg-white px-4 py-5 lg:flex">
-        <Link href="/home" className="mb-8 flex items-center gap-2 px-2">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-white px-4 py-5 lg:flex">
+        <Link href="/home" className="mb-7 flex items-center gap-2 px-2">
           <Image
             src="/logo_yoohoo.png"
             alt="Yoohoo"
             width={32}
             height={32}
-            className="h-8 w-8 rounded-lg"
+            className="h-9 w-9 rounded-lg"
           />
         </Link>
 
         <nav
           className="flex min-h-0 flex-1 flex-col gap-1"
-          aria-label="Navigasi utama"
+          aria-label="Main navigation"
         >
           {discovery.map((item) => (
             <NavItem key={item.href} item={item} />
           ))}
-          <div className="my-4 h-px bg-neutral-200" />
           {workspace.map((item) => (
             <NavItem key={item.href} item={item} />
           ))}
-          <div className="my-4 h-px bg-neutral-200" />
           <NotificationBell />
           {identity.map((item) => (
             <NavItem key={item.href} item={item} />
           ))}
 
-          <div className="mt-auto border-t border-neutral-200 pt-4">
-            <Link
-              href={profileHref}
-              className="mb-3 flex items-center gap-3 rounded-xl px-2 py-1 transition hover:bg-neutral-100"
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#e4f0e8] text-[#013528]">
-                <User className="h-4 w-4" aria-hidden="true" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-xs font-semibold text-neutral-900">
-                  {userName}
-                </p>
-                <p className="truncate text-[11px] text-neutral-500">
-                  {session.user.email}
-                </p>
-              </div>
-            </Link>
-            <LanguageSwitcher mobile />
-            <Link
-              href="/settings"
-              className="mt-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900"
-            >
-              <Settings className="h-4 w-4" aria-hidden="true" /> Pengaturan
-            </Link>
-            <Link
-              href="/trash"
-              className="mt-2 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900"
-            >
-              <Trash2 className="h-4 w-4" aria-hidden="true" /> Sampah
-            </Link>
-            <button
-              type="button"
-              onClick={() => void handleLogout()}
-              disabled={isLoggingOut}
-              className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-50"
-              title={t("nav.logoutTitle")}
-            >
-              <LogOut className="h-4 w-4" aria-hidden="true" />
-              {isLoggingOut ? "Keluar..." : t("nav.logout")}
+          <div ref={createRef} className="relative mt-4">
+            <button type="button" onClick={() => setCreateOpen(value => !value)} aria-expanded={createOpen} aria-haspopup="menu" className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#164C3D] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#1E5B48]">
+              Create <ChevronDown className={`h-4 w-4 transition ${createOpen ? "rotate-180" : ""}`} />
             </button>
+            {createOpen && <div role="menu" className="absolute left-0 top-full z-50 mt-2 w-full overflow-hidden rounded-xl border border-[#D8DCD3] bg-white p-1.5 shadow-[0_14px_34px_rgba(22,36,29,.16)]">
+              <Link href="/desk" role="menuitem" onClick={() => setCreateOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#16241D] hover:bg-[#F0F3EE]"><FilePlus2 className="h-5 w-5" />Create your deck</Link>
+              <Link href="/home?compose=1" role="menuitem" onClick={() => { setCreateOpen(false); window.dispatchEvent(new Event("yoohoo:open-composer")); }} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#16241D] hover:bg-[#F0F3EE]"><PenLine className="h-5 w-5" />Post</Link>
+            </div>}
+          </div>
+
+          <div ref={desktopMoreRef} className="relative mt-auto">
+            {desktopMoreOpen && <div role="menu" className="absolute bottom-14 left-0 w-full overflow-hidden rounded-xl border border-[#D8DCD3] bg-white p-1.5 shadow-[0_14px_34px_rgba(22,36,29,.16)]">
+              <Link href="/settings" role="menuitem" onClick={() => setDesktopMoreOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#5B6B62] hover:bg-[#F0F3EE]"><Settings className="h-4 w-4" />Settings</Link>
+              <Link href="/trash" role="menuitem" onClick={() => setDesktopMoreOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#5B6B62] hover:bg-[#F0F3EE]"><Trash2 className="h-4 w-4" />Trash</Link>
+              <div className="my-1 h-px bg-[#E5E8E2]" />
+              <LanguageSwitcher mobile />
+              <button type="button" role="menuitem" onClick={() => void handleLogout()} disabled={isLoggingOut} className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-[#5B6B62] hover:bg-[#F0F3EE] disabled:opacity-50"><LogOut className="h-4 w-4" />{isLoggingOut ? "Logging out..." : t("nav.logout")}</button>
+            </div>}
+            <button type="button" onClick={() => setDesktopMoreOpen(value => !value)} aria-expanded={desktopMoreOpen} aria-haspopup="menu" className={`flex w-full items-center gap-4 rounded-xl px-3 py-3 text-[15px] font-medium transition ${desktopMoreOpen ? "bg-[#F0F3EE] text-[#16241D]" : "text-[#7A837E] hover:text-[#16241D]"}`}><MoreHorizontal className="h-5 w-5" />More</button>
           </div>
         </nav>
       </aside>
 
       <nav
         className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-neutral-200 bg-white px-2 py-2 lg:hidden"
-        aria-label="Navigasi mobile"
+        aria-label="Mobile navigation"
       >
         {[...discovery, workspace[0], workspace[1], identity[0]].map((item) => (
           <NavItem key={item.href} item={item} compact />
@@ -204,7 +183,7 @@ export default function SidebarNav() {
             ) : (
               <MoreHorizontal className="h-4 w-4" />
             )}
-            Lainnya
+            More
           </button>
           {moreOpen && (
             <div
@@ -231,7 +210,7 @@ export default function SidebarNav() {
                 className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 disabled:opacity-50"
               >
                 <LogOut className="h-4 w-4" aria-hidden="true" />
-                {isLoggingOut ? "Keluar..." : t("nav.logout")}
+                {isLoggingOut ? "Logging out..." : t("nav.logout")}
               </button>
             </div>
           )}

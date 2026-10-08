@@ -12,7 +12,9 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
     const sql = ragSql();
     const [doc] = await sql`select id,title from public.documents where id=${id} and user_id=${session.user.id} and deleted_at is null`;
     if (!doc) return NextResponse.json({ success: false, error: "Dokumen tidak ditemukan." }, { status: 404 });
-    const cards = await sql`select id,term,definition from public.flashcards where document_id=${id} order by id`;
+    const cards = await sql`select f.id,f.term,f.definition,
+      (to_jsonb(f)->>'blob_variant')::smallint as blob_variant
+      from public.flashcards f where f.document_id=${id} order by f.id`;
     for (const card of cards) await sql`select private.refresh_flashcard_relations(${session.user.id},${card.id})`;
     const relations = await sql`select r.from_flashcard_id,r.to_flashcard_id,r.relation_type,r.suggested_term,r.source_chunk_id,
       target.term as target_term,target.definition as target_definition
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
       bySource.set(String(relation.from_flashcard_id), list);
     }
     return NextResponse.json({ success: true, documentId: id, documentTitle: doc.title, total: cards.length,
-      flashcards: cards.map(card => ({ id: String(card.id), term: String(card.term), definition: String(card.definition), related_terms: bySource.get(String(card.id)) ?? [] })) });
+      flashcards: cards.map(card => ({ id: String(card.id), term: String(card.term), definition: String(card.definition), blobVariant: card.blob_variant == null ? null : Number(card.blob_variant), related_terms: bySource.get(String(card.id)) ?? [] })) });
   } catch (error) {
     console.error("[flashcards]", error instanceof Error ? error.message : error);
     return NextResponse.json({ success: false, error: "Gagal memuat flashcard." }, { status: 500 });

@@ -197,10 +197,14 @@ export const auth = betterAuth({
     }),
   },
   session: {
+    // Sessions are intentionally capped at one day. The signed cookie cache
+    // avoids a Postgres lookup every time server code asks for the session.
+    expiresIn: 60 * 60 * 24,
+    disableSessionRefresh: true,
     fields: { expiresAt: "expires_at", createdAt: "created_at", updatedAt: "updated_at", ipAddress: "ip_address", userAgent: "user_agent", userId: "user_id" },
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // 5 minutes — avoids DB hit on every getSession call
+      maxAge: 60 * 60 * 24,
     },
   },
   user: {

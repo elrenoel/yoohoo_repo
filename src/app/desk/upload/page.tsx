@@ -23,9 +23,9 @@ type StatusResponse = { documentId: string; status: DocumentStatus; errorMessage
 
 const statusLabels: Record<Exclude<DocumentStatus, "failed">, string> = {
   uploaded: "Menyiapkan dokumen...",
-  chunking: "Membaca dan memecah materi...",
-  indexing: "Menganalisis konten dan mencari keyword...",
-  ready_for_selection: "Menyiapkan daftar keyword...",
+  chunking: "Reading and splitting the material...",
+  indexing: "Analyzing content and finding keywords...",
+  ready_for_selection: "Preparing the keyword list...",
 };
 
 const steps = [
@@ -147,7 +147,7 @@ export default function RagUploadPage() {
       try {
         const response = await fetch(`/api/documents/${current.documentId}/status`, { cache: "no-store", signal: controller.signal });
         const body = await readJson(response);
-        if (!response.ok) throw new Error(responseMessage(body, "Status dokumen belum dapat diperiksa."));
+        if (!response.ok) throw new Error(responseMessage(body, "The document status could not be checked yet."));
         const snapshot = body as StatusResponse;
         if (!snapshot || typeof snapshot.status !== "string") throw new Error("Respons status dokumen tidak valid.");
         if (cancelled) return;
@@ -160,14 +160,14 @@ export default function RagUploadPage() {
         }
         if (snapshot.status === "failed") {
           localStorage.removeItem(PENDING_UPLOAD_KEY);
-          setProcessingMessage(snapshot.errorMessage || "Dokumen gagal diproses. Silakan upload ulang.");
+          setProcessingMessage(snapshot.errorMessage || "The document could not be processed. Please upload it again.");
           return;
         }
         setProcessingMessage(statusLabels[snapshot.status]);
         timer = setTimeout(poll, POLL_INTERVAL_MS);
       } catch (cause) {
         if (cancelled || controller.signal.aborted) return;
-        setError(cause instanceof Error ? cause.message : "Gagal memeriksa status dokumen.");
+        setError(cause instanceof Error ? cause.message : "Could not check the document status.");
         timer = setTimeout(poll, POLL_INTERVAL_MS);
       }
     }
@@ -204,15 +204,15 @@ export default function RagUploadPage() {
         try {
           response = await fetch("/api/documents/presign", { method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ filename: file.name, contentType: file.type, fileSize: file.size }) });
-        } catch { throw new Error("Gagal menyiapkan upload: server tidak dapat dijangkau."); }
+        } catch { throw new Error("Could not prepare the upload: the server is unreachable."); }
         const body = await readJson(response);
-        if (!response.ok) throw new Error(`Gagal menyiapkan upload: ${responseMessage(body, "permintaan presign ditolak.")}`);
+        if (!response.ok) throw new Error(`Could not prepare the upload: ${responseMessage(body, "the presign request was rejected.")}`);
         const signed = body as { documentId?: unknown; uploadUrl?: unknown; headers?: unknown };
         if (typeof signed.documentId !== "string" || !UUID.test(signed.documentId) || typeof signed.uploadUrl !== "string"
-          || !signed.headers || typeof signed.headers !== "object") throw new Error("Gagal menyiapkan upload: respons server tidak valid.");
+          || !signed.headers || typeof signed.headers !== "object") throw new Error("Could not prepare the upload: the server response is invalid.");
         setUploadMessage("Mengunggah PDF ke penyimpanan...");
         try { await putPdf(signed.uploadUrl, signed.headers as Record<string, string>, file, setProgress); }
-        catch (cause) { throw new Error(`Upload PDF ke penyimpanan gagal: ${cause instanceof Error ? cause.message : "koneksi terputus."}`); }
+        catch (cause) { throw new Error(`Could not upload the PDF to storage: ${cause instanceof Error ? cause.message : "connection interrupted."}`); }
         id = signed.documentId;
         setUploadedId(id);
       }
@@ -222,9 +222,9 @@ export default function RagUploadPage() {
         response = await fetch("/api/documents/confirm", { method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ documentId: id, filename: file.name,
             title: documentName.trim() || file.name.replace(/\.pdf$/i, "").slice(0, 200), contentLanguage }) });
-      } catch { throw new Error("File sudah terunggah, tetapi gagal didaftarkan: server tidak dapat dijangkau."); }
+      } catch { throw new Error("The file was uploaded but could not be registered: the server is unreachable."); }
       const body = await readJson(response);
-      if (!response.ok) throw new Error(`File sudah terunggah, tetapi gagal didaftarkan: ${responseMessage(body, "konfirmasi ditolak.")}`);
+      if (!response.ok) throw new Error(`The file was uploaded but could not be registered: ${responseMessage(body, "confirmation was rejected.")}`);
       const nextPending = { documentId: id, startedAt: Date.now() };
       localStorage.setItem(PENDING_UPLOAD_KEY, JSON.stringify(nextPending));
       setPending(nextPending);
@@ -235,7 +235,7 @@ export default function RagUploadPage() {
       router.replace(`/desk/upload?documentId=${id}`, { scroll: false });
       void queryClient.invalidateQueries({ queryKey: queryKeys.documents });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Upload gagal. Silakan coba lagi.");
+      setError(cause instanceof Error ? cause.message : "Upload failed. Please try again.");
       setUploadMessage("");
     } finally { setBusy(false); }
   }
@@ -281,7 +281,7 @@ export default function RagUploadPage() {
                 {processingFailed ? <AlertCircle className="w-5 h-5" /> : <Loader2 className="w-5 h-5 animate-spin" />}
               </div>
               <div className="min-w-0">
-                <h2 className="font-semibold">{processingFailed ? "Dokumen gagal diproses" : "Dokumen sedang diproses"}</h2>
+                <h2 className="font-semibold">{processingFailed ? "Document processing failed" : "Document is being processed"}</h2>
                 <p className={`mt-1 text-sm leading-relaxed ${processingFailed ? "text-rose-700" : "text-neutral-600"}`} role="status">
                   {pollTimedOut ? "Proses lebih lama dari biasanya. Pemrosesan di server tetap berjalan." : processingMessage}
                 </p>
@@ -291,9 +291,9 @@ export default function RagUploadPage() {
             {!processingFailed && !pollTimedOut && <div className="h-1.5 overflow-hidden rounded-full bg-neutral-100"><div className="h-full w-1/3 rounded-full bg-emerald-600 animate-pulse" /></div>}
             {error && !processingFailed && <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><AlertCircle className="w-4 h-4 mt-0.5" />{error} Mencoba lagi otomatis...</div>}
             <div className="flex flex-col sm:flex-row gap-3">
-              {pollTimedOut && !processingFailed && <Button onClick={resumePolling} size="lg"><RefreshCw className="w-4 h-4" />Periksa lagi</Button>}
-              {processingFailed && <Button onClick={resetUpload} size="lg"><RefreshCw className="w-4 h-4" />Coba lagi</Button>}
-              <Link href="/desk" className="inline-flex items-center justify-center rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">Kembali ke Your Desk</Link>
+              {pollTimedOut && !processingFailed && <Button onClick={resumePolling} size="lg"><RefreshCw className="w-4 h-4" />Check again</Button>}
+              {processingFailed && <Button onClick={resetUpload} size="lg"><RefreshCw className="w-4 h-4" />Try again</Button>}
+              <Link href="/desk" className="inline-flex items-center justify-center rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">Back to Your Desk</Link>
             </div>
           </Card>
         ) : (
@@ -303,7 +303,7 @@ export default function RagUploadPage() {
               className={`relative rounded-xl border-2 border-dashed p-8 text-center transition ${isDragging ? "border-neutral-900 bg-neutral-50" : file ? "border-neutral-300 bg-neutral-50/50" : "border-neutral-200 bg-neutral-50/30 hover:border-neutral-400"}`}>
               <input ref={inputRef} type="file" accept="application/pdf,.pdf" disabled={busy}
                 onChange={event => selectFile(event.target.files?.item(0) ?? null)}
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" aria-label="Pilih file PDF" />
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" aria-label="Choose a PDF file" />
               <div className="pointer-events-none flex flex-col items-center">
                 <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-neutral-200 bg-neutral-100 text-neutral-700"><Upload className="w-5 h-5" /></div>
                 {file ? <><div className="flex max-w-full items-center justify-center gap-2 text-sm font-medium"><FileText className="w-4 h-4 shrink-0 text-neutral-600" /><span className="truncate">{file.name}</span></div><p className="mt-1 text-xs text-neutral-500">{formatBytes(file.size)} · {t("upload.fileSelected")}</p></>
@@ -326,9 +326,9 @@ export default function RagUploadPage() {
 
             {busy && <div className="mt-4 space-y-2" role="status"><div className="flex justify-between text-xs text-neutral-600"><span>{uploadMessage}</span><span className="font-mono">{progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-neutral-100" role="progressbar" aria-valuenow={progress}><div className="h-full rounded-full bg-emerald-700 transition-[width]" style={{ width: `${progress}%` }} /></div></div>}
             {error && <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700" role="alert"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error}</span></div>}
-            {uploadedId && error && <div className="mt-3 flex items-center gap-2 text-xs text-neutral-500"><CheckCircle2 className="w-4 h-4 text-emerald-700" />PDF sudah ada di S3. Kamu bisa mencoba konfirmasi lagi tanpa upload ulang.</div>}
+            {uploadedId && error && <div className="mt-3 flex items-center gap-2 text-xs text-neutral-500"><CheckCircle2 className="w-4 h-4 text-emerald-700" />The PDF is already in S3. You can retry confirmation without uploading it again.</div>}
             <Button onClick={upload} disabled={!file || busy} size="lg" className="mt-6 w-full">
-              <span>{busy ? "Sedang diproses..." : uploadedId ? "Coba konfirmasi lagi" : t("upload.submit")}</span>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+              <span>{busy ? "Processing..." : uploadedId ? "Retry confirmation" : t("upload.submit")}</span>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
             </Button>
           </Card>
         )}

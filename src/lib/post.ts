@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DECK_CARD_COLORS } from "@/lib/deck-card-colors";
 
 export const POST_MAX_LENGTH = 500;
 export const POST_MAX_IMAGES = 4;
@@ -10,6 +11,7 @@ export const unifiedPostSchema = z.object({
     .transform(values => [...new Set(values.map(value => value.toLowerCase()))]),
   imageIds: z.array(z.uuid()).max(POST_MAX_IMAGES).default([]),
   deckId: z.uuid().nullable().optional(),
+  deckColor: z.enum(DECK_CARD_COLORS).default("green"),
 }).strict().refine(value => Boolean(value.body || value.imageIds.length || value.deckId), {
   message: "Tambahkan teks, gambar, atau deck sebelum mengirim.",
 });

@@ -4,6 +4,7 @@ import { ragSql } from "@/lib/rag/db";
 import { createProfileSchema, updateProfileSchema } from "@/lib/profile-validation";
 import { getOwnProfile } from "@/lib/profile-server";
 import { ZodError } from "zod";
+import { withApiTiming } from "@/lib/api-timing";
 
 export const runtime = "nodejs";
 
@@ -14,10 +15,13 @@ function friendlyError(error: unknown) {
 }
 
 export async function GET(request: Request) {
-  try {
-    const userId = await sessionUser(request);
-    return Response.json({ profile: await getOwnProfile(userId) });
-  } catch (error) { return friendlyError(error); }
+  return withApiTiming(request, "GET /api/profile", async (time) => {
+    try {
+      const userId = await time("auth", () => sessionUser(request));
+      const profile = await time("db.profile", () => getOwnProfile(userId));
+      return Response.json({ profile });
+    } catch (error) { return friendlyError(error); }
+  });
 }
 
 export async function POST(request: Request) {

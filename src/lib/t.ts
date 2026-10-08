@@ -20,7 +20,7 @@ function getLang(): "id" | "en" {
   } catch {
     // localStorage unavailable
   }
-  return "id";
+  return "en";
 }
 
 export function t(key: TranslationKey, params?: TranslationParams): string {

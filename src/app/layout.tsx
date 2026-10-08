@@ -6,10 +6,16 @@ import QueryProvider from "@/lib/query-provider";
 import { SessionProvider } from "@/lib/session-provider";
 import { AppToaster } from "@/lib/toast";
 import "katex/dist/katex.min.css";
+import { Plus_Jakarta_Sans } from "next/font/google";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
+import type { SessionData } from "@/lib/session-provider";
+
+const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", variable: "--font-plus-jakarta-sans" });
 
 export const metadata: Metadata = {
   title: "Yoohoo — AI Flashcard & Quiz Generator",
-  description: "Ubah materi PDF kuliah & buku jadi flashcard dan quiz interaktif otomatis dengan AI.",
+  description: "Turn course PDFs and books into interactive AI-generated flashcards and quizzes.",
   icons: {
     icon: "/logo_yoohoo.png",
     shortcut: "/logo_yoohoo.png",
@@ -17,17 +23,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialSession = await auth.api.getSession({ headers: await headers() });
+
   return (
-    <html lang="id" className="h-full antialiased">
+    <html lang="en" className={`${plusJakartaSans.variable} h-full antialiased`}>
       <body className="min-h-full bg-neutral-50 text-neutral-900 font-sans flex flex-col selection:bg-neutral-900 selection:text-white">
         <ErrorBoundary>
           <QueryProvider>
-            <SessionProvider>
+            <SessionProvider initialSession={initialSession as SessionData | null}>
               <LanguageProvider>
                 {children}
                 <AppToaster />

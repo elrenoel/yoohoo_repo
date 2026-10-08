@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { ragSql } from "@/lib/rag/db";
@@ -36,7 +37,10 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       if (!locked) throw new Error("SUGGESTION_NOT_FOUND");
       if (locked.to_flashcard_id) return { existing: true, card: { id: locked.to_flashcard_id }, remaining: null };
       const [quota] = await tx`select * from public.consume_generation_quota(${session.user.id},${DAILY_LIMIT})`;
-      const [card] = await tx`insert into public.flashcards(document_id,term,definition) values (${source.document_id},${generated.term.trim()},${generated.definition.trim()}) returning id,term,definition`;
+      const [schema] = await tx<{ hasBlobVariant: boolean }[]>`select exists(select 1 from information_schema.columns where table_schema='public' and table_name='flashcards' and column_name='blob_variant') as "hasBlobVariant"`;
+      const [card] = schema?.hasBlobVariant
+        ? await tx`insert into public.flashcards(document_id,term,definition,blob_variant) values (${source.document_id},${generated.term.trim()},${generated.definition.trim()},${randomInt(1,6)}) returning id,term,definition,blob_variant`
+        : await tx`insert into public.flashcards(document_id,term,definition) values (${source.document_id},${generated.term.trim()},${generated.definition.trim()}) returning id,term,definition`;
       await tx`update public.flashcard_relations set relation_type='linked',to_flashcard_id=${card.id},suggested_term=null,source_chunk_id=null where id=${relation.id} and relation_type='suggested'`;
       return { card, remaining: quota.remaining };
     });

@@ -16,7 +16,7 @@ interface SessionUser {
   lastGenerationDate?: string | null;
 }
 
-interface SessionData {
+export interface SessionData {
   session: {
     id: string;
     userId: string;
@@ -38,7 +38,13 @@ interface SessionContextValue {
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
-export function SessionProvider({ children }: { children: ReactNode }) {
+export function SessionProvider({
+  children,
+  initialSession,
+}: {
+  children: ReactNode;
+  initialSession: SessionData | null;
+}) {
   const queryClient = useQueryClient();
 
   const {
@@ -46,6 +52,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     isPending,
   } = useQuery<SessionData | null>({
     queryKey: ["better-auth-session"],
+    initialData: initialSession,
     queryFn: async () => {
       try {
         const result = await authClient.getSession();
@@ -56,8 +63,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return null;
       }
     },
-    // Fetch once, cache for 10 minutes
-    staleTime: 10 * 60 * 1000,
+    // The initial server-verified session remains fresh for its full lifetime.
+    staleTime: 24 * 60 * 60 * 1000,
+    gcTime: 24 * 60 * 60 * 1000,
     // Don't refetch on window focus — session is cookie-cached server-side
     refetchOnWindowFocus: false,
     // Don't refetch on mount if still fresh

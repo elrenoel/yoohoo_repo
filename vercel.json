@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/post-images/cleanup",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

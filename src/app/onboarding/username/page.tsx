@@ -1,30 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProfileForm from "@/components/profile/ProfileForm";
 import { useSession } from "@/lib/session-provider";
 import { useI18n } from "@/lib/i18n";
+import { useOwnProfile } from "@/hooks/use-own-profile";
 
 export default function UsernameOnboardingPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
   const { t } = useI18n();
-  const [checking, setChecking] = useState(true);
+  const profile = useOwnProfile();
 
   useEffect(() => {
     if (isPending) return;
     if (!session?.user) { router.replace("/login"); return; }
-    let active = true;
-    void fetch("/api/profile", { cache: "no-store" }).then((response) => response.json()).then((data: { profile?: { username: string } }) => {
-      if (!active) return;
-      if (data.profile) router.replace(`/u/${data.profile.username}`);
-      else setChecking(false);
-    }).catch(() => { if (active) setChecking(false); });
-    return () => { active = false; };
-  }, [isPending, router, session?.user]);
+    if (profile.data?.profile) router.replace(`/profile/${profile.data.profile.username}`);
+  }, [isPending, profile.data?.profile, router, session?.user]);
 
-  if (isPending || checking || !session?.user) return <OnboardingSkeleton />;
+  if (isPending || profile.isPending || !session?.user || profile.data?.profile) return <OnboardingSkeleton />;
   return (
     <main className="min-h-screen bg-[#F5F6F3] px-5 py-12 text-[#16241D]">
       <div className="mx-auto max-w-xl border border-[#D8DCD3] bg-[#FAFBF8] p-6 sm:p-10">

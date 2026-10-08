@@ -382,6 +382,7 @@ export type Database = {
       }
       flashcards: {
         Row: {
+          blob_variant: number
           deck_id: string | null
           definition: string
           document_id: string
@@ -391,6 +392,7 @@ export type Database = {
           term: string
         }
         Insert: {
+          blob_variant?: number
           deck_id?: string | null
           definition: string
           document_id: string
@@ -400,6 +402,7 @@ export type Database = {
           term: string
         }
         Update: {
+          blob_variant?: number
           deck_id?: string | null
           definition?: string
           document_id?: string
@@ -868,6 +871,7 @@ export type Database = {
           session_id: string | null
           total: number
           total_time_ms: number | null
+          user_id: string | null
         }
         Insert: {
           answers?: Json
@@ -880,6 +884,7 @@ export type Database = {
           session_id?: string | null
           total: number
           total_time_ms?: number | null
+          user_id?: string | null
         }
         Update: {
           answers?: Json
@@ -892,8 +897,16 @@ export type Database = {
           session_id?: string | null
           total?: number
           total_time_ms?: number | null
+          user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "quiz_attempts_document_id_documents_id_fk"
             columns: ["document_id"]

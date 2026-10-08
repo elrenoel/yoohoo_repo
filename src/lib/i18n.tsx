@@ -30,7 +30,7 @@ const STORAGE_KEY = "yoohoo_lang";
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("id");
+  const [lang, setLangState] = useState<Lang>("en");
 
   // Muat preferensi bahasa dari localStorage saat mount
   useEffect(() => {
@@ -85,7 +85,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 export function useI18n(): I18nContextValue {
   const ctx = useContext(I18nContext);
   if (!ctx) {
-    throw new Error("useI18n harus dipanggil di dalam <LanguageProvider>.");
+    throw new Error("useI18n must be used inside <LanguageProvider>.");
   }
   return ctx;
 }

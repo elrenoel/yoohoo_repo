@@ -3,11 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "@/lib/session-provider";
 import type { OwnProfile } from "@/lib/profile-server";
+import { queryKeys } from "@/lib/query-keys";
 
 export function useOwnProfile() {
   const { data: session, isPending: sessionPending } = useSession();
   const query = useQuery<{ profile: OwnProfile | null }>({
-    queryKey: ["own-profile", session?.user.id],
+    queryKey: queryKeys.profile(session?.user.id),
     queryFn: async () => {
       const response = await fetch("/api/profile", { cache: "no-store" });
       if (!response.ok) throw new Error("Gagal memuat profil.");

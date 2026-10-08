@@ -24,13 +24,13 @@ function getBackHref(pathname: string, documentId: string) {
 
 function getSectionLabel(pathname: string) {
   if (pathname.endsWith("/keywords")) return "Pilih keyword";
-  if (pathname.endsWith("/generate-flashcards")) return "Membuat materi";
+  if (pathname.endsWith("/generate-flashcards")) return "Creating materials";
   if (pathname.endsWith("/flashcards")) return "Flashcards";
-  if (pathname.endsWith("/quiz/results")) return "Hasil Kuis";
+  if (pathname.endsWith("/quiz/results")) return "Quiz results";
   if (pathname.endsWith("/quiz")) return "Quiz";
-  if (pathname.includes("/attempts/")) return "Pembahasan jawaban";
-  if (pathname.endsWith("/attempts")) return "Riwayat quiz";
-  return "Materi";
+  if (pathname.includes("/attempts/")) return "Answer review";
+  if (pathname.endsWith("/attempts")) return "Quiz history";
+  return "Materials";
 }
 
 export default function DocumentWorkspaceHeader({ documentId, title, pageCount, backHref: backHrefOverride }: Props) {
@@ -62,7 +62,7 @@ export default function DocumentWorkspaceHeader({ documentId, title, pageCount, 
       <div className="flex min-h-16 items-center gap-3 px-4 py-2 sm:px-6">
         <Link
           href={backHref}
-          aria-label="Kembali"
+          aria-label="Back"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FDF7EB] text-[#013528] transition hover:bg-white"
         >
           <ChevronLeft className="h-4 w-4" />
@@ -92,9 +92,9 @@ export default function DocumentWorkspaceHeader({ documentId, title, pageCount, 
               </button>
               {menuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-neutral-200 bg-white p-1.5 text-neutral-800 shadow-xl" role="menu">
-                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-neutral-100">Profil</Link>
+                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-neutral-100">Profile</Link>
                   <button type="button" role="menuitem" disabled={isLoggingOut} onClick={() => { setMenuOpen(false); void handleLogout(); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-100 disabled:opacity-50">
-                    <LogOut className="h-4 w-4" /> {isLoggingOut ? "Keluar..." : "Keluar"}
+                    <LogOut className="h-4 w-4" /> {isLoggingOut ? "Logging out..." : "Log out"}
                   </button>
                 </div>
               )}
@@ -105,7 +105,7 @@ export default function DocumentWorkspaceHeader({ documentId, title, pageCount, 
         <div className="flex items-center gap-2 sm:hidden">
           <LanguageSwitcher compact />
           {session?.user && (
-            <Link href="/profile" aria-label="Profil" className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FDF7EB] text-[#013528]"><User className="h-4 w-4" /></Link>
+            <Link href="/profile" aria-label="Profile" className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FDF7EB] text-[#013528]"><User className="h-4 w-4" /></Link>
           )}
         </div>
       </div>

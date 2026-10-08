@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getNotifications, markNotificationRead, markAllNotificationsRead, getUnreadCount } from "@/lib/jobs";
 import { handleApiError } from "@/lib/api-error";
 import { ragSql } from "@/lib/rag/db";
+import { withApiTiming } from "@/lib/api-timing";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,9 @@ export const dynamic = "force-dynamic";
  * - Response: { notifications: [], total: number, unreadCount: number }
  */
 export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({ headers: request.headers });
+  return withApiTiming(request, "GET /api/notifications", async (time) => {
+   try {
+    const session = await time("auth", () => auth.api.getSession({ headers: request.headers }));
     if (!session?.user) {
       return NextResponse.json(
         { success: false, error: "Silakan masuk (login) terlebih dahulu.", requireAuth: true },
@@ -37,16 +39,16 @@ export async function GET(request: NextRequest) {
       catch { return NextResponse.json({ error: "Cursor tidak valid." }, { status: 400 }); }
       if (!cursor.createdAt || !cursor.id) return NextResponse.json({ error: "Cursor tidak valid." }, { status: 400 });
       const sql = ragSql();
-      const rows = await sql`select * from public.notifications where user_id=${session.user.id}
-        and (created_at,id)<(${cursor.createdAt},${cursor.id}) order by created_at desc,id desc limit 21`;
+      const rows = await time("db.notifications", () => sql`select * from public.notifications where user_id=${session.user.id}
+        and (created_at,id)<(${cursor.createdAt},${cursor.id}) order by created_at desc,id desc limit 21`);
       const page = rows.slice(0,20), last = rows.length>20?page.at(-1):null;
       return NextResponse.json({ notifications: page, nextCursor: last ? Buffer.from(JSON.stringify({createdAt:new Date(last.created_at).toISOString(),id:String(last.id)})).toString("base64url") : null });
     }
 
-    const [notifications, totalResult] = await Promise.all([
+    const [notifications, totalResult] = await time("db.notifications", () => Promise.all([
       getNotifications(session.user.id, { limit, offset, unreadOnly }),
       getUnreadCount(session.user.id),
-    ]);
+    ]));
 
     return NextResponse.json({
       success: true,
@@ -59,6 +61,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     return handleApiError(error, "GET /api/notifications");
   }
+  });
 }
 
 /**

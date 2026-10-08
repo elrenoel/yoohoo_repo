@@ -44,8 +44,8 @@ function putWithProgress(uploadUrl: string, headers: Record<string, string>, fil
     };
     xhr.onload = () => xhr.status >= 200 && xhr.status < 300
       ? (onProgress(100), resolve())
-      : reject(new Error(`S3 merespons dengan status ${xhr.status}.`));
-    xhr.onerror = () => reject(new Error("Koneksi ke penyimpanan terputus."));
+      : reject(new Error(`S3 responded with status ${xhr.status}.`));
+    xhr.onerror = () => reject(new Error("The storage connection was interrupted."));
     xhr.send(file);
   });
 }
@@ -97,9 +97,9 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
   useEffect(() => { onCloseRef.current = onClose; onReadyRef.current = onReady; }, [onClose, onReady]);
   useEffect(() => () => { mountedRef.current = false; }, []);
 
-  const heading = title ?? (attaching ? "Upload PDF ke deck ini" : "Upload PDF untuk meja baru");
-  const sub = subtitle ?? (attaching ? deckTitle ?? "" : "Deck baru dibuat otomatis dari materi ini.");
-  const eyebrow = attaching ? "Tambah materi" : "Meja baru";
+  const heading = title ?? (attaching ? "Upload a PDF to this deck" : "Upload a PDF for a new desk");
+  const sub = subtitle ?? (attaching ? deckTitle ?? "" : "A new deck will be created automatically from this material.");
+  const eyebrow = attaching ? "Add material" : "New desk";
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -126,9 +126,9 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
   function pickFile(nextFile: File | null) {
     setError("");
     if (!nextFile) { setFile(null); return; }
-    if (nextFile.type !== "application/pdf" || !nextFile.name.toLowerCase().endsWith(".pdf")) { setFile(null); setError("File harus berupa PDF."); return; }
-    if (nextFile.size <= 0) { setFile(null); setError("PDF kosong dan tidak dapat diupload."); return; }
-    if (nextFile.size > MAX_PDF_BYTES) { setFile(null); setError(`Ukuran PDF maksimal ${formatBytes(MAX_PDF_BYTES)}. File ini berukuran ${formatBytes(nextFile.size)}.`); return; }
+    if (nextFile.type !== "application/pdf" || !nextFile.name.toLowerCase().endsWith(".pdf")) { setFile(null); setError("The file must be a PDF."); return; }
+    if (nextFile.size <= 0) { setFile(null); setError("The PDF is empty and cannot be uploaded."); return; }
+    if (nextFile.size > MAX_PDF_BYTES) { setFile(null); setError(`The maximum PDF size is ${formatBytes(MAX_PDF_BYTES)}. This file is ${formatBytes(nextFile.size)}.`); return; }
     setFile(nextFile);
     if (!name.trim()) setName(nextFile.name.replace(/\.pdf$/i, "").slice(0, 200));
   }
@@ -150,8 +150,8 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
     const fail = (cause: unknown) => {
       const raw = cause instanceof Error ? cause.message : "";
       const fallback = raw === "__TIMEOUT__"
-        ? "Proses lebih lama dari biasanya. Materi tetap diproses di server — cek daftar materi beberapa saat lagi."
-        : raw || "Upload gagal. Silakan coba lagi.";
+        ? "Processing is taking longer than usual. Your material is still being processed—check the material list again shortly."
+        : raw || "Upload failed. Please try again.";
       if (mountedRef.current) { setPhase("failed"); setError(fallback); }
       const options: { id: string | number; action?: { label: string; onClick: () => void } } = { id: toastId };
       // Only offer retry while the overlay is still around to restart the form.
@@ -159,27 +159,27 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
       toast.error(fallback, options);
     };
     try {
-      setMessage("Menyiapkan upload...");
+      setMessage("Preparing upload...");
       const presignResponse = await fetch("/api/documents/presign", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ filename: file.name, contentType: file.type, fileSize: file.size }) });
       const presignBody = await presignResponse.json().catch(() => ({}));
-      if (!presignResponse.ok) throw new Error((presignBody as { error?: string }).error || "Gagal menyiapkan upload.");
+      if (!presignResponse.ok) throw new Error((presignBody as { error?: string }).error || "Could not prepare the upload.");
       const signed = presignBody as { documentId?: unknown; uploadUrl?: unknown; headers?: unknown };
       if (typeof signed.documentId !== "string" || !UUID.test(signed.documentId) || typeof signed.uploadUrl !== "string"
-        || !signed.headers || typeof signed.headers !== "object") throw new Error("Respons server tidak valid.");
-      setMessage("Mengunggah PDF ke penyimpanan...");
+        || !signed.headers || typeof signed.headers !== "object") throw new Error("The server response is invalid.");
+      setMessage("Uploading PDF to storage...");
       await putWithProgress(signed.uploadUrl, signed.headers as Record<string, string>, file, setProgress);
       toast.loading(attaching ? t("toast.upload.processing") : t("toast.desk.creating"), { id: toastId });
-      setMessage("Mendaftarkan dokumen...");
+      setMessage("Registering document...");
       const payload: Record<string, unknown> = { documentId: signed.documentId, filename: file.name,
         title: name.trim() || file.name.replace(/\.pdf$/i, "").slice(0, 200), contentLanguage: lang };
       if (deckId) payload.deckId = deckId;
       const confirmResponse = await fetch("/api/documents/confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const confirmBody = await confirmResponse.json().catch(() => ({}));
-      if (!confirmResponse.ok) throw new Error((confirmBody as { error?: string }).error || "Konfirmasi ditolak.");
+      if (!confirmResponse.ok) throw new Error((confirmBody as { error?: string }).error || "Confirmation was rejected.");
       const confirmedDeckId = typeof (confirmBody as { deckId?: unknown }).deckId === "string" ? (confirmBody as { deckId: string }).deckId : signed.documentId;
       const documentId = signed.documentId;
-      setMessage("Materi sedang diproses AI...");
+      setMessage("AI is processing the material...");
       if (mountedRef.current) setPhase("processing");
       onUploaded?.({ documentId, deckId: confirmedDeckId });
 
@@ -210,18 +210,18 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
             <h2 className="mt-1.5 truncate text-2xl font-semibold tracking-tight">{heading}</h2>
             {sub && <p className="mt-1 truncate text-sm text-[#5E6D63]">{sub}</p>}
           </div>
-          <button type="button" onClick={requestClose} disabled={phase === "uploading"} aria-label="Tutup" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 text-[#466050] transition hover:bg-white hover:text-[#183229] disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
+          <button type="button" onClick={requestClose} disabled={phase === "uploading"} aria-label="Close" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 text-[#466050] transition hover:bg-white hover:text-[#183229] disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
         </div>
 
         <div className="grid flex-1 content-start gap-4 overflow-y-auto px-6 py-5">
           {phase === "processing" ? <div className="rounded-2xl border border-[#C5D2BE] bg-white/75 p-6 text-center">
             <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#244E3D]" />
-            <p className="mt-3 text-sm font-semibold text-[#183229]">Materi sedang diproses AI</p>
-            <p className="mt-1 text-xs leading-relaxed text-[#66736B]">Keyword diekstrak otomatis dari PDF. Panel ini bisa ditutup — statusnya tetap muncul di toast dan materi akan masuk ke daftar.</p>
-            <button type="button" onClick={onClose} className="mt-4 inline-flex rounded-xl bg-[#123F34] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#244E3D]">Tutup sementara</button>
+            <p className="mt-3 text-sm font-semibold text-[#183229]">AI is processing the material</p>
+            <p className="mt-1 text-xs leading-relaxed text-[#66736B]">Keywords are extracted automatically from the PDF. You can close this panel—the status will remain in the toast and the material will appear in the list.</p>
+            <button type="button" onClick={onClose} className="mt-4 inline-flex rounded-xl bg-[#123F34] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#244E3D]">Close for now</button>
           </div> : phase === "failed" ? <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-6 text-center">
             <AlertCircle className="mx-auto h-6 w-6 text-rose-600" />
-            <p className="mt-3 text-sm font-semibold text-rose-700">Upload gagal</p>
+            <p className="mt-3 text-sm font-semibold text-rose-700">Upload failed</p>
             <p className="mt-1 text-xs leading-relaxed text-rose-600">{error}</p>
             <div className="mt-4 flex justify-center gap-2">
               <button type="button" onClick={() => { setPhase("form"); setError(""); }} className="inline-flex items-center gap-1.5 rounded-xl bg-[#123F34] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#244E3D]"><RefreshCw className="h-3.5 w-3.5" />{t("toast.retry")}</button>
@@ -231,21 +231,21 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
             <div onDragOver={event => { event.preventDefault(); if (!busyRef.current) setDrag(true); }} onDragLeave={() => setDrag(false)}
               onDrop={event => { event.preventDefault(); setDrag(false); if (!busyRef.current) pickFile(event.dataTransfer.files.item(0)); }}
               className={`relative rounded-2xl border-2 border-dashed p-6 text-center transition ${drag ? "border-[#244E3D] bg-[#E7F0DF]" : file ? "border-[#B8C4B8] bg-white/70" : "border-[#C8CDC4] bg-white/40 hover:border-[#B8C4B8]"}`}>
-              <input type="file" accept="application/pdf,.pdf" disabled={phase === "uploading"} onChange={event => pickFile(event.target.files?.item(0) ?? null)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" aria-label="Pilih file PDF" />
+              <input type="file" accept="application/pdf,.pdf" disabled={phase === "uploading"} onChange={event => pickFile(event.target.files?.item(0) ?? null)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" aria-label="Choose a PDF file" />
               <div className="pointer-events-none flex flex-col items-center">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EFF1EB] text-[#526159]"><Upload className="h-5 w-5" /></div>
-                {file ? <><p className="mt-2 max-w-full truncate text-sm font-medium text-[#183229]">{file.name}</p><p className="mt-0.5 text-[11px] text-[#66736B]">{formatBytes(file.size)} • Pilih PDF lain untuk mengganti</p></>
-                  : <><p className="mt-2 text-sm font-medium text-[#183229]">Tarik file PDF ke sini, atau pilih file</p><p className="mt-0.5 text-[11px] text-[#66736B]">Mendukung slide kuliah, ebook, dan catatan PDF</p></>}
+                {file ? <><p className="mt-2 max-w-full truncate text-sm font-medium text-[#183229]">{file.name}</p><p className="mt-0.5 text-[11px] text-[#66736B]">{formatBytes(file.size)} • Choose another PDF to replace it</p></>
+                  : <><p className="mt-2 text-sm font-medium text-[#183229]">Drag a PDF here, or choose a file</p><p className="mt-0.5 text-[11px] text-[#66736B]">Supports lecture slides, ebooks, and PDF notes</p></>}
               </div>
             </div>
 
-            <input value={name} onChange={event => setName(event.target.value)} placeholder="Nama materi (opsional)" maxLength={200} disabled={phase === "uploading"}
+            <input value={name} onChange={event => setName(event.target.value)} placeholder="Material name (optional)" maxLength={200} disabled={phase === "uploading"}
               className="w-full rounded-xl border border-[#D8D9D0] bg-white/70 px-3.5 py-2.5 text-sm focus:border-[#244E3D] focus:outline-none disabled:opacity-50" />
 
             <label className="grid gap-1.5">
-              <span className="text-xs font-medium text-[#526159]">Bahasa materi</span>
+              <span className="text-xs font-medium text-[#526159]">Material language</span>
               <select value={lang} onChange={event => setLang(event.target.value)} disabled={phase === "uploading"} className="w-full cursor-pointer rounded-xl border border-[#D8D9D0] bg-white/70 px-3.5 py-2.5 text-sm focus:border-[#244E3D] focus:outline-none disabled:opacity-50">
-                <option value="auto">Sesuai bahasa PDF sumber</option><option value="id">Bahasa Indonesia</option><option value="en">English</option>
+                <option value="auto">Match the source PDF language</option><option value="id">Indonesian</option><option value="en">English</option>
               </select>
             </label>
 
@@ -259,7 +259,7 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
             <button type="button" onClick={() => void submit()} disabled={!file || phase === "uploading"} aria-busy={phase === "uploading"}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#123F34] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#244E3D] disabled:cursor-not-allowed disabled:opacity-50">
               {phase === "uploading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              {phase === "uploading" ? "Sedang mengunggah..." : attaching ? "Upload & proses materi" : "Upload & buat meja"}
+              {phase === "uploading" ? "Uploading..." : attaching ? "Upload & process material" : "Upload & create desk"}
             </button>
           </>}
         </div>

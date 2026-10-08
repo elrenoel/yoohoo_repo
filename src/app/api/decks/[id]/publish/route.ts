@@ -30,7 +30,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           values(${userId},${postPath},${input.caption.slice(0,80)},${input.caption.slice(0,300)},${input.caption},${input.caption},${input.tags.slice(0,3)},${rows[0].id},'published',now()) returning id`;
         await notify(tx,userId,"post_published","Post dipublikasikan","Caption deck kamu sudah tampil di feed.",`/p/${postPath}`,userId,"post",String(posts[0].id));
       }
-      await notify(tx,userId,"deck_published","Deck dipublikasikan",`Deck “${input.title}” sekarang dapat dilihat publik.`,`/d/${slug}`);
+      await notify(tx,userId,"deck_published","Deck dipublikasikan",`Deck “${input.title}” sekarang dapat dilihat publik.`,`/desk/${deckId}?share=1`);
       return { status: 201 as const, deck: rows[0] };
     });
     if (result.status === 404) return Response.json({error:"Deck tidak ditemukan."},{status:404});

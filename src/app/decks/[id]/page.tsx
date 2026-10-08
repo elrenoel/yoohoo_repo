@@ -21,7 +21,6 @@ import UploadMaterialDialog from "@/components/desk/UploadMaterialDialog";
 import GenerateFlashcardsDialog from "@/components/desk/GenerateFlashcardsDialog";
 import { useToast } from "@/lib/toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/lib/query-keys";
 
 type FlashcardPreview = { id: string; term: string; definition: string };
 type DeckDocument = {
@@ -99,7 +98,7 @@ export default function DeckWorkbenchPage() {
     toast.loading("Membuat flashcard dan quiz… Notifikasi muncul saat selesai.");
     setActiveJobId(jobId);
     void fetchDeck().then(applyDeck).catch(() => undefined);
-    void queryClient.invalidateQueries({ queryKey: queryKeys.notifications("all") });
+    void queryClient.invalidateQueries({ queryKey: ["notifications"] });
   }, [toast, queryClient, fetchDeck, applyDeck]);
 
   // Polling status job tiap 4 detik sampai selesai/gagal (UI tidak diblokir).
@@ -124,7 +123,7 @@ export default function DeckWorkbenchPage() {
           setActiveJobId(null);
           toast.error(body.job.errorMessage || "Generate flashcard gagal.");
         }
-        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications("all") });
+        void queryClient.invalidateQueries({ queryKey: ["notifications"] });
       } catch {
         // Koneksi sesaat gagal — biarkan polling berikutnya mencoba lagi.
       }

@@ -12,13 +12,38 @@ export function newDeckSlug(title: string) {
 export async function replaceSnapshot(tx: postgres.TransactionSql, publicDeckId: string, sourceDeckId: string) {
   await tx`delete from public.public_deck_cards where public_deck_id=${publicDeckId}`;
   await tx`delete from public.public_deck_questions where public_deck_id=${publicDeckId}`;
-  await tx`
-    insert into public.public_deck_cards(public_deck_id, position, front, back, content_type)
-    select ${publicDeckId}, row_number() over(order by f.id)::int, f.term, f.definition, 'concept'
-    from public.flashcards f
-    where f.deck_id=${sourceDeckId} or f.document_id in (select document_id from public.deck_documents where deck_id=${sourceDeckId})
-    order by f.id
-  `;
+  const [schema] = await tx<{ hasBlobVariant: boolean }[]>`
+    select exists (
+      select 1 from information_schema.columns
+      where table_schema='public' and table_name='flashcards'
+        and column_name='blob_variant'
+    ) and exists (
+      select 1 from information_schema.columns
+      where table_schema='public' and table_name='public_deck_cards'
+        and column_name='blob_variant'
+    ) as "hasBlobVariant"`;
+  if (schema?.hasBlobVariant) {
+    await tx`
+      insert into public.public_deck_cards(
+        public_deck_id, position, front, back, content_type, blob_variant
+      )
+      select ${publicDeckId}, row_number() over(order by f.id)::int,
+        f.term, f.definition, 'concept', f.blob_variant
+      from public.flashcards f
+      where f.deck_id=${sourceDeckId} or f.document_id in (
+        select document_id from public.deck_documents where deck_id=${sourceDeckId}
+      )
+      order by f.id`;
+  } else {
+    await tx`
+      insert into public.public_deck_cards(public_deck_id, position, front, back, content_type)
+      select ${publicDeckId}, row_number() over(order by f.id)::int, f.term, f.definition, 'concept'
+      from public.flashcards f
+      where f.deck_id=${sourceDeckId} or f.document_id in (
+        select document_id from public.deck_documents where deck_id=${sourceDeckId}
+      )
+      order by f.id`;
+  }
   await tx`
     insert into public.public_deck_questions(public_deck_id, position, question, options, correct_index, explanation, difficulty)
     select ${publicDeckId}, row_number() over(order by qs.created_at, q.id)::int,

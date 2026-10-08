@@ -6,6 +6,21 @@
  * misspelled or mismatched keys.
  */
 export const queryKeys = {
+  feedRoot: ["feed"] as const,
+  feed: ["feed", "following"] as const,
+  feedSuggestions: ["feed", "suggestions"] as const,
+  explore: (filters: { q: string; tab: string; tag: string; sort: string }) =>
+    ["explore", filters] as const,
+  exploreTags: ["explore", "tags"] as const,
+  posts: (userId?: string) => ["posts", userId ?? "guest"] as const,
+  profile: (userId?: string) => ["profile", userId ?? "guest"] as const,
+  publicDeckRoot: ["public-deck"] as const,
+  publicDeck: (slug: string) => ["public-deck", slug] as const,
+  saved: (targetType: "post" | "public_deck") => ["saved", targetType] as const,
+  comments: (targetType: "post" | "public_deck", targetId: string) =>
+    ["comments", targetType, targetId] as const,
+  publicDeckProgress: (deckId: string, userId?: string) =>
+    ["public-deck-progress", deckId, userId ?? "guest"] as const,
   /** Document list (history page) */
   documents: ["documents"] as const,
 
@@ -24,8 +39,10 @@ export const queryKeys = {
 
   /** Notifications */
   notifications: (
+    userId?: string,
     filter?: "all" | "unread",
     limit?: number,
     offset?: number
-  ) => ["notifications", filter ?? "all", limit ?? 20, offset ?? 0] as const,
+  ) => ["notifications", userId ?? "guest", filter ?? "all", limit ?? 50, offset ?? 0] as const,
+  unreadCount: (userId?: string) => ["unread-count", userId ?? "guest"] as const,
 } as const;

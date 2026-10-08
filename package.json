@@ -23,7 +23,11 @@
     "rag:smoke": "tsx scripts/rag-smoke.ts",
     "rag:backfill-core-keywords": "tsx scripts/backfill-core-keywords.ts",
     "api:test": "tsx scripts/test-suite.ts",
-    "test": "tsx scripts/test-suite.ts"
+    "test": "tsx scripts/test-suite.ts",
+    "test:optimistic": "tsx --test src/hooks/use-optimistic-intent-mutation.test.ts src/lib/interaction-notifications.test.ts",
+    "seed:generate": "tsx scripts/seed-generate.ts",
+    "seed:run": "tsx scripts/seed-run.ts",
+    "seed:reset": "tsx scripts/seed-reset.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1140.0",
@@ -50,6 +54,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
+    "sharp": "0.34.4",
     "sonner": "^2.0.8",
     "tailwind-merge": "^3.6.0",
     "unpdf": "^1.8.1",

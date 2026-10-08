@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, ArrowLeft, ArrowUpRight, Bell, Check, Clock3, FileText, Info, Layers3, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Bell, Check, Clock3, FileText, Info, Layers3, Loader2 } from "lucide-react";
 
 type Detail = {
   id: string;
@@ -76,7 +76,6 @@ export default function NotificationDetailPage() {
             {detail.job?.errorMessage && <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 sm:col-span-2"><p className="text-xs font-medium text-rose-700">Detail kegagalan</p><p className="mt-1 text-sm text-rose-700">{detail.job.errorMessage}</p></div>}
           </div>
 
-          {detail.link && <footer className="border-t border-[#E4E6DE] px-6 py-5 sm:px-8"><Link href={detail.link} className="inline-flex items-center gap-2 rounded-xl bg-[#123F34] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#244E3D]">{detail.job?.kind === "quiz_generate" ? "Buka set quiz" : "Buka hasil task"}<ArrowUpRight className="h-4 w-4" /></Link></footer>}
         </article>
       </div>
     </main>

@@ -17,12 +17,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { MOCK_DOCUMENT } from "@/lib/mock-data";
 import Button from "@/components/ui/Button";
+import { Flashcard as FlashcardView } from "@/components/flashcard/Flashcard";
+import { resolveBlobVariant } from "@/lib/flashcard-variant";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 interface Flashcard {
   id: string;
   term: string;
   definition: string;
+  blobVariant?: number | null;
   related_terms?: RelatedTerm[];
 }
 type RelatedTerm = { term: string; type: "linked" | "suggested"; flashcard_id?: string; source_chunk_id?: string; definition?: string };
@@ -87,7 +90,6 @@ export default function FlashcardsPage() {
 
   const [viewState, setViewState] = useState<{ key: number; index: number; flipped: boolean }>({ key: 0, index: 0, flipped: false });
   const [activeRelated, setActiveRelated] = useState<RelatedTerm | null>(null);
-  const [hoveredRelated, setHoveredRelated] = useState<RelatedTerm | null>(null);
   const [addingSuggested, setAddingSuggested] = useState(false);
   const [suggestedError, setSuggestedError] = useState<string | null>(null);
 
@@ -157,27 +159,6 @@ export default function FlashcardsPage() {
       if (targetIndex >= 0) { setCurrentIndex(targetIndex); setIsFlipped(false); setActiveRelated(null); return; }
     }
     setActiveRelated(related);
-  };
-
-  const renderDefinition = (definition: string, related: RelatedTerm[]) => {
-    if (!related.length) return definition;
-    const terms = [...related].sort((a, b) => b.term.length - a.term.length).filter(item => item.term.trim());
-    const pattern = new RegExp(`(${terms.map(item => item.term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`, "gi");
-    const parts = definition.split(pattern);
-    return parts.map((part, index) => {
-      const match = terms.find(item => item.term.toLocaleLowerCase() === part.toLocaleLowerCase());
-      if (!match) return <span key={index}>{part}</span>;
-      return <span key={index} className="relative inline-block" onMouseEnter={() => setHoveredRelated(match)} onMouseLeave={() => setHoveredRelated(null)}>
-        <button type="button" onClick={(event) => { event.stopPropagation(); handleRelatedClick(match); }} className="font-semibold text-[#DFF26D] underline decoration-[#DFF26D]/60 decoration-2 underline-offset-4 hover:text-[#F2FA9E]">{part}</button>
-        {hoveredRelated?.term === match.term && (
-          <span role="tooltip" className="pointer-events-none absolute z-30 bottom-full left-1/2 mb-3 w-64 -translate-x-1/2 rounded-xl border border-[#D8D9D0] bg-white px-3 py-2 text-left text-xs leading-relaxed text-[#183229] shadow-xl">
-            <span className="block font-semibold text-[#123F34] mb-1">{match.term}</span>
-            {match.type === "suggested" ? "Istilah ini disebut di materi, tetapi belum menjadi flashcard." : (match.definition || "Klik untuk membuka flashcard terkait.")}
-            <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-white" />
-          </span>
-        )}
-      </span>;
-    });
   };
 
   const handleAddSuggested = async () => {
@@ -281,66 +262,42 @@ export default function FlashcardsPage() {
               </span>
             </div>
 
-            {/* 3D Flippable Card */}
-            <div
-              onClick={handleToggleFlip}
-              className="w-full aspect-[4/3] sm:aspect-[16/10] max-h-[380px] perspective-1000 cursor-pointer group select-none"
-            >
-              <div
-                className={`w-full h-full relative transform-style-3d transition-transform duration-500 rounded-2xl ${
-                  isFlipped ? "rotate-y-180" : ""
-                }`}
-              >
-                {/* FRONT SIDE (Term) */}
-                <div className="absolute inset-0 bg-white border border-[#D8D9D0] rounded-2xl p-8 flex flex-col justify-between backface-hidden shadow-xs hover:border-[#B8C4B8] transition">
-                  <div className="flex items-center justify-between text-xs text-[#7B877F]">
-                    <span className="font-mono uppercase tracking-wider text-[10px]">{t("flashcards.termLabel")}</span>
-                    <span className="inline-flex items-center gap-1 text-[#7B877F] group-hover:text-[#183229] transition">
-                      <RotateCw className="w-3 h-3" /> {t("flashcards.flipCard")}
-                    </span>
-                  </div>
-
-                  <div className="text-center py-6">
-                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#183229] leading-snug">
-                      {currentCard.term}
-                    </h2>
-                  </div>
-
-                  <div className="text-center text-xs text-[#7B877F] font-mono">
-                    {t("flashcards.clickToReveal")}
-                  </div>
-                </div>
-
-                {/* BACK SIDE (Definition) */}
-                <div className="absolute inset-0 bg-[#123F34] text-white border border-[#123F34] rounded-2xl p-8 flex flex-col justify-between backface-hidden rotate-y-180 shadow-md">
-                  <div className="flex items-center justify-between text-xs text-[#7B877F]">
-                    <span className="font-mono uppercase tracking-wider text-[10px] text-[#AFC4B7]">{t("flashcards.definitionLabel")}</span>
-                    <span className="inline-flex items-center gap-1 text-[#AFC4B7]">
-                      <RotateCw className="w-3 h-3" /> {t("flashcards.flipToTerm")}
-                    </span>
-                  </div>
-
-                  <div className="text-center py-4 px-2">
-                    <p className="text-base sm:text-lg text-[#F4F9F0] leading-relaxed font-normal">
-                      {renderDefinition(currentCard.definition, currentCard.related_terms ?? [])}
-                    </p>
-                    {activeRelated && (currentCard.related_terms ?? []).some(item => item.term === activeRelated.term) && (
-                      <div className="mt-4 rounded-lg border border-[#DFF26D]/40 bg-[#DFF26D]/10 px-3 py-2 text-left text-xs text-[#F4F9D9]">
-                        {activeRelated.type === "suggested" ? <>
-                          <p>Istilah ini ada di materi, tetapi belum menjadi flashcard.</p>
-                          <Button size="sm" className="mt-2" onClick={handleAddSuggested} disabled={addingSuggested}>{addingSuggested ? "Membuat flashcard..." : "Tambahkan flashcard ini"}</Button>
-                        </> : <p><strong>{activeRelated.term}</strong>: {activeRelated.definition}</p>}
-                        {suggestedError && <p className="mt-2 text-rose-300">{suggestedError}</p>}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="text-center text-xs text-[#7B877F] font-mono">
-                    {currentCard.term}
-                  </div>
-                </div>
-              </div>
+            <div className="mx-auto w-full max-w-[420px]">
+              <FlashcardView
+                term={currentCard.term}
+                definition={currentCard.definition}
+                blobVariant={resolveBlobVariant(
+                  currentCard.blobVariant,
+                  currentCard.term,
+                )}
+                relatedTerms={currentCard.related_terms}
+                onRelatedTermClick={handleRelatedClick}
+                flipped={isFlipped}
+                onFlip={setIsFlipped}
+              />
             </div>
+
+            {activeRelated?.type === "suggested" && (
+              <div className="mt-5 w-full rounded-2xl border border-[#D8D9D0] bg-white p-4">
+                <p className="text-xs text-[#526159]">
+                  <strong>{activeRelated.term}</strong> ada di materi tetapi belum
+                  menjadi flashcard.
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-3"
+                  onClick={handleAddSuggested}
+                  disabled={addingSuggested}
+                >
+                  {addingSuggested
+                    ? "Membuat flashcard..."
+                    : "Tambahkan flashcard ini"}
+                </Button>
+                {suggestedError && (
+                  <p className="mt-2 text-xs text-rose-600">{suggestedError}</p>
+                )}
+              </div>
+            )}
 
             {/* Navigation Controls */}
             <div className="flex items-center justify-between w-full mt-8 gap-4">

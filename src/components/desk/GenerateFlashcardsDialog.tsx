@@ -97,13 +97,13 @@ export default function GenerateFlashcardsDialog({
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/decks/${deckId}/documents`, { cache: "no-store" })
-      .then(response => readJson<{ documents: DeckDocument[] }>(response, "Materi tidak dapat dimuat."))
+      .then(response => readJson<{ documents: DeckDocument[] }>(response, "Materials could not be loaded."))
       .then(body => {
         if (cancelled) return;
         setDocuments(body.documents ?? []);
         setError("");
       })
-      .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Materi tidak dapat dimuat."); })
+      .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Materials could not be loaded."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [deckId]);
@@ -133,7 +133,7 @@ export default function GenerateFlashcardsDialog({
       const params = new URLSearchParams({ documentIds: [...selectedDocIds].join(",") });
       const body = await readJson<{ documents: KeywordGroup[] }>(
         await fetch(`/api/decks/${deckId}/keywords?${params}`, { cache: "no-store" }),
-        "Keyword tidak dapat dimuat."
+        "Keywords could not be loaded."
       );
       const groups = mergeTwins(body.documents ?? []);
       setKeywordGroups(groups);
@@ -141,7 +141,7 @@ export default function GenerateFlashcardsDialog({
       const validIds = new Set(groups.flatMap(group => group.keywords.map(keyword => keyword.id)));
       setSelectedIds(previous => new Set([...previous].filter(id => validIds.has(id))));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Keyword tidak dapat dimuat.");
+      setError(cause instanceof Error ? cause.message : "Keywords could not be loaded.");
     } finally {
       setLoading(false);
     }
@@ -224,12 +224,12 @@ export default function GenerateFlashcardsDialog({
             idempotencyKey,
           }),
         }),
-        "Gagal memulai proses generate."
+        "Could not start generation."
       );
       onStarted(body.jobId);
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gagal memulai proses generate.");
+      setError(cause instanceof Error ? cause.message : "Could not start generation.");
       setSubmitting(false);
       busyRef.current = false;
     }
@@ -247,17 +247,17 @@ export default function GenerateFlashcardsDialog({
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[#5B6B62]"><Sparkles className="h-4 w-4" /><p className="font-mono text-[10px] uppercase tracking-[0.2em]">{flashcardTitle}</p></div>
             <h2 className="mt-1.5 truncate font-serif text-2xl font-semibold tracking-tight text-[#16241D]">
-              {step === "documents" ? "1. Pilih materi" : step === "keywords" ? "2. Pilih keyword" : "3. Konfirmasi"}
+              {step === "documents" ? "1. Choose materials" : step === "keywords" ? "2. Choose keywords" : "3. Confirm"}
             </h2>
             <p className="mt-1 text-sm text-[#5B6B62]">
-              {step === "documents" ? "Pilih satu atau lebih materi yang sudah selesai diproses."
-                : step === "keywords" ? "Keyword dipilih dari materi terpilih. Istilah kembar otomatis digabung."
-                : "Periksa ringkasan sebelum memulai proses."}
+              {step === "documents" ? "Choose one or more materials that have finished processing."
+                : step === "keywords" ? "Choose keywords from the selected materials. Duplicate terms are merged automatically."
+                : "Review the summary before starting."}
             </p>
           </div>
           <div className="flex items-center gap-2">
             <span className="rounded-full border border-[#D8DCD3] bg-white px-2.5 py-1 font-mono text-[10px] text-[#5B6B62]">{stepIndex}/3</span>
-            <button type="button" onClick={onClose} disabled={submitting} aria-label="Tutup"
+            <button type="button" onClick={onClose} disabled={submitting} aria-label="Close"
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#D8DCD3] bg-white text-[#16241D] transition hover:bg-[#EFF1EB] disabled:opacity-50">
               <X className="h-4 w-4" />
             </button>
@@ -268,7 +268,7 @@ export default function GenerateFlashcardsDialog({
         <div className="grid flex-1 content-start gap-4 overflow-y-auto px-6 py-5">
           {loading && step !== "confirm" ? (
             <div className="space-y-2.5" role="status">
-              <span className="sr-only">Memuat…</span>
+              <span className="sr-only">Loading...</span>
               {Array.from({ length: 4 }, (_, index) => (
                 <div key={index} className="h-14 rounded-2xl border border-[#D8DCD3] bg-white animate-pulse" />
               ))}
@@ -285,9 +285,9 @@ export default function GenerateFlashcardsDialog({
                   <input type="checkbox" checked={allReadySelected} onChange={toggleAllDocuments}
                     disabled={!readyDocuments.length}
                     className="h-4 w-4 rounded border-[#D8DCD3] accent-[#123F34]" />
-                  Pilih semua ({readyDocuments.length} siap)
+                  Select all ({readyDocuments.length} ready)
                 </label>
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5B6B62]">{selectedDocIds.size} DIPILIH</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5B6B62]">{selectedDocIds.size} SELECTED</span>
               </div>
               <div className="space-y-2">
                 {documents.map(document => {
@@ -301,7 +301,7 @@ export default function GenerateFlashcardsDialog({
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-semibold text-[#16241D]">{document.title}</span>
                         <span className="mt-0.5 block text-[11px] text-[#5B6B62]">
-                          {document.keywordCount} keyword • {document.keywordWithFlashcard} sudah punya kartu
+                          {document.keywordCount} keywords • {document.keywordWithFlashcard} already have cards
                         </span>
                       </span>
                       {document.ready
@@ -314,7 +314,7 @@ export default function GenerateFlashcardsDialog({
                 })}
                 {!documents.length && (
                   <div className="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-[#D8DCD3] bg-white/50 px-6 text-center text-sm text-[#5B6B62]">
-                    Belum ada materi di deck ini.
+                    No materials in this deck yet.
                   </div>
                 )}
               </div>
@@ -325,15 +325,15 @@ export default function GenerateFlashcardsDialog({
                 <div className="relative min-w-52 flex-1">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7A8780]" />
                   <input value={search} onChange={event => setSearch(event.target.value)}
-                    placeholder="Cari keyword…" aria-label="Cari keyword"
+                    placeholder="Search keywords..." aria-label="Search keywords"
                     className="w-full rounded-xl border border-[#D8DCD3] bg-white py-2.5 pl-9 pr-3 text-sm text-[#16241D] placeholder:text-[#9AA69E] focus:border-[#123F34] focus:outline-none" />
                 </div>
                 <button type="button" onClick={() => setStep("documents")}
                   className="inline-flex items-center gap-1.5 rounded-xl border border-[#D8DCD3] bg-white px-3 py-2.5 text-xs font-medium text-[#16241D] transition hover:bg-[#EFF1EB]">
-                  <ArrowLeft className="h-3.5 w-3.5" />Ganti materi
+                  <ArrowLeft className="h-3.5 w-3.5" />Change materials
                 </button>
                 <span className={`rounded-full px-3 py-1.5 font-mono text-[10px] ${overLimit ? "bg-[#FBEDEB] text-[#C24A3D]" : "bg-[#E6EADF] text-[#526159]"}`}>
-                  {keywordCount}/{MAX_KEYWORDS} DIPILIH
+                  {keywordCount}/{MAX_KEYWORDS} SELECTED
                 </span>
               </div>
 
@@ -348,7 +348,7 @@ export default function GenerateFlashcardsDialog({
                       <span className="font-mono text-[10px] text-[#5B6B62]">{group.keywords.length} KEYWORD</span>
                       <button type="button" onClick={() => toggleDocumentKeywords(group)}
                         className="text-[11px] font-medium text-[#244E3D] transition hover:underline">
-                        {isDocumentFullySelected(group) ? "Hapus semua" : "Pilih semua"}
+                        {isDocumentFullySelected(group) ? "Clear all" : "Select all"}
                       </button>
                     </div>
                   </div>
@@ -357,7 +357,7 @@ export default function GenerateFlashcardsDialog({
                       const disabled = keyword.alreadyHasFlashcard;
                       const ids = eligibleIds(keyword);
                       const checked = ids.length > 0 && ids.every(id => selectedIds.has(id));
-                      const twinLabel = keyword.twinIds.length > 0 ? `kembar di ${keyword.twinIds.length + 1} materi` : null;
+                      const twinLabel = keyword.twinIds.length > 0 ? `duplicate in ${keyword.twinIds.length + 1} materials` : null;
                       return (
                         <label key={keyword.id}
                           className={`flex items-start gap-3 rounded-xl border p-3 transition ${disabled ? "cursor-not-allowed border-[#E3E5DE] bg-[#EFF1EB]/60 opacity-75" : checked ? "border-[#123F34] bg-white" : "border-transparent bg-white/60 hover:border-[#D8DCD3]"}`}>
@@ -367,7 +367,7 @@ export default function GenerateFlashcardsDialog({
                           <span className="min-w-0 flex-1">
                             <span className="flex flex-wrap items-center gap-2">
                               <span className="text-sm font-semibold text-[#16241D]">{keyword.term}</span>
-                              {disabled && <span className="rounded-full border border-[#D8DCD3] bg-[#EFF1EB] px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-[#5B6B62]">sudah ada</span>}
+                              {disabled && <span className="rounded-full border border-[#D8DCD3] bg-[#EFF1EB] px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-[#5B6B62]">already exists</span>}
                               {!disabled && twinLabel && <span className="rounded-full bg-[#E6EADF] px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-[#526159]">{twinLabel}</span>}
                             </span>
                             {keyword.snippet && <span className="mt-0.5 line-clamp-2 block text-xs leading-relaxed text-[#66736B]">{keyword.snippet}</span>}
@@ -375,28 +375,28 @@ export default function GenerateFlashcardsDialog({
                         </label>
                       );
                     })}
-                    {!group.keywords.length && <p className="px-1 py-2 text-xs text-[#5B6B62]">Tidak ada keyword yang cocok.</p>}
+                    {!group.keywords.length && <p className="px-1 py-2 text-xs text-[#5B6B62]">No matching keywords.</p>}
                   </div>
                 </section>
               ))}
               {!filteredGroups.length && (
                 <div className="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-[#D8DCD3] bg-white/50 px-6 text-center text-sm text-[#5B6B62]">
-                  {search ? "Tidak ada keyword yang cocok dengan pencarian." : "Belum ada keyword pada materi terpilih."}
+                  {search ? "No keywords match your search." : "The selected materials do not have keywords yet."}
                 </div>
               )}
             </>
           ) : (
             <div className="space-y-4">
               <div className="rounded-2xl border border-[#D8DCD3] bg-white p-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5B6B62]">RINGKASAN</p>
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5B6B62]">SUMMARY</p>
                 <div className="mt-3 grid grid-cols-2 gap-3">
                   <div className="rounded-xl border border-[#D8DCD3] bg-[#F5F6F3] p-4">
                     <p className="font-serif text-3xl font-semibold text-[#16241D]">{selectedDocIds.size}</p>
-                    <p className="mt-0.5 text-xs text-[#5B6B62]">materi terpilih</p>
+                    <p className="mt-0.5 text-xs text-[#5B6B62]">selected materials</p>
                   </div>
                   <div className="rounded-xl border border-[#D8DCD3] bg-[#F5F6F3] p-4">
                     <p className={`font-serif text-3xl font-semibold ${overLimit ? "text-[#C24A3D]" : "text-[#16241D]"}`}>{keywordCount}</p>
-                    <p className="mt-0.5 text-xs text-[#5B6B62]">keyword (maks {MAX_KEYWORDS})</p>
+                    <p className="mt-0.5 text-xs text-[#5B6B62]">keywords (max {MAX_KEYWORDS})</p>
                   </div>
                 </div>
                 <ul className="mt-4 space-y-1.5">
@@ -415,13 +415,13 @@ export default function GenerateFlashcardsDialog({
               {overLimit && (
                 <div className="flex items-start gap-3 rounded-2xl border border-[#F0C4BE] bg-[#FBEDEB] p-4">
                   <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#C24A3D]" />
-                  <p className="text-sm text-[#C24A3D]">Jumlah keyword melebihi batas {MAX_KEYWORDS}. Kembali dan kurangi pilihan.</p>
+                  <p className="text-sm text-[#C24A3D]">The keyword count exceeds the {MAX_KEYWORDS} limit. Go back and reduce your selection.</p>
                 </div>
               )}
               {!canGenerate && !overLimit && (
                 <div className="flex items-start gap-3 rounded-2xl border border-[#D8DCD3] bg-white p-4">
                   <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#5B6B62]" />
-                  <p className="text-sm text-[#5B6B62]">Pilih setidaknya satu keyword untuk melanjutkan.</p>
+                  <p className="text-sm text-[#5B6B62]">Select at least one keyword to continue.</p>
                 </div>
               )}
             </div>
@@ -440,24 +440,24 @@ export default function GenerateFlashcardsDialog({
             onClick={() => step === "documents" ? onClose() : step === "keywords" ? setStep("documents") : setStep("keywords")}
             disabled={submitting}
             className="inline-flex items-center gap-1.5 rounded-xl border border-[#D8DCD3] bg-white px-4 py-2.5 text-sm font-medium text-[#16241D] transition hover:bg-[#F5F6F3] disabled:opacity-50">
-            <ArrowLeft className="h-4 w-4" />{step === "documents" ? "Batal" : "Kembali"}
+            <ArrowLeft className="h-4 w-4" />{step === "documents" ? "Cancel" : "Back"}
           </button>
 
           {step === "documents" ? (
             <button type="button" onClick={() => void goToKeywords()} disabled={!selectedDocIds.size}
               className="inline-flex items-center gap-1.5 rounded-xl bg-[#123F34] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244E3D] disabled:cursor-not-allowed disabled:opacity-50">
-              Pilih keyword <ArrowRight className="h-4 w-4" />
+              Choose keywords <ArrowRight className="h-4 w-4" />
             </button>
           ) : step === "keywords" ? (
             <button type="button" onClick={() => setStep("confirm")} disabled={!keywordCount}
               className="inline-flex items-center gap-1.5 rounded-xl bg-[#123F34] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244E3D] disabled:cursor-not-allowed disabled:opacity-50">
-              Tinjau <ArrowRight className="h-4 w-4" />
+              Review <ArrowRight className="h-4 w-4" />
             </button>
           ) : (
             <button type="button" onClick={() => void submit()} disabled={!canGenerate || submitting} aria-busy={submitting}
               className="inline-flex items-center gap-2 rounded-xl bg-[#123F34] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244E3D] disabled:cursor-not-allowed disabled:opacity-50">
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCheck className="h-4 w-4" />}
-              {submitting ? "Memulai…" : `Generate ${keywordCount} flashcard`}
+              {submitting ? "Starting..." : `Generate ${keywordCount} flashcards`}
             </button>
           )}
         </div>

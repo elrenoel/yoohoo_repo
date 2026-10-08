@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useSession } from "@/lib/session-provider";
 import { useToast } from "@/lib/toast";
 import {
@@ -10,6 +11,8 @@ import {
   AlertTriangle,
   Info,
   ArrowUpRight,
+  Bookmark,
+  Repeat2,
 } from "lucide-react";
 import { useNotifications } from "@/hooks/use-notifications";
 
@@ -24,6 +27,8 @@ const severityIcons = {
   success: Check,
   error: AlertTriangle,
 } as const;
+
+const interactionIcons = { repost: Repeat2, save: Bookmark } as const;
 
 type NotificationRow = {
   id: string;
@@ -59,12 +64,14 @@ function NotificationItem({
   onNotificationClick: (notification: NotificationRow) => void;
 }) {
   const severity = notification.severity || "info";
-  const Icon = severityIcons[severity as keyof typeof severityIcons] || Info;
+  const Icon = notification.type === "repost" || notification.type === "save"
+    ? interactionIcons[notification.type]
+    : severityIcons[severity as keyof typeof severityIcons] || Info;
   const isRead = !!notification.read_at;
 
   return (
     <Link
-      href={`/notifications/${notification.id}`}
+      href={notification.link || `/notifications/${notification.id}`}
       onClick={() => onNotificationClick(notification)}
       className={`flex gap-3 rounded-xl border p-4 transition ${
         isRead
@@ -107,19 +114,19 @@ export default function NotificationsPage() {
   const { data: session } = useSession();
   const toast = useToast();
   const { t } = toast;
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const { notifications, unreadCount, isLoading, markRead, markAllRead } =
-    useNotifications();
+    useNotifications({ limit: 50 });
 
-  async function handleNotificationClick(notification: NotificationRow) {
-    if (notification.link && !notification.read_at) {
-      await markRead(notification.id);
+  function handleNotificationClick(notification: NotificationRow) {
+    if (!notification.read_at) {
+      void markRead(notification.id);
     }
   }
 
-  async function handleMarkAllRead() {
-    await markAllRead();
-    toast.success(t("toast.dismiss") + " Notifikasi");
+  function handleMarkAllRead() {
+    void markAllRead().then(success => { if (success) toast.success(t("toast.dismiss") + " Notifikasi"); });
   }
 
   if (!session?.user) {
@@ -192,18 +199,29 @@ export default function NotificationsPage() {
             <Bell className="h-10 w-10 text-[#A4ADA6]" />
             <h2 className="mt-4 font-semibold">Tidak ada notifikasi</h2>
             <p className="mt-1 text-sm text-[#5B6B62]">
-              Notifikasi muncul saat ada perubahan status job.
+              Aktivitas belajar dan interaksi sosial akan muncul di sini.
             </p>
           </div>
         ) : (
           <div className="space-y-2">
-            {notifications.map((notification) => (
+            {notifications.slice(0, visibleCount).map((notification) => (
               <NotificationItem
                 key={notification.id}
                 notification={notification}
                 onNotificationClick={handleNotificationClick}
               />
             ))}
+            {visibleCount < notifications.length && (
+              <div className="flex justify-center pt-5">
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((count) => count + 10)}
+                  className="rounded-xl border border-[#C9D2C8] bg-white px-5 py-2.5 text-sm font-semibold text-[#164C3D] transition hover:bg-[#EEF3ED]"
+                >
+                  Lihat lebih banyak
+                </button>
+              </div>
+            )}
             {notifications.length === 0 && unreadCount === 0 && (
               <div className="text-center py-8 text-sm text-[#5B6B62]">
                 Belum ada notifikasi untuk ditampilkan.
