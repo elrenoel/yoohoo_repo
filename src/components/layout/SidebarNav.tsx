@@ -26,6 +26,7 @@ import { useAccountActions } from "@/hooks/use-account-actions";
 import { useLanguage } from "@/hooks/use-language";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import { useOwnProfile } from "@/hooks/use-own-profile";
+import ThemeSelector from "@/components/theme/ThemeSelector";
 
 type NavigationItem = { href: string; label: string; icon: LucideIcon };
 
@@ -155,6 +156,7 @@ export default function SidebarNav() {
               <Link href="/settings" role="menuitem" onClick={() => setDesktopMoreOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#5B6B62] hover:bg-[#F0F3EE]"><Settings className="h-4 w-4" />Settings</Link>
               <Link href="/trash" role="menuitem" onClick={() => setDesktopMoreOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-[#5B6B62] hover:bg-[#F0F3EE]"><Trash2 className="h-4 w-4" />Trash</Link>
               <div className="my-1 h-px bg-[#E5E8E2]" />
+              <ThemeSelector />
               <LanguageSwitcher mobile />
               <button type="button" role="menuitem" onClick={() => void handleLogout()} disabled={isLoggingOut} className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-[#5B6B62] hover:bg-[#F0F3EE] disabled:opacity-50"><LogOut className="h-4 w-4" />{isLoggingOut ? "Logging out..." : t("nav.logout")}</button>
             </div>}
@@ -198,6 +200,7 @@ export default function SidebarNav() {
                 />
               ))}
               <div className="my-2 h-px bg-neutral-100" />
+              <ThemeSelector />
               <LanguageSwitcher mobile />
               <button
                 type="button"

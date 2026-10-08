@@ -1,24 +1,187 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @theme {
   --font-sans: var(--font-plus-jakarta-sans), system-ui, sans-serif;
   --font-serif: var(--font-plus-jakarta-sans), system-ui, sans-serif;
   --font-mono: var(--font-plus-jakarta-sans), system-ui, sans-serif;
 }
 
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-hover: var(--surface-hover);
+  --color-overlay: var(--overlay);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-on-accent: var(--on-accent);
+  --color-action-primary: var(--action-primary);
+  --color-action-primary-hover: var(--action-primary-hover);
+  --color-on-action-primary: var(--on-action-primary);
+  --color-success: var(--success);
+  --color-success-hover: var(--success-hover);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-border: var(--success-border);
+  --color-success-text: var(--success-text);
+  --color-on-success: var(--on-success);
+  --color-warning: var(--warning);
+  --color-warning-hover: var(--warning-hover);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-border: var(--warning-border);
+  --color-warning-text: var(--warning-text);
+  --color-on-warning: var(--on-warning);
+  --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-border: var(--danger-border);
+  --color-danger-text: var(--danger-text);
+  --color-on-danger: var(--on-danger);
+  --color-focus-ring: var(--focus-ring);
+  --color-skeleton: var(--skeleton);
+  --color-skeleton-highlight: var(--skeleton-highlight);
+}
+
 :root {
-  --background: #fafafa;
-  --foreground: #171717;
-  --card-bg: #ffffff;
-  --border-color: #e5e7eb;
+  color-scheme: light;
+
+  /* Canvas and surfaces: preserve the existing light theme exactly. */
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-subtle: #f5f5f5;
+  --surface-hover: #fafafa;
+  --overlay: rgb(23 23 23 / 30%);
+
+  /* Content and structure. */
+  --border: #e5e5e5;
+  --border-strong: #a3a3a3;
+  --text: #171717;
+  --text-secondary: #525252;
+  --text-muted: #737373;
+
+  /* Brand and interaction. */
+  --accent: #013528;
+  --accent-hover: #164c3d;
+  --accent-subtle: #e4f0e8;
+  --on-accent: #ffffff;
+  --action-primary: #171717;
+  --action-primary-hover: #262626;
+  --on-action-primary: #ffffff;
+
+  /* Feedback states. */
+  --success: #047857;
+  --success-hover: #065f46;
+  --success-subtle: #eef5f0;
+  --success-border: #bfd6c4;
+  --success-text: #2f7651;
+  --on-success: #ffffff;
+  --warning: #b45309;
+  --warning-hover: #92400e;
+  --warning-subtle: #fffbeb;
+  --warning-border: #fde68a;
+  --warning-text: #92400e;
+  --on-warning: #ffffff;
+  --danger: #e11d48;
+  --danger-hover: #be123c;
+  --danger-subtle: #fbedeb;
+  --danger-border: #f0c4be;
+  --danger-text: #c24a3d;
+  --on-danger: #ffffff;
+
+  /* System UI. */
+  --focus-ring: #aadd66;
+  --focus-offset: #fafafa;
+  --skeleton: #f5f5f5;
+  --skeleton-highlight: #ffffff;
+  --scrollbar-track: #f5f5f5;
+  --scrollbar-thumb: #a3a3a3;
+  --scrollbar-thumb-hover: #737373;
+  --selection-bg: #171717;
+  --selection-text: #ffffff;
+  --shadow-color: rgb(22 36 29 / 16%);
+
+  /* Compatibility aliases while areas migrate to semantic utilities. */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card-bg: var(--surface);
+  --border-color: var(--border);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0c120f;
+  --surface: #131b17;
+  --surface-raised: #1a2420;
+  --surface-subtle: #1a2420;
+  --surface-hover: #202d27;
+  --overlay: rgb(12 18 15 / 72%);
+
+  --border: #26332d;
+  --border-strong: #3a4b43;
+  --text: #e8eee9;
+  --text-secondary: #9aa9a0;
+  --text-muted: #6f7f76;
+
+  --accent: #aadd66;
+  --accent-hover: #bfe883;
+  --accent-subtle: rgb(170 221 102 / 12%);
+  --on-accent: #0c120f;
+  --action-primary: #aadd66;
+  --action-primary-hover: #bfe883;
+  --on-action-primary: #0c120f;
+
+  --success: #78bd95;
+  --success-hover: #91cda9;
+  --success-subtle: rgb(120 189 149 / 12%);
+  --success-border: rgb(120 189 149 / 28%);
+  --success-text: #9bd8b3;
+  --on-success: #0c120f;
+  --warning: #d6b46c;
+  --warning-hover: #e4c987;
+  --warning-subtle: rgb(214 180 108 / 12%);
+  --warning-border: rgb(214 180 108 / 28%);
+  --warning-text: #e8c87c;
+  --on-warning: #0c120f;
+  --danger: #f27b6b;
+  --danger-hover: #ff9587;
+  --danger-subtle: rgb(242 123 107 / 12%);
+  --danger-border: rgb(242 123 107 / 28%);
+  --danger-text: #f69a8e;
+  --on-danger: #0c120f;
+
+  --focus-ring: #aadd66;
+  --focus-offset: #0c120f;
+  --skeleton: #1a2420;
+  --skeleton-highlight: #26332d;
+  --scrollbar-track: #131b17;
+  --scrollbar-thumb: #3a4b43;
+  --scrollbar-thumb-hover: #52645b;
+  --selection-bg: #aadd66;
+  --selection-text: #0c120f;
+  --shadow-color: transparent;
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
+  background-color: var(--bg);
+  color: var(--text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--selection-bg);
+  color: var(--selection-text);
 }
 
 /* 3D Flip Card Utilities */

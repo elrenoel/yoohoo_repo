@@ -10,6 +10,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import type { SessionData } from "@/lib/session-provider";
+import ThemeProvider from "@/components/theme/ThemeProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", variable: "--font-plus-jakarta-sans" });
 
@@ -31,18 +32,27 @@ export default async function RootLayout({
   const initialSession = await auth.api.getSession({ headers: await headers() });
 
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} h-full antialiased`}>
-      <body className="min-h-full bg-neutral-50 text-neutral-900 font-sans flex flex-col selection:bg-neutral-900 selection:text-white">
-        <ErrorBoundary>
-          <QueryProvider>
-            <SessionProvider initialSession={initialSession as SessionData | null}>
-              <LanguageProvider>
-                {children}
-                <AppToaster />
-              </LanguageProvider>
-            </SessionProvider>
-          </QueryProvider>
-        </ErrorBoundary>
+    <html lang="en" className={`${plusJakartaSans.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="min-h-full bg-bg text-text font-sans flex flex-col">
+        <ThemeProvider
+          attribute="data-theme"
+          defaultTheme="system"
+          enableSystem
+          enableColorScheme
+          disableTransitionOnChange
+          storageKey="yoohoo-theme"
+        >
+          <ErrorBoundary>
+            <QueryProvider>
+              <SessionProvider initialSession={initialSession as SessionData | null}>
+                <LanguageProvider>
+                  {children}
+                  <AppToaster />
+                </LanguageProvider>
+              </SessionProvider>
+            </QueryProvider>
+          </ErrorBoundary>
+        </ThemeProvider>
       </body>
     </html>
   );
