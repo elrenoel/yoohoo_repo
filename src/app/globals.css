@@ -125,6 +125,10 @@
   --chrome-muted: rgb(253 247 235 / 70%);
   --chrome-hover: rgb(253 247 235 / 10%);
   --chrome-border: rgb(253 247 235 / 20%);
+  --google-blue: #4285f4;
+  --google-green: #34a853;
+  --google-yellow: #fbbc05;
+  --google-red: #ea4335;
 
   --toast-normal-bg: #f5f6f3;
   --toast-normal-text: #16241d;
