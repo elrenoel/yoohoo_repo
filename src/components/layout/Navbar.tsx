@@ -121,14 +121,13 @@ export default function Navbar({
       {/* Trigger button */}
       <button
         onClick={() => setMenuOpen((o) => !o)}
-        className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#FDF7EB] border border-[#FDF7EB]/30 text-xs font-medium transition cursor-pointer"
-        style={{ color: '#041914' }}
+        className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-control-subtle border border-chrome-border text-control-text text-xs font-medium transition cursor-pointer"
       >
-        <UserIcon className="w-3.5 h-3.5" style={{ color: '#041914' }} />
+        <UserIcon className="w-3.5 h-3.5" />
         <span className="hidden sm:inline truncate max-w-[100px]">
           {session.user.name || session.user.email}
         </span>
-        <EllipsisVertical className="w-3.5 h-3.5" style={{ color: '#041914' }} />
+        <EllipsisVertical className="w-3.5 h-3.5" />
       </button>
 
       {/* Dropdown overlay + panel */}
@@ -137,15 +136,14 @@ export default function Navbar({
         onClick={() => setMenuOpen(false)}
       />
       <div
-        className={`absolute right-0 mt-2 w-56 rounded-xl shadow-lg z-50 overflow-hidden transition-all duration-200 ease-out origin-top-right ${menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"}`}
-        style={{ backgroundColor: '#FDF7EB' }}
+        className={`absolute right-0 mt-2 w-56 rounded-xl border border-border bg-surface-raised text-text shadow-lg dark:shadow-none z-50 overflow-hidden transition-all duration-200 ease-out origin-top-right ${menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"}`}
       >
         {/* User info header */}
-        <div className="px-4 py-3" style={{ borderBottom: '1px solid #ccc' }}>
-          <p className="text-sm font-medium truncate" style={{ color: '#041914' }}>
+        <div className="border-b border-border px-4 py-3">
+          <p className="text-sm font-medium truncate text-text">
             {session.user.name}
           </p>
-          <p className="text-xs truncate mt-0.5" style={{ color: '#041914', opacity: 0.7 }}>
+          <p className="text-xs truncate mt-0.5 text-text-secondary">
             {session.user.email}
           </p>
         </div>
@@ -155,22 +153,20 @@ export default function Navbar({
           <Link
             href="/trash"
             onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-[#EDEABF] transition-colors"
-            style={{ color: '#041914' }}
+            className="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-hover hover:text-text transition-colors"
           >
-            <Trash2 className="w-4 h-4" style={{ color: '#041914' }} />
+            <Trash2 className="w-4 h-4" />
             {t("nav.trash")}
           </Link>
         </div>
 
         {/* Logout */}
-        <div className="py-1.5" style={{ borderTop: '1px solid #ccc' }}>
+        <div className="border-t border-border py-1.5">
           <button
             onClick={() => { setMenuOpen(false); handleLogout(); }}
             disabled={isLoggingOut}
             title={t("nav.logoutTitle")}
-            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm transition-colors disabled:opacity-50 cursor-pointer"
-            style={{ color: '#041914' }}
+            className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-hover hover:text-text transition-colors disabled:opacity-50 cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             {t("nav.logout")}
@@ -189,15 +185,13 @@ export default function Navbar({
         <div className="flex items-center gap-2">
           <Link
             href="/login"
-            className="px-3 py-1.5 text-xs font-medium transition"
-            style={{ color: '#FDF7EB' }}
+            className="px-3 py-1.5 text-xs font-medium text-chrome-text transition"
           >
             {t("nav.login")}
           </Link>
           <Link
             href="/register"
-            className="px-3.5 py-1.5 text-xs font-medium rounded-lg transition shadow-2xs"
-            style={{ backgroundColor: '#FDF7EB', color: '#013528' }}
+            className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-control-subtle text-control-text transition shadow-2xs dark:shadow-none"
           >
             {t("nav.register")}
           </Link>
@@ -211,18 +205,18 @@ export default function Navbar({
     <div className="flex items-center gap-3 min-w-0">
       <Link
         href={backHref}
-        className="w-8 h-8 rounded-lg bg-[#FDF7EB] hover:bg-[#FDF7EB]/50 flex items-center justify-center text-neutral-900 transition shrink-0"
+        className="w-8 h-8 rounded-lg bg-control-subtle hover:opacity-80 flex items-center justify-center text-control-text transition shrink-0"
         title={t("error.backToHome")}
       >
         <ChevronLeft className="w-4 h-4" />
       </Link>
       {title && (
         <div className="min-w-0">
-          <h1 className="font-semibold text-[#FDF7EB] text-sm sm:text-base tracking-tight truncate max-w-[160px] sm:max-w-md">
+          <h1 className="font-semibold text-chrome-text text-sm sm:text-base tracking-tight truncate max-w-[160px] sm:max-w-md">
             {title}
           </h1>
           {subtitle && (
-            <p className="text-[11px] text-[#FDF7EB] font-mono">{subtitle}</p>
+            <p className="text-[11px] text-chrome-muted font-mono">{subtitle}</p>
           )}
         </div>
       )}
@@ -234,7 +228,7 @@ export default function Navbar({
         alt="Yoohoo logo"
         className="w-8 h-8 rounded-lg object-contain"
       />
-      <span className="font-semibold tracking-tight text-lg" style={{ color: '#FDF7EB' }}>
+      <span className="font-semibold tracking-tight text-lg text-chrome-text">
         Yoohoo
       </span>
     </Link>
@@ -245,8 +239,7 @@ export default function Navbar({
     <button
       ref={mobileMenuButtonRef}
       onClick={toggleMobileMenu}
-      className="sm:hidden w-9 h-9 rounded-lg flex items-center justify-center transition cursor-pointer"
-      style={{ color: '#FDF7EB' }}
+      className="sm:hidden w-9 h-9 rounded-lg flex items-center justify-center text-chrome-text transition cursor-pointer"
       aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
       aria-expanded={mobileMenuOpen}
     >
@@ -264,7 +257,7 @@ export default function Navbar({
   // ── Render ────────────────────────────────────────────────────────────
   return (
     <>
-      <header className="bg-[#013528] sticky top-0 z-20">
+      <header className="bg-chrome sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
             {leftSection}
 
@@ -275,8 +268,7 @@ export default function Navbar({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={link.isActive ? "px-3 py-1.5 text-xs font-semibold rounded-lg transition" : "px-3 py-1.5 text-xs font-medium rounded-lg transition"}
-                  style={{ color: '#FDF7EB' }}
+                  className={link.isActive ? "px-3 py-1.5 text-xs font-semibold rounded-lg bg-chrome-hover text-chrome-text transition" : "px-3 py-1.5 text-xs font-medium rounded-lg text-chrome-text hover:bg-chrome-hover transition"}
                 >
                   {link.label}
                 </Link>
@@ -304,7 +296,7 @@ export default function Navbar({
 
       {/* ── Mobile menu overlay ────────────────────────────────────────── */}
       <div
-        className={`fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity duration-300 sm:hidden ${mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 z-40 bg-overlay backdrop-blur-sm transition-opacity duration-300 sm:hidden ${mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
         onClick={() => setMobileMenuOpen(false)}
         aria-hidden="true"
       />
@@ -314,7 +306,7 @@ export default function Navbar({
         ref={mobileMenuRef}
         className={`fixed top-[56px] left-0 right-0 z-50 sm:hidden transition-all duration-300 ease-out ${mobileMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}
       >
-        <div className="bg-[#013528] border-b border-neutral-700 shadow-xl max-h-[calc(100vh-56px)] overflow-y-auto">
+        <div className="bg-chrome border-b border-chrome-border shadow-xl dark:shadow-none max-h-[calc(100vh-56px)] overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 py-4 flex flex-col gap-1">
             {/* Nav links for logged-in users */}
             {session?.user && !backHref && (
@@ -324,13 +316,12 @@ export default function Navbar({
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-4 py-2.5 rounded-lg text-sm font-medium transition ${link.isActive ? "bg-white/10" : "hover:bg-white/5"}`}
-                    style={{ color: '#FDF7EB' }}
+                    className={`px-4 py-2.5 rounded-lg text-sm font-medium text-chrome-text transition ${link.isActive ? "bg-chrome-hover" : "hover:bg-chrome-hover"}`}
                   >
                     {link.label}
                   </Link>
                 ))}
-                <div className="h-px bg-white/10 my-2" />
+                <div className="h-px bg-chrome-border my-2" />
               </>
             )}
 
@@ -338,7 +329,7 @@ export default function Navbar({
             {!session?.user && centerContent && (
               <>
                 <div className="px-4 py-2">{centerContent}</div>
-                <div className="h-px bg-white/10 my-2" />
+                <div className="h-px bg-chrome-border my-2" />
               </>
             )}
 
@@ -348,18 +339,18 @@ export default function Navbar({
             {/* Auth section for logged-in users */}
             {session?.user ? (
               <>
-                <div className="h-px bg-white/10 my-2" />
+                <div className="h-px bg-chrome-border my-2" />
                 <div className="px-4 py-2">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                      <UserIcon className="w-4 h-4" style={{ color: '#FDF7EB' }} />
+                    <div className="w-8 h-8 rounded-full bg-chrome-hover text-chrome-text flex items-center justify-center">
+                      <UserIcon className="w-4 h-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium truncate" style={{ color: '#FDF7EB' }}>
+                      <p className="text-sm font-medium truncate text-chrome-text">
                         {session.user.name || session.user.email}
                       </p>
                       {session.user.name && session.user.email && (
-                        <p className="text-xs truncate" style={{ color: '#FDF7EB', opacity: 0.6 }}>
+                        <p className="text-xs truncate text-chrome-muted">
                           {session.user.email}
                         </p>
                       )}
@@ -370,8 +361,7 @@ export default function Navbar({
                     <Link
                       href="/trash"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-white/5 transition"
-                      style={{ color: '#FDF7EB' }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-chrome-text hover:bg-chrome-hover transition"
                     >
                       <Trash2 className="w-4 h-4" />
                       {t("nav.trash")}
@@ -380,8 +370,7 @@ export default function Navbar({
                       onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
                       disabled={isLoggingOut}
                       title={t("nav.logoutTitle")}
-                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm hover:bg-white/5 transition disabled:opacity-50 cursor-pointer text-left w-full"
-                      style={{ color: '#FDF7EB' }}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-chrome-text hover:bg-chrome-hover transition disabled:opacity-50 cursor-pointer text-left w-full"
                     >
                       <LogOut className="w-4 h-4" />
                       {t("nav.logout")}
@@ -392,21 +381,19 @@ export default function Navbar({
             ) : (
               <>
                 {/* Auth buttons for guests */}
-                <div className="h-px bg-white/10 my-2" />
+                <div className="h-px bg-chrome-border my-2" />
                 <div className="px-4 py-2 flex flex-col gap-2">
                   <Link
                     href="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-2.5 text-sm font-medium rounded-lg text-center transition border"
-                    style={{ color: '#FDF7EB', borderColor: 'rgba(255,255,255,0.2)' }}
+                    className="px-4 py-2.5 text-sm font-medium rounded-lg text-center text-chrome-text transition border border-chrome-border"
                   >
                     {t("nav.login")}
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="px-4 py-2.5 text-sm font-medium rounded-lg text-center transition"
-                    style={{ backgroundColor: '#FDF7EB', color: '#013528' }}
+                    className="px-4 py-2.5 text-sm font-medium rounded-lg text-center bg-control-subtle text-control-text transition"
                   >
                     {t("nav.register")}
                   </Link>
