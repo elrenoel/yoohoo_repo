@@ -4,7 +4,7 @@ import DeckCardSkeleton from "@/components/desk/DeckCardSkeleton";
 export default function Loading() {
   return (
     <AppShell>
-      <main className="min-h-screen bg-bg px-5 py-10 pb-28 text-text sm:px-8">
+      <main className="min-h-screen bg-canvas-soft px-5 py-10 pb-28 text-text sm:px-8">
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 flex items-start justify-between gap-4">
             <div>
