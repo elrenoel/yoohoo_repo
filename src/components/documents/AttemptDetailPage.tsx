@@ -51,12 +51,12 @@ interface ReviewItem {
 
 function attemptGrade(percentage: number): { label: string; className: string } {
   if (percentage >= 85)
-    return { label: st("attempt.grade.great"), className: "bg-emerald-100 text-emerald-800 border-emerald-200" };
+    return { label: st("attempt.grade.great"), className: "bg-success-subtle text-success-text border-success-border" };
   if (percentage >= 70)
-    return { label: st("attempt.grade.good"), className: "bg-blue-100 text-blue-800 border-blue-200" };
+    return { label: st("attempt.grade.good"), className: "bg-accent-subtle text-accent border-accent" };
   if (percentage >= 50)
-    return { label: st("attempt.grade.practice"), className: "bg-amber-100 text-amber-800 border-amber-200" };
-  return { label: st("attempt.grade.study"), className: "bg-rose-100 text-rose-800 border-rose-200" };
+    return { label: st("attempt.grade.practice"), className: "bg-warning-subtle text-warning-text border-warning-border" };
+  return { label: st("attempt.grade.study"), className: "bg-danger-subtle text-danger-text border-danger-border" };
 }
 
 async function fetchAttempts(docId: string): Promise<{ document: { id: string; title: string }; attempts: QuizAttempt[] }> {
@@ -113,15 +113,15 @@ export default function AttemptDetailPage() {
 
   if (attemptsLoading) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
-        <p className="text-sm text-neutral-500 font-mono">{t("attempt.loading")}</p>
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <p className="text-sm text-text-muted font-mono">{t("attempt.loading")}</p>
       </div>
     );
   }
 
   if (attemptsError || !attempt) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center px-6">
+      <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-6">
         <ErrorState
           title={t("attempt.notFoundTitle")}
           message={attemptsError?.message || t("attempt.notFound")}
@@ -163,7 +163,7 @@ export default function AttemptDetailPage() {
   const skippedItems = review.filter((r) => r.selectedIndex === -1);
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
+    <div className="min-h-screen bg-bg flex flex-col justify-between text-text">
       {/*
       <Navbar
         backHref={`/desk/${docId}/attempts`}
@@ -176,18 +176,18 @@ export default function AttemptDetailPage() {
       <main className="max-w-2xl mx-auto px-6 py-10 flex-1 w-full">
         {/* Summary Card */}
         <Card className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-neutral-100 border border-neutral-200 text-neutral-800 mb-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface-subtle border border-border text-text mb-4">
             <Trophy className="w-7 h-7" />
           </div>
 
-          <div className="text-5xl font-bold tracking-tight text-neutral-900 mb-1">
+          <div className="text-5xl font-bold tracking-tight text-text mb-1">
             {percentage}
-            <span className="text-2xl text-neutral-500 font-normal">%</span>
+            <span className="text-2xl text-text-muted font-normal">%</span>
           </div>
 
-          <p className="text-sm text-neutral-600 mb-3">
-            <strong className="text-neutral-900">{attempt.score}</strong> /{" "}
-            <strong className="text-neutral-900">{attempt.total}</strong>
+          <p className="text-sm text-text-secondary mb-3">
+            <strong className="text-text">{attempt.score}</strong> /{" "}
+            <strong className="text-text">{attempt.total}</strong>
           </p>
 
           <span
@@ -196,30 +196,30 @@ export default function AttemptDetailPage() {
             {grade.label}
           </span>
 
-          <p className="text-[11px] text-neutral-400 font-mono mt-4">
+          <p className="text-[11px] text-text-muted font-mono mt-4">
             {attempt.quizSetLabel ? `${attempt.quizSetLabel} · ` : ""}
             {formatDateTime(attempt.createdAt)}
           </p>
 
           {hasReview && (
-            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-neutral-100 text-xs">
+            <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border text-xs">
               <div className="text-center">
-                <div className="text-2xl font-bold text-emerald-700">
+                <div className="text-2xl font-bold text-success-text">
                   {correctItems.length}
                 </div>
-                <div className="text-neutral-500 mt-0.5">{t("attempt.correct")}</div>
+                <div className="text-text-muted mt-0.5">{t("attempt.correct")}</div>
               </div>
-              <div className="text-center border-x border-neutral-100">
-                <div className="text-2xl font-bold text-rose-600">
+              <div className="text-center border-x border-border">
+                <div className="text-2xl font-bold text-danger-text">
                   {wrongItems.length}
                 </div>
-                <div className="text-neutral-500 mt-0.5">{t("attempt.wrong")}</div>
+                <div className="text-text-muted mt-0.5">{t("attempt.wrong")}</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-neutral-400">
+                <div className="text-2xl font-bold text-text-muted">
                   {skippedItems.length}
                 </div>
-                <div className="text-neutral-500 mt-0.5">{t("attempt.skipped")}</div>
+                <div className="text-text-muted mt-0.5">{t("attempt.skipped")}</div>
               </div>
             </div>
           )}
@@ -229,10 +229,10 @@ export default function AttemptDetailPage() {
         {hasReview ? (
           <>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-neutral-900">
+              <h2 className="text-sm font-semibold text-text">
                 {t("attempt.reviewTitle")}
               </h2>
-              <span className="text-xs text-neutral-500 font-mono">
+              <span className="text-xs text-text-muted font-mono">
                 {review.length} Soal
               </span>
             </div>
@@ -241,24 +241,24 @@ export default function AttemptDetailPage() {
               {review.map((item, idx) => {
                 const isSkipped = item.selectedIndex === -1;
                 const statusColor = item.isCorrect
-                  ? "border-emerald-200 bg-emerald-50/40"
+                  ? "border-success-border bg-success-subtle"
                   : isSkipped
-                  ? "border-neutral-200 bg-neutral-50"
-                  : "border-rose-200 bg-rose-50/40";
+                  ? "border-border bg-surface-subtle"
+                  : "border-danger-border bg-danger-subtle";
 
                 return (
                   <div
                     key={idx}
-                    className={`bg-white rounded-xl border p-5 shadow-2xs ${statusColor}`}
+                    className={`bg-surface rounded-xl border p-5 shadow-2xs dark:shadow-none ${statusColor}`}
                   >
                     <div className="flex items-start gap-3 mb-4">
                       <div
                         className={`mt-0.5 shrink-0 ${
                           item.isCorrect
-                            ? "text-emerald-600"
+                            ? "text-success-text"
                             : isSkipped
-                            ? "text-neutral-400"
-                            : "text-rose-600"
+                            ? "text-text-muted"
+                            : "text-danger-text"
                         }`}
                       >
                         {item.isCorrect ? (
@@ -270,10 +270,10 @@ export default function AttemptDetailPage() {
                         )}
                       </div>
                       <div>
-                        <p className="text-[10px] font-mono font-medium text-neutral-400 uppercase tracking-wider mb-1">
+                        <p className="text-[10px] font-mono font-medium text-text-muted uppercase tracking-wider mb-1">
                           Soal {idx + 1}
                         </p>
-                        <p className="text-sm font-semibold text-neutral-900 leading-relaxed">
+                        <p className="text-sm font-semibold text-text leading-relaxed">
                           {item.question}
                         </p>
                       </div>
@@ -285,18 +285,18 @@ export default function AttemptDetailPage() {
                         const isUserChoice = optIdx === item.selectedIndex;
 
                         let optClass =
-                          "border-neutral-200 text-neutral-600 bg-neutral-50";
-                        let labelClass = "bg-neutral-100 text-neutral-600";
+                          "border-border text-text-secondary bg-surface-subtle";
+                        let labelClass = "bg-surface-raised text-text-secondary";
 
                         if (isCorrectOption) {
                           optClass =
-                            "border-emerald-300 bg-emerald-50 text-emerald-900";
-                          labelClass = "bg-emerald-200 text-emerald-900";
+                            "border-success-border bg-success-subtle text-success-text";
+                          labelClass = "bg-success-subtle text-success-text";
                         }
                         if (isUserChoice && !item.isCorrect) {
                           optClass =
-                            "border-rose-300 bg-rose-50 text-rose-800";
-                          labelClass = "bg-rose-200 text-rose-800";
+                            "border-danger-border bg-danger-subtle text-danger-text";
+                          labelClass = "bg-danger-subtle text-danger-text";
                         }
 
                         return (
@@ -311,12 +311,12 @@ export default function AttemptDetailPage() {
                             </div>
                             <span className="leading-relaxed pt-0.5">{opt}</span>
                             {isCorrectOption && (
-                              <span className="ml-auto shrink-0 text-[10px] font-semibold text-emerald-700 whitespace-nowrap">
+                              <span className="ml-auto shrink-0 text-[10px] font-semibold text-success-text whitespace-nowrap">
                                 ✓ {t("attempt.correctAnswer")}
                               </span>
                             )}
                             {isUserChoice && !item.isCorrect && (
-                              <span className="ml-auto shrink-0 text-[10px] font-semibold text-rose-600 whitespace-nowrap">
+                              <span className="ml-auto shrink-0 text-[10px] font-semibold text-danger-text whitespace-nowrap">
                                 ✗ {t("attempt.yourChoice")}
                               </span>
                             )}
@@ -331,23 +331,23 @@ export default function AttemptDetailPage() {
           </>
         ) : (
           <Card variant="centered" className="p-10">
-            <div className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center mx-auto mb-3 text-neutral-500">
+            <div className="w-10 h-10 rounded-xl bg-surface-subtle flex items-center justify-center mx-auto mb-3 text-text-muted">
               <span className="text-lg">📋</span>
             </div>
-            <h3 className="text-sm font-semibold text-neutral-900 mb-1">
+            <h3 className="text-sm font-semibold text-text mb-1">
               {t("attempt.noDetailTitle")}
             </h3>
-            <p className="text-xs text-neutral-500 max-w-sm mx-auto">
+            <p className="text-xs text-text-muted max-w-sm mx-auto">
               {t("attempt.noDetailMessage")}
             </p>
           </Card>
         )}
 
         {/* Bottom CTA */}
-        <div className="mt-10 pt-8 border-t border-neutral-200 text-center">
+        <div className="mt-10 pt-8 border-t border-border text-center">
           <Link
             href={`/desk/${docId}/attempts`}
-            className="inline-flex items-center gap-1.5 text-xs font-medium text-neutral-900 underline underline-offset-4 hover:text-neutral-600 transition"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-text underline underline-offset-4 hover:text-text-secondary transition"
           >
             <ArrowLeft className="w-3 h-3" /> {t("attempt.backToAttempts")}
           </Link>

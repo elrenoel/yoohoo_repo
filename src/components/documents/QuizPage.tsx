@@ -81,12 +81,12 @@ function quizVariantLabel(variant: QuizSetOption["variant"]) {
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 function QuestionSkeleton() {
   return (
-    <div className="bg-white border border-neutral-200 rounded-2xl p-6 sm:p-8 shadow-xs mb-6 animate-pulse">
-      <div className="h-5 bg-neutral-100 rounded w-3/4 mb-4" />
-      <div className="h-4 bg-neutral-100 rounded w-1/2 mb-6" />
+    <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs dark:shadow-none mb-6 animate-pulse">
+      <div className="skeleton-shimmer h-5 rounded w-3/4 mb-4" />
+      <div className="skeleton-shimmer h-4 rounded w-1/2 mb-6" />
       <div className="space-y-3">
         {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-14 bg-neutral-50 border border-neutral-100 rounded-xl" />
+          <div key={i} className="skeleton-shimmer h-14 border border-border rounded-xl" />
         ))}
       </div>
     </div>
@@ -280,7 +280,7 @@ function QuizContent({
       {/* Question Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between mb-6">
         <div className="flex justify-between w-full">
-          <span className="text-xs font-mono font-medium px-3 py-2 rounded-full bg-neutral-900 text-white shadow-2xs">
+          <span className="text-xs font-mono font-medium px-3 py-2 rounded-full bg-action-primary text-on-action-primary shadow-2xs dark:shadow-none">
           {t("quiz.questionOf", {
             current: currentIndex + 1,
             total: questions.length,
@@ -288,27 +288,27 @@ function QuizContent({
         </span>
         <span className="flex sm:hidden">
           {questions.length > 0 ? (
-            <div className="flex items-center gap-2 text-xs font-mono text-neutral-600 bg-neutral-100 px-3 py-1.5 rounded-lg border border-neutral-200">
+            <div className="flex items-center gap-2 text-xs font-mono text-text-secondary bg-surface-subtle px-3 py-1.5 rounded-lg border border-border">
               <span>{t("quiz.answered")}</span>
-              <span className="font-bold text-neutral-900">
+              <span className="font-bold text-text">
                 {answeredCount} / {questions.length}
               </span>
             </div>
           ) : undefined}
         </span> 
         </div>
-        <span className="text-xs text-neutral-400 font-mono">
+        <span className="text-xs text-text-muted font-mono">
           {mode === "time_attack" ? `Time Attack · ${Math.ceil(remainingMs / 1000)}s` : t("quiz.pickOne")}
         </span>
       </div>
-      {mode === "time_attack" && <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-neutral-200"><div className={`h-full transition-all ${remainingMs < 5_000 ? "bg-rose-500" : "bg-emerald-600"}`} style={{ width: `${(remainingMs / TIME_ATTACK_QUESTION_MS) * 100}%` }} /></div>}
+      {mode === "time_attack" && <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-border"><div className={`h-full transition-all ${remainingMs < 5_000 ? "bg-danger" : "bg-success"}`} style={{ width: `${(remainingMs / TIME_ATTACK_QUESTION_MS) * 100}%` }} /></div>}
 
       {/* Question Card */}
-      <div className="bg-white border border-neutral-200 rounded-2xl p-6 sm:p-8 shadow-xs mb-6">
-        <h2 className="text-lg sm:text-xl font-semibold text-neutral-900 leading-relaxed mb-6">
+      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs dark:shadow-none mb-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-text leading-relaxed mb-6">
           {currentQuestion.question}
         </h2>
-        {currentQuestion.difficulty && <span className="inline-flex mb-4 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-neutral-600">{currentQuestion.difficulty}</span>}
+        {currentQuestion.difficulty && <span className="inline-flex mb-4 rounded-full bg-surface-subtle px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-text-secondary">{currentQuestion.difficulty}</span>}
 
         {/* 4 Options */}
         <div className="space-y-3">
@@ -321,15 +321,15 @@ function QuizContent({
                 onClick={() => handleSelectOption(optIdx)}
                 className={`w-full p-4 rounded-xl border text-left transition flex items-start gap-3.5 cursor-pointer text-xs sm:text-sm ${
                   isSelected
-                    ? "border-neutral-900 bg-neutral-900 text-white shadow-xs"
-                    : "border-neutral-200 bg-neutral-50/50 hover:bg-neutral-100/70 hover:border-neutral-300 text-neutral-800"
+                    ? "border-action-primary bg-action-primary text-on-action-primary shadow-xs dark:shadow-none"
+                    : "border-control-border bg-surface-subtle hover:bg-surface-hover text-text"
                 }`}
               >
                 <div
                   className={`w-6 h-6 rounded-md flex items-center justify-center font-mono font-bold text-xs shrink-0 transition ${
                     isSelected
-                      ? "bg-white text-neutral-900"
-                      : "bg-white border border-neutral-200 text-neutral-600"
+                      ? "bg-surface text-text"
+                      : "bg-surface border border-border text-text-secondary"
                   }`}
                 >
                   {optionLabels[optIdx]}
@@ -343,8 +343,8 @@ function QuizContent({
 
       {/* Submit error */}
       {submitError && (
-        <div className="bg-neutral-50 border border-neutral-200 p-3 rounded-lg mb-4">
-          <p className="text-xs text-neutral-700 font-medium">{submitError}</p>
+        <div className="bg-danger-subtle border border-danger-border p-3 rounded-lg mb-4">
+          <p className="text-xs text-danger-text font-medium">{submitError}</p>
         </div>
       )}
 
@@ -541,7 +541,7 @@ export default function QuizPage() {
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
+    <div className="min-h-screen bg-bg flex flex-col justify-between text-text">
       {/*
       <Navbar
         backHref={`/desk/${docId}/flashcards`}
@@ -555,18 +555,18 @@ export default function QuizPage() {
         }
         rightContent={
           !isLoading && totalQuestions > 0 ? (
-            <div className="flex items-center gap-2 text-xs font-mono text-neutral-600 bg-neutral-100 px-3 py-1.5 rounded-lg border border-neutral-200">
+            <div className="flex items-center gap-2 text-xs font-mono text-text-secondary bg-surface-subtle px-3 py-1.5 rounded-lg border border-border">
               <span>{t("quiz.answered")}</span>
-              <span className="font-bold text-neutral-900">
+              <span className="font-bold text-text">
                 {answeredCount} / {totalQuestions}
               </span>
             </div>
           ) : undefined
         }
         bottomBar={
-          <div className="w-full bg-neutral-100 h-1.5">
+          <div className="w-full bg-surface-subtle h-1.5">
             <div
-              className="bg-neutral-900 h-1.5 transition-all duration-300 ease-out"
+              className="bg-accent h-1.5 transition-all duration-300 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -574,9 +574,9 @@ export default function QuizPage() {
       />
       */}
 
-      <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-6 pt-6 text-xs text-neutral-500">
+      <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-6 pt-6 text-xs text-text-muted">
         <span className="shrink-0 font-mono">{answeredCount} / {totalQuestions} terjawab</span>
-        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-neutral-200"><div className="h-full bg-neutral-900 transition-all" style={{ width: `${progressPercent}%` }} /></div>
+        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border"><div className="h-full bg-accent transition-all" style={{ width: `${progressPercent}%` }} /></div>
       </div>
 
       {/* Main Quiz Container */}
@@ -584,7 +584,7 @@ export default function QuizPage() {
         {/* Loading state */}
         {isLoading && (
           <div className="w-full flex flex-col gap-4">
-            <div className="flex items-center gap-2 text-sm text-neutral-500 mb-2">
+            <div className="flex items-center gap-2 text-sm text-text-muted mb-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>{t("quiz.loading")}</span>
             </div>
@@ -608,13 +608,13 @@ export default function QuizPage() {
         {!isLoading && !error && sets.length > 0 && (
           <div className="mb-6 space-y-3">
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <label className="flex items-center gap-2 text-xs text-neutral-600">
+              <label className="flex items-center gap-2 text-xs text-text-secondary">
                 <span className="font-medium">{t("quiz.setLabel")}</span>
                 <select
                   value={selectedSetId ?? ""}
                   onChange={handleSetChange}
                   disabled={isLoading || isRegenerating}
-                  className="px-3 py-2 rounded-xl border border-neutral-200 bg-white text-xs font-medium text-neutral-800 focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-900 disabled:opacity-50 cursor-pointer"
+                  className="px-3 py-2 rounded-xl border border-control-border bg-surface text-xs font-medium text-text disabled:opacity-50 cursor-pointer"
                 >
                   {sets.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -627,7 +627,7 @@ export default function QuizPage() {
               <button
                 onClick={() => setShowGenerateDialog(true)}
                 disabled={isRegenerating || regenerateLimitReached}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-neutral-200 text-xs font-medium text-neutral-700 hover:bg-neutral-50 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-surface border border-control-border text-xs font-medium text-text-secondary hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
               >
                 {isRegenerating ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -641,13 +641,13 @@ export default function QuizPage() {
             </div>
 
             {regenerateError && (
-              <div className="bg-neutral-50 border border-neutral-200 p-3 rounded-lg">
-                <p className="text-xs text-neutral-700 font-medium">
+              <div className="bg-danger-subtle border border-danger-border p-3 rounded-lg">
+                <p className="text-xs text-danger-text font-medium">
                   {regenerateError}
                 </p>
                 {!regenerateLimitReached && <button
                   onClick={() => setShowGenerateDialog(true)}
-                  className="mt-2 text-xs text-neutral-900 font-medium underline underline-offset-2 hover:text-neutral-600 transition cursor-pointer"
+                  className="mt-2 text-xs text-text font-medium underline underline-offset-2 hover:text-text-secondary transition cursor-pointer"
                 >
                   {t("error.retry")}
                 </button>}
@@ -655,7 +655,7 @@ export default function QuizPage() {
             )}
 
             {regenerateMessage && (
-              <div className="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-xs text-success-text bg-success-subtle border border-success-border p-3 rounded-lg">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 <span>{regenerateMessage}</span>
               </div>
@@ -664,15 +664,15 @@ export default function QuizPage() {
         )}
 
         {!isLoading && !error && !isDemo && questions.length === 0 && (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-center shadow-xs sm:p-8">
-            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+          <div className="rounded-2xl border border-border bg-surface p-6 text-center shadow-xs dark:shadow-none sm:p-8">
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-success-subtle text-success-text">
               <Sparkles className="h-5 w-5" />
             </div>
-            <h2 className="mt-4 text-lg font-semibold text-neutral-900">Quiz belum tersedia</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-neutral-500">
+            <h2 className="mt-4 text-lg font-semibold text-text">Quiz belum tersedia</h2>
+            <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-muted">
               Buat set quiz dari flashcard materi ini. Prosesnya dapat membutuhkan beberapa saat.
             </p>
-            {regenerateError && <p className="mt-4 text-xs font-medium text-rose-700">{regenerateError}</p>}
+            {regenerateError && <p className="mt-4 text-xs font-medium text-danger-text">{regenerateError}</p>}
             <Button
               className="mt-5"
               size="lg"
@@ -687,15 +687,15 @@ export default function QuizPage() {
         )}
 
         {!isLoading && !error && !isDemo && questions.length > 0 && !started && (
-          <div className="rounded-2xl border border-neutral-200 bg-white p-6 sm:p-8 shadow-xs mb-6">
-            <h2 className="text-lg font-semibold text-neutral-900">Pilih mode pengerjaan</h2>
-            {selectedSetLabel && <p className="mt-1 text-xs font-medium text-emerald-700">Set aktif: {selectedSetLabel}</p>}
-            <p className="mt-2 text-sm text-neutral-600">Time Attack memberi waktu {TIME_ATTACK_QUESTION_MS / 1000} detik untuk setiap soal.</p>
+          <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-xs dark:shadow-none mb-6">
+            <h2 className="text-lg font-semibold text-text">Pilih mode pengerjaan</h2>
+            {selectedSetLabel && <p className="mt-1 text-xs font-medium text-success-text">Set aktif: {selectedSetLabel}</p>}
+            <p className="mt-2 text-sm text-text-secondary">Time Attack memberi waktu {TIME_ATTACK_QUESTION_MS / 1000} detik untuk setiap soal.</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {(["normal", "time_attack"] as QuizMode[]).map(value => (
-                <button key={value} type="button" onClick={() => setMode(value)} className={`rounded-xl border p-4 text-left transition ${mode === value ? "border-neutral-900 bg-neutral-900 text-white" : "border-neutral-200 bg-neutral-50 hover:border-neutral-400"}`}>
+                <button key={value} type="button" onClick={() => setMode(value)} className={`rounded-xl border p-4 text-left transition ${mode === value ? "border-action-primary bg-action-primary text-on-action-primary" : "border-control-border bg-surface-subtle hover:bg-surface-hover"}`}>
                   <span className="block text-sm font-semibold">{value === "normal" ? "Normal" : "Time Attack"}</span>
-                  <span className={`mt-1 block text-xs ${mode === value ? "text-neutral-300" : "text-neutral-500"}`}>{value === "normal" ? "Tanpa batas waktu per soal" : `${TIME_ATTACK_QUESTION_MS / 1000} detik per soal`}</span>
+                  <span className={`mt-1 block text-xs ${mode === value ? "opacity-75" : "text-text-muted"}`}>{value === "normal" ? "Tanpa batas waktu per soal" : `${TIME_ATTACK_QUESTION_MS / 1000} detik per soal`}</span>
                 </button>
               ))}
             </div>
@@ -704,18 +704,18 @@ export default function QuizPage() {
         )}
 
         {!isLoading && !error && !isDemo && sets.length > 0 && !started && (
-          <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-xs sm:p-6">
+          <section className="rounded-2xl border border-border bg-surface p-5 shadow-xs dark:shadow-none sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2 text-neutral-900">
+                <div className="flex items-center gap-2 text-text">
                   <History className="h-4 w-4" />
                   <h2 className="text-base font-semibold">Riwayat set soal</h2>
                 </div>
-                <p className="mt-1 text-xs leading-relaxed text-neutral-500">
+                <p className="mt-1 text-xs leading-relaxed text-text-muted">
                   Semua set yang pernah dibuat tetap tersimpan. Pilih satu untuk dilihat dan dikerjakan lagi.
                 </p>
               </div>
-              <span className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-medium text-neutral-600">
+              <span className="shrink-0 rounded-full bg-surface-subtle px-2.5 py-1 text-[11px] font-medium text-text-secondary">
                 {sets.length} set
               </span>
             </div>
@@ -724,17 +724,17 @@ export default function QuizPage() {
               {[...sets].reverse().map((set) => {
                 const isActive = set.id === selectedSetId;
                 return (
-                  <article key={set.id} className={`rounded-xl border p-4 transition ${isActive ? "border-emerald-300 bg-emerald-50/60" : "border-neutral-200 bg-neutral-50/50"}`}>
+                  <article key={set.id} className={`rounded-xl border p-4 transition ${isActive ? "border-success-border bg-success-subtle" : "border-border bg-surface-subtle"}`}>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="truncate text-sm font-semibold text-neutral-900">{set.label}</h3>
-                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${set.variant === "harder" ? "bg-amber-100 text-amber-800" : set.variant === "different" ? "bg-sky-100 text-sky-800" : "bg-neutral-200 text-neutral-700"}`}>
+                          <h3 className="truncate text-sm font-semibold text-text">{set.label}</h3>
+                          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${set.variant === "harder" ? "bg-warning-subtle text-warning-text" : set.variant === "different" ? "bg-accent-subtle text-accent" : "bg-surface-raised text-text-secondary"}`}>
                             {quizVariantLabel(set.variant)}
                           </span>
-                          {isActive && <span className="rounded-full bg-emerald-700 px-2 py-0.5 text-[10px] font-semibold text-white">Aktif</span>}
+                          {isActive && <span className="rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold text-on-success">Aktif</span>}
                         </div>
-                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-neutral-500">
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-muted">
                           <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{formatQuizSetDate(set.createdAt)}</span>
                           <span>{set.questionCount} soal</span>
                           <span>Mudah {set.difficultyCounts.easy}</span>
@@ -747,12 +747,12 @@ export default function QuizPage() {
                       </Button>
                     </div>
                     {isActive && questions.length > 0 && (
-                      <div className="mt-4 border-t border-emerald-200/70 pt-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Daftar soal dalam set ini</p>
+                      <div className="mt-4 border-t border-success-border pt-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">Daftar soal dalam set ini</p>
                         <ol className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-2">
                           {questions.map((question, index) => (
-                            <li key={question.id} className="flex gap-2 text-xs leading-relaxed text-neutral-700">
-                              <span className="font-mono text-neutral-400">{String(index + 1).padStart(2, "0")}</span>
+                            <li key={question.id} className="flex gap-2 text-xs leading-relaxed text-text-secondary">
+                              <span className="font-mono text-text-muted">{String(index + 1).padStart(2, "0")}</span>
                               <span>{question.question}</span>
                             </li>
                           ))}
@@ -783,38 +783,38 @@ export default function QuizPage() {
       </main>
 
       {showGenerateDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/45 p-4 backdrop-blur-[2px]" role="presentation" onMouseDown={() => !isRegenerating && setShowGenerateDialog(false)}>
-          <div className="w-full max-w-lg rounded-2xl border border-neutral-200 bg-white p-5 shadow-2xl sm:p-6" role="dialog" aria-modal="true" aria-labelledby="generate-quiz-title" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4 backdrop-blur-[2px]" role="presentation" onMouseDown={() => !isRegenerating && setShowGenerateDialog(false)}>
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface-raised p-5 shadow-2xl dark:shadow-none sm:p-6" role="dialog" aria-modal="true" aria-labelledby="generate-quiz-title" onMouseDown={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">Generate quiz</p>
-                <h2 id="generate-quiz-title" className="mt-1 text-xl font-semibold text-neutral-900">Pilih set berikutnya</h2>
-                <p className="mt-2 text-sm leading-relaxed text-neutral-500">Set sebelumnya tidak dihapus dan tetap bisa dibuka dari riwayat.</p>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">Generate quiz</p>
+                <h2 id="generate-quiz-title" className="mt-1 text-xl font-semibold text-text">Pilih set berikutnya</h2>
+                <p className="mt-2 text-sm leading-relaxed text-text-muted">Set sebelumnya tidak dihapus dan tetap bisa dibuka dari riwayat.</p>
               </div>
-              <button type="button" aria-label="Tutup" disabled={isRegenerating} onClick={() => setShowGenerateDialog(false)} className="rounded-lg p-2 text-neutral-500 transition hover:bg-neutral-100 disabled:opacity-40">
+              <button type="button" aria-label="Tutup" disabled={isRegenerating} onClick={() => setShowGenerateDialog(false)} className="rounded-lg p-2 text-text-muted transition hover:bg-surface-hover disabled:opacity-40">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <button type="button" disabled={isRegenerating || regenerateLimitReached} onClick={() => handleGenerateSet("different")} className="group rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-left transition hover:border-sky-300 hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-50">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-700"><Shuffle className="h-4 w-4" /></span>
-                <span className="mt-4 block text-sm font-semibold text-neutral-900">Soal berbeda</span>
-                <span className="mt-1 block text-xs leading-relaxed text-neutral-500">Buat variasi pertanyaan baru tanpa mengulang soal yang pernah dibuat.</span>
-                {generatingVariant === "different" && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-sky-700"><Loader2 className="h-3.5 w-3.5 animate-spin" />Membuat set...</span>}
+              <button type="button" disabled={isRegenerating || regenerateLimitReached} onClick={() => handleGenerateSet("different")} className="group rounded-2xl border border-control-border bg-surface-subtle p-4 text-left transition hover:border-accent hover:bg-accent-subtle disabled:cursor-not-allowed disabled:opacity-50">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-subtle text-accent"><Shuffle className="h-4 w-4" /></span>
+                <span className="mt-4 block text-sm font-semibold text-text">Soal berbeda</span>
+                <span className="mt-1 block text-xs leading-relaxed text-text-muted">Buat variasi pertanyaan baru tanpa mengulang soal yang pernah dibuat.</span>
+                {generatingVariant === "different" && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-accent"><Loader2 className="h-3.5 w-3.5 animate-spin" />Membuat set...</span>}
               </button>
 
-              <button type="button" disabled={isRegenerating || regenerateLimitReached || !selectedSetId} onClick={() => handleGenerateSet("harder")} className="group rounded-2xl border border-neutral-200 bg-neutral-50 p-4 text-left transition hover:border-amber-300 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700"><TrendingUp className="h-4 w-4" /></span>
-                <span className="mt-4 block text-sm font-semibold text-neutral-900">Lebih sulit</span>
-                <span className="mt-1 block text-xs leading-relaxed text-neutral-500">Buat set hard baru berbasis analisis kasus dan gabungan beberapa konsep.</span>
-                {generatingVariant === "harder" && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-amber-700"><Loader2 className="h-3.5 w-3.5 animate-spin" />Menaikkan level...</span>}
+              <button type="button" disabled={isRegenerating || regenerateLimitReached || !selectedSetId} onClick={() => handleGenerateSet("harder")} className="group rounded-2xl border border-control-border bg-surface-subtle p-4 text-left transition hover:border-warning hover:bg-warning-subtle disabled:cursor-not-allowed disabled:opacity-50">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning-subtle text-warning-text"><TrendingUp className="h-4 w-4" /></span>
+                <span className="mt-4 block text-sm font-semibold text-text">Lebih sulit</span>
+                <span className="mt-1 block text-xs leading-relaxed text-text-muted">Buat set hard baru berbasis analisis kasus dan gabungan beberapa konsep.</span>
+                {generatingVariant === "harder" && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-warning-text"><Loader2 className="h-3.5 w-3.5 animate-spin" />Menaikkan level...</span>}
               </button>
             </div>
 
-            {!selectedSetId && <p className="mt-3 text-xs text-neutral-500">Opsi lebih sulit tersedia setelah set quiz pertama dibuat.</p>}
-            {regenerateError && <p className="mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs font-medium text-rose-700">{regenerateError}</p>}
-            {regenerateLimitReached && <p className="mt-4 text-xs font-medium text-amber-700">Limit generate harian sudah tercapai. Coba lagi besok.</p>}
+            {!selectedSetId && <p className="mt-3 text-xs text-text-muted">Opsi lebih sulit tersedia setelah set quiz pertama dibuat.</p>}
+            {regenerateError && <p className="mt-4 rounded-xl border border-danger-border bg-danger-subtle p-3 text-xs font-medium text-danger-text">{regenerateError}</p>}
+            {regenerateLimitReached && <p className="mt-4 text-xs font-medium text-warning-text">Limit generate harian sudah tercapai. Coba lagi besok.</p>}
           </div>
         </div>
       )}
