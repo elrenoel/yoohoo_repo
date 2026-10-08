@@ -60,7 +60,7 @@ export default function TrialQuizPage() {
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex flex-col items-center justify-center px-6">
+      <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-6">
         <ErrorState
           title={t("trial.notFoundTitle")}
           message={t("trial.notFoundMessage")}
@@ -117,7 +117,7 @@ export default function TrialQuizPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
+    <div className="min-h-screen bg-bg flex flex-col justify-between text-text">
       <Navbar
         backHref="/trial/flashcards"
         title={trialData.title}
@@ -127,14 +127,14 @@ export default function TrialQuizPage() {
           </>
         }
         rightContent={
-          <span className="text-xs font-mono text-neutral-500 bg-neutral-100 px-3 py-1 rounded-full border border-neutral-200">
+          <span className="text-xs font-mono text-text-muted bg-surface-subtle px-3 py-1 rounded-full border border-border">
             {answeredCount}/{questions.length}
           </span>
         }
         bottomBar={
-          <div className="w-full bg-neutral-100 h-1">
+          <div className="w-full bg-surface-subtle h-1">
             <div
-              className="bg-neutral-900 h-1 transition-all duration-300 ease-out"
+              className="bg-accent h-1 transition-all duration-300 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -142,22 +142,22 @@ export default function TrialQuizPage() {
       />
 
       {/* Trial Notice Banner */}
-      <div className="bg-amber-50 border-b border-amber-200 px-6 py-2.5">
+      <div className="bg-warning-subtle border-b border-warning-border px-6 py-2.5">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row items-start sm:items-center gap-2 justify-between">
-          <p className="text-xs text-amber-800 font-medium leading-relaxed">
+          <p className="text-xs text-warning-text font-medium leading-relaxed">
             {t("trial.quizBanner")}
           </p>
           <div className="flex items-center gap-2 shrink-0">
             <Link
               href="/login"
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-white border border-amber-300 text-amber-800 hover:bg-amber-100 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-surface border border-control-border text-warning-text hover:bg-surface-hover transition"
             >
               <LogIn className="w-3 h-3" />
               <span>{t("trial.login")}</span>
             </Link>
             <Link
               href="/register"
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-amber-700 text-white hover:bg-amber-800 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-warning text-on-warning hover:bg-warning-hover transition"
             >
               <UserPlus className="w-3 h-3" />
               <span>{t("trial.register")}</span>
@@ -170,15 +170,15 @@ export default function TrialQuizPage() {
       <main className="max-w-2xl mx-auto px-6 py-10 flex-1 w-full flex flex-col justify-center">
         {/* Question Counter & Info */}
         <div className="flex items-center justify-between mb-4">
-          <span className="text-xs font-mono text-neutral-500 font-medium">
+          <span className="text-xs font-mono text-text-muted font-medium">
             {t("quiz.questionOf", { current: currentIndex + 1, total: questions.length })}
           </span>
-          <span className="text-xs font-mono text-neutral-400"></span>
+          <span className="text-xs font-mono text-text-muted"></span>
         </div>
 
         {/* Question Card */}
-        <div className="bg-white border border-neutral-200 rounded-2xl p-6 sm:p-8 shadow-xs mb-6">
-          <h2 className="text-lg sm:text-xl font-semibold text-neutral-900 tracking-tight leading-snug mb-6">
+        <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs dark:shadow-none mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-text tracking-tight leading-snug mb-6">
             {currentQuestion.question}
           </h2>
 
@@ -192,15 +192,15 @@ export default function TrialQuizPage() {
                   onClick={() => handleSelectOption(optIdx)}
                   className={`w-full p-4 rounded-xl border text-left transition flex items-start gap-3.5 cursor-pointer group ${
                     isSelected
-                      ? "border-neutral-900 bg-neutral-900 text-white shadow-xs"
-                      : "border-neutral-200 bg-neutral-50/50 hover:bg-neutral-100/80 hover:border-neutral-300 text-neutral-800"
+                      ? "border-action-primary bg-action-primary text-on-action-primary shadow-xs dark:shadow-none"
+                      : "border-control-border bg-surface-subtle hover:bg-surface-hover text-text"
                   }`}
                 >
                   <span
                     className={`w-6 h-6 rounded-lg text-xs font-mono font-bold flex items-center justify-center shrink-0 mt-0.5 transition ${
                       isSelected
-                        ? "bg-white text-neutral-900"
-                        : "bg-white border border-neutral-200 text-neutral-600 group-hover:border-neutral-300"
+                        ? "bg-surface text-text"
+                        : "bg-surface border border-border text-text-secondary group-hover:border-control-border"
                     }`}
                   >
                     {optionLabels[optIdx]}
