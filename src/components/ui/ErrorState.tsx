@@ -56,7 +56,7 @@ export default function ErrorState({
               const variantClass =
                 action.variant === "primary"
                   ? "bg-action-primary text-on-action-primary hover:bg-action-primary-hover shadow-xs dark:shadow-none"
-                  : "bg-surface border border-border text-text-secondary hover:bg-surface-hover";
+                  : "bg-surface border border-control-border text-text-secondary hover:bg-surface-hover";
 
               if (action.href) {
                 return (

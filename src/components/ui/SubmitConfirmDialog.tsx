@@ -61,7 +61,7 @@ export default function SubmitConfirmDialog({
           <button
             autoFocus
             onClick={onCancel}
-            className="py-2.5 px-5 rounded-xl bg-surface border border-border text-xs sm:text-sm font-medium text-text-secondary hover:bg-surface-hover transition cursor-pointer"
+            className="py-2.5 px-5 rounded-xl bg-surface border border-control-border text-xs sm:text-sm font-medium text-text-secondary hover:bg-surface-hover transition cursor-pointer"
           >
             {t("quiz.checkAgain")}
           </button>

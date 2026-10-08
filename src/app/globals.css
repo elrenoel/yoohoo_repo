@@ -17,6 +17,7 @@
   --color-overlay: var(--overlay);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-control-border: var(--control-border);
   --color-text: var(--text);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
@@ -66,6 +67,7 @@
   /* Content and structure. */
   --border: #e5e5e5;
   --border-strong: #a3a3a3;
+  --control-border: #8a948e;
   --text: #171717;
   --text-secondary: #525252;
   --text-muted: #737373;
@@ -96,7 +98,7 @@
   --danger-hover: #be123c;
   --danger-subtle: #fbedeb;
   --danger-border: #f0c4be;
-  --danger-text: #c24a3d;
+  --danger-text: #aa382f;
   --on-danger: #ffffff;
 
   /* System UI. */
@@ -124,7 +126,7 @@
   --toast-warning-text: #92400e;
   --toast-warning-border: #fde68a;
   --toast-error-bg: #fbedeb;
-  --toast-error-text: #c24a3d;
+  --toast-error-text: #aa382f;
   --toast-error-border: #f0c4be;
 
   /* Compatibility aliases while areas migrate to semantic utilities. */
@@ -146,9 +148,10 @@
 
   --border: #26332d;
   --border-strong: #3a4b43;
+  --control-border: #6f7f76;
   --text: #e8eee9;
   --text-secondary: #9aa9a0;
-  --text-muted: #6f7f76;
+  --text-muted: #7c8d84;
 
   --accent: #aadd66;
   --accent-hover: #bfe883;
@@ -211,6 +214,12 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  border-color: var(--control-border);
+  accent-color: var(--accent);
 }
 
 ::selection {
