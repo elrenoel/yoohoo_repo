@@ -48,6 +48,8 @@
   --color-focus-ring: var(--focus-ring);
   --color-skeleton: var(--skeleton);
   --color-skeleton-highlight: var(--skeleton-highlight);
+  --color-control-subtle: var(--control-subtle);
+  --color-control-text: var(--control-text);
 }
 
 :root {
@@ -99,6 +101,7 @@
 
   /* System UI. */
   --focus-ring: #aadd66;
+  --focus-contrast: #013528;
   --focus-offset: #fafafa;
   --skeleton: #f5f5f5;
   --skeleton-highlight: #ffffff;
@@ -108,6 +111,21 @@
   --selection-bg: #171717;
   --selection-text: #ffffff;
   --shadow-color: rgb(22 36 29 / 16%);
+  --control-subtle: #fdf7eb;
+  --control-text: #041914;
+
+  --toast-normal-bg: #f5f6f3;
+  --toast-normal-text: #16241d;
+  --toast-normal-border: #d8dcd3;
+  --toast-success-bg: #eef5f0;
+  --toast-success-text: #2f7651;
+  --toast-success-border: #bfd6c4;
+  --toast-warning-bg: #fffbeb;
+  --toast-warning-text: #92400e;
+  --toast-warning-border: #fde68a;
+  --toast-error-bg: #fbedeb;
+  --toast-error-text: #c24a3d;
+  --toast-error-border: #f0c4be;
 
   /* Compatibility aliases while areas migrate to semantic utilities. */
   --background: var(--bg);
@@ -160,6 +178,7 @@
   --on-danger: #0c120f;
 
   --focus-ring: #aadd66;
+  --focus-contrast: #0c120f;
   --focus-offset: #0c120f;
   --skeleton: #1a2420;
   --skeleton-highlight: #26332d;
@@ -169,6 +188,21 @@
   --selection-bg: #aadd66;
   --selection-text: #0c120f;
   --shadow-color: transparent;
+  --control-subtle: #1a2420;
+  --control-text: #e8eee9;
+
+  --toast-normal-bg: #1a2420;
+  --toast-normal-text: #e8eee9;
+  --toast-normal-border: #26332d;
+  --toast-success-bg: rgb(120 189 149 / 12%);
+  --toast-success-text: #9bd8b3;
+  --toast-success-border: rgb(120 189 149 / 28%);
+  --toast-warning-bg: rgb(214 180 108 / 12%);
+  --toast-warning-text: #e8c87c;
+  --toast-warning-border: rgb(214 180 108 / 28%);
+  --toast-error-bg: rgb(242 123 107 / 12%);
+  --toast-error-text: #f69a8e;
+  --toast-error-border: rgb(242 123 107 / 28%);
 }
 
 body {
@@ -182,6 +216,62 @@ body {
 ::selection {
   background: var(--selection-bg);
   color: var(--selection-text);
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--focus-contrast);
+}
+
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border: 2px solid var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: var(--skeleton);
+}
+
+.skeleton-shimmer::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--skeleton-highlight),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  to {
+    transform: translateX(100%);
+  }
 }
 
 /* 3D Flip Card Utilities */
@@ -206,8 +296,8 @@ body {
 /* Toasts (sonner) — token-aligned, crisp border instead of a generic soft shadow */
 [data-sonner-toast] {
   font-family: var(--font-sans) !important;
-  border: 1px solid #D8DCD3;
-  box-shadow: 0 10px 28px rgba(22, 36, 29, 0.16) !important;
+  border: 1px solid var(--toast-normal-border);
+  box-shadow: 0 10px 28px var(--shadow-color) !important;
 }
 
 [data-sonner-toast] [data-title] {
@@ -236,5 +326,10 @@ body {
 
   .animate-pulse {
     animation: none !important;
+  }
+
+  .skeleton-shimmer::after {
+    animation: none;
+    display: none;
   }
 }

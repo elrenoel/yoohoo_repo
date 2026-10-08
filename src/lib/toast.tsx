@@ -11,15 +11,18 @@ import { useI18n } from "@/lib/i18n";
 
 // Sonner reads these CSS variables, so the toasts inherit the app's tokens.
 const TOAST_VARS = {
-  "--normal-bg": "#F5F6F3",
-  "--normal-text": "#16241D",
-  "--normal-border": "#D8DCD3",
-  "--success-bg": "#EEF5F0",
-  "--success-text": "#2F7651",
-  "--success-border": "#BFD6C4",
-  "--error-bg": "#FBEDEB",
-  "--error-text": "#C24A3D",
-  "--error-border": "#F0C4BE",
+  "--normal-bg": "var(--toast-normal-bg)",
+  "--normal-text": "var(--toast-normal-text)",
+  "--normal-border": "var(--toast-normal-border)",
+  "--success-bg": "var(--toast-success-bg)",
+  "--success-text": "var(--toast-success-text)",
+  "--success-border": "var(--toast-success-border)",
+  "--warning-bg": "var(--toast-warning-bg)",
+  "--warning-text": "var(--toast-warning-text)",
+  "--warning-border": "var(--toast-warning-border)",
+  "--error-bg": "var(--toast-error-bg)",
+  "--error-text": "var(--toast-error-text)",
+  "--error-border": "var(--toast-error-border)",
   "--border-radius": "12px",
   "--width": "min(92vw, 360px)",
 } as CSSProperties;

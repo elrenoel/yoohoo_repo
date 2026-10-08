@@ -29,21 +29,21 @@ export default function ErrorState({
     : "w-full max-w-sm mx-auto text-center";
 
   const cardClass = compact
-    ? "bg-white border border-neutral-200 rounded-2xl p-6 shadow-xs"
-    : "bg-white border border-neutral-200 rounded-2xl p-8 shadow-xs";
+    ? "bg-surface border border-border rounded-2xl p-6 shadow-xs dark:shadow-none"
+    : "bg-surface border border-border rounded-2xl p-8 shadow-xs dark:shadow-none";
 
   return (
     <div className={containerClass}>
       <div className={cardClass}>
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-neutral-100 border border-neutral-200 text-neutral-600 mb-4">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-surface-subtle border border-border text-text-secondary mb-4">
           <AlertTriangle className="w-5 h-5" />
         </div>
 
-        <h2 className="text-base font-semibold text-neutral-900 mb-1.5">
+        <h2 className="text-base font-semibold text-text mb-1.5">
           {title || st("error.defaultTitle")}
         </h2>
 
-        <p className="text-xs text-neutral-500 leading-relaxed max-w-xs mx-auto">
+        <p className="text-xs text-text-secondary leading-relaxed max-w-xs mx-auto">
           {message || st("error.defaultMessage")}
         </p>
 
@@ -55,8 +55,8 @@ export default function ErrorState({
 
               const variantClass =
                 action.variant === "primary"
-                  ? "bg-neutral-900 text-white hover:bg-neutral-800 shadow-xs"
-                  : "bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50";
+                  ? "bg-action-primary text-on-action-primary hover:bg-action-primary-hover shadow-xs dark:shadow-none"
+                  : "bg-surface border border-border text-text-secondary hover:bg-surface-hover";
 
               if (action.href) {
                 return (
@@ -87,8 +87,7 @@ export default function ErrorState({
           <div className="mt-6">
             <Link
               href="/"
-              className="inline-flex items-center gap-1.5 text-xs font-medium underline underline-offset-4 transition"
-              style={{ color: '#FDF7EB' }}
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-accent underline underline-offset-4 transition hover:text-accent-hover"
             >
               <Home className="w-3 h-3" /> {st("error.backToHome")}
             </Link>
