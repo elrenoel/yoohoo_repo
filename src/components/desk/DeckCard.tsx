@@ -6,12 +6,9 @@ import {
   CalendarDays,
   ExternalLink,
   FileText,
-  FolderKanban,
   Globe2,
-  Link2,
   Loader2,
   Lock,
-  MessageCircle,
   MoreHorizontal,
   RefreshCw,
   Share2,
@@ -104,16 +101,16 @@ export default function DeckCard({
       ref={(element) => {
         setCardRef?.(deck.id, element);
       }}
-      className={`group relative rounded-2xl border ${deck.isPriority ? "border-[#C24A3D]" : "border-[#D8DCD3]"} bg-white transition duration-300 ease-out hover:-translate-y-0.5 hover:border-[#AAB7AB] hover:shadow-[0_5px_14px_rgba(22,36,29,0.12)] ${menuOpen ? "z-40" : "z-0"} ${removing ? "pointer-events-none scale-[0.98] opacity-0" : "opacity-100"}`}
+      className={`group relative rounded-2xl border ${deck.isPriority ? "border-danger" : "border-border"} bg-surface transition duration-300 ease-out hover:-translate-y-0.5 hover:border-border-strong hover:shadow-none ${menuOpen ? "z-40" : "z-0"} ${removing ? "pointer-events-none scale-[0.98] opacity-0" : "opacity-100"}`}
     >
       <Link
         href={`/desk/${deck.id}`}
         aria-label={`Open deck ${deck.title}`}
-        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#013528]"
+        className="absolute inset-0 z-0 rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring"
       />
 
       {deck.isPriority && (
-        <div className="pointer-events-none relative z-10 rounded-t-2xl bg-[#C24A3D] px-4 py-1.5 text-center font-mono text-[10px] font-semibold tracking-[0.08em] text-white">
+        <div className="pointer-events-none relative z-10 rounded-t-2xl bg-danger px-4 py-1.5 text-center font-mono text-[10px] font-semibold tracking-[0.08em] text-on-danger">
           HIGH PRIORITY
         </div>
       )}
@@ -122,12 +119,12 @@ export default function DeckCard({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 shrink-0 text-[#013528]" />
+              <FileText className="h-4 w-4 shrink-0 text-accent" />
               <h2 className="truncate font-serif text-lg font-semibold">
                 {deck.title}
               </h2>
             </div>
-            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-[#7A8780]">
+            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-text-muted">
               A study workspace for managing materials, key concepts, and
               learning tools.
             </p>
@@ -143,7 +140,7 @@ export default function DeckCard({
               aria-busy={busy}
               disabled={busy}
               onClick={() => onTogglePriority(deck)}
-              className={`rounded-lg p-1.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${deck.isPriority ? "text-[#C24A3D]" : "text-[#A2ADA5] hover:text-[#C24A3D]"}`}
+              className={`rounded-lg p-1.5 transition disabled:cursor-not-allowed disabled:opacity-60 ${deck.isPriority ? "text-danger-text" : "text-text-muted hover:text-danger-text"}`}
             >
               {busy ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -163,7 +160,7 @@ export default function DeckCard({
                 aria-expanded={menuOpen}
                 disabled={busy}
                 onClick={() => setMenuOpen((open) => !open)}
-                className={`rounded-lg p-1.5 transition hover:bg-[#F1F3EE] ${menuOpen ? "text-[#16241D]" : "text-[#5B6B62]"}`}
+                className={`rounded-lg p-1.5 transition hover:bg-surface-hover ${menuOpen ? "text-text" : "text-text-secondary"}`}
               >
                 <MoreHorizontal className="h-5 w-5" />
               </button>
@@ -171,7 +168,7 @@ export default function DeckCard({
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-xl border border-[#D8DCD3] bg-white py-1 text-sm shadow-[0_10px_28px_rgba(22,36,29,0.16)]"
+                  className="absolute right-0 top-full z-30 mt-1 w-44 overflow-hidden rounded-xl border border-border bg-surface py-1 text-sm shadow-none"
                 >
                   <button
                     type="button"
@@ -180,7 +177,7 @@ export default function DeckCard({
                       setMenuOpen(false);
                       onPublish(deck);
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[#16241D] hover:bg-[#F1F3EE]"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-text hover:bg-surface-hover"
                   >
                     <Share2 className="h-4 w-4" />
                     Share
@@ -194,7 +191,7 @@ export default function DeckCard({
                           setMenuOpen(false);
                           onRefreshSnapshot(deck);
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#F1F3EE]"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-surface-hover"
                       >
                         <RefreshCw className="h-4 w-4" />
                         Refresh snapshot
@@ -206,7 +203,7 @@ export default function DeckCard({
                           setMenuOpen(false);
                           onUnpublish(deck);
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#FBEDEB]"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-danger-subtle"
                       >
                         <Undo2 className="h-4 w-4" />
                         Unpublish
@@ -217,7 +214,7 @@ export default function DeckCard({
                     <Link
                       href={`/desk/${deck.id}?share=1`}
                       role="menuitem"
-                      className="flex items-center gap-2 px-3 py-2 hover:bg-[#F1F3EE]"
+                      className="flex items-center gap-2 px-3 py-2 hover:bg-surface-hover"
                     >
                       <ExternalLink className="h-4 w-4" />
                       Open page
@@ -230,10 +227,10 @@ export default function DeckCard({
                       setMenuOpen(false);
                       onTogglePriority(deck);
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-[#16241D] transition hover:bg-[#F1F3EE]"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left text-text transition hover:bg-surface-hover"
                   >
                     <Star
-                      className="h-4 w-4 text-[#C24A3D]"
+                      className="h-4 w-4 text-danger-text"
                       fill={deck.isPriority ? "currentColor" : "none"}
                     />
                     {deck.isPriority ? "Remove priority" : "Mark as priority"}
@@ -245,7 +242,7 @@ export default function DeckCard({
                       setMenuOpen(false);
                       onRequestDelete(deck);
                     }}
-                    className="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-[#C24A3D] transition hover:bg-[#FBEDEB]"
+                    className="flex w-full items-center gap-2 px-3 py-2 text-left font-medium text-danger-text transition hover:bg-danger-subtle"
                   >
                     <Trash2 className="h-4 w-4" />
                     Delete deck
@@ -257,7 +254,7 @@ export default function DeckCard({
         </div>
 
         <div className="mt-4 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1 rounded-md border border-[#D8DCD3] px-2 py-1 font-mono text-[10px] text-[#5B6B62]">
+          <span className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 font-mono text-[10px] text-text-secondary">
             {deck.visibility === "private" ? (
               <Lock className="h-3 w-3" />
             ) : (
@@ -270,14 +267,14 @@ export default function DeckCard({
                 : "LINK"}
           </span>
           <span
-            className={`rounded-md px-2 py-1 text-[11px] font-medium ${deck.processingCount > 0 ? "bg-[#FFF1E7] text-[#C86621]" : deck.isPriority ? "bg-[#FBEDEB] text-[#C24A3D]" : "bg-[#EEF5F0] text-[#397653]"}`}
+            className={`rounded-md px-2 py-1 text-[11px] font-medium ${deck.processingCount > 0 ? "bg-warning-subtle text-warning-text" : deck.isPriority ? "bg-danger-subtle text-danger-text" : "bg-success-subtle text-success-text"}`}
           >
             {status}
           </span>
         </div>
       </div>
 
-      <div className="pointer-events-none relative z-10 flex items-center justify-between border-t border-[#F0F1EC] px-4 py-3 font-mono text-[11px] text-[#7A8780]">
+      <div className="pointer-events-none relative z-10 flex items-center justify-between border-t border-border px-4 py-3 font-mono text-[11px] text-text-muted">
         <div className="flex items-center gap-3"></div>
         <span className="inline-flex items-center gap-1">
           <CalendarDays className="h-3.5 w-3.5" />
