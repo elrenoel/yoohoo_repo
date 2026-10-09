@@ -84,27 +84,27 @@ export default function ProfileForm({ initial, mode, onSaved }: {
   return (
     <form onSubmit={submit} className="space-y-5">
       <label className="block">
-        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.16em] text-[#5B6B62]">{t("profile.username")}</span>
-        <div className="flex rounded-lg border border-[#D8DCD3] bg-white focus-within:border-[#164C3D]">
-          <span className="px-3 py-3 text-[#5B6B62]">@</span>
+        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.16em] text-text-secondary">{t("profile.username")}</span>
+        <div className="flex rounded-lg border border-border bg-surface focus-within:border-accent">
+          <span className="px-3 py-3 text-text-secondary">@</span>
           <input value={username} onChange={(event) => changeUsername(event.target.value)} maxLength={20} autoComplete="username" className="min-w-0 flex-1 bg-transparent py-3 pr-3 outline-none" required />
         </div>
-        <span className={`mt-2 flex min-h-5 items-center gap-1.5 text-xs ${availability === "available" ? "text-emerald-700" : availability === "checking" || availability === "idle" ? "text-[#5B6B62]" : "text-[#C24A3D]"}`}>{status}</span>
+        <span className={`mt-2 flex min-h-5 items-center gap-1.5 text-xs ${availability === "available" ? "text-success-text" : availability === "checking" || availability === "idle" ? "text-text-secondary" : "text-danger-text"}`}>{status}</span>
       </label>
       <label className="block">
-        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.16em] text-[#5B6B62]">{t("profile.displayName")}</span>
-        <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={50} required className="w-full rounded-lg border border-[#D8DCD3] bg-white px-3 py-3 outline-none focus:border-[#164C3D]" />
+        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.16em] text-text-secondary">{t("profile.displayName")}</span>
+        <input value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={50} required className="w-full rounded-lg border border-border bg-surface px-3 py-3 outline-none focus:border-accent" />
       </label>
       <label className="block">
-        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.16em] text-[#5B6B62]">{t("profile.bio")}</span>
-        <textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength={160} rows={4} className="w-full resize-none rounded-lg border border-[#D8DCD3] bg-white px-3 py-3 outline-none focus:border-[#164C3D]" />
-        <span className="mt-1 block text-right font-mono text-[11px] text-[#5B6B62]">{bio.length}/160</span>
+        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.16em] text-text-secondary">{t("profile.bio")}</span>
+        <textarea value={bio} onChange={(event) => setBio(event.target.value)} maxLength={160} rows={4} className="w-full resize-none rounded-lg border border-border bg-surface px-3 py-3 outline-none focus:border-accent" />
+        <span className="mt-1 block text-right font-mono text-[11px] text-text-secondary">{bio.length}/160</span>
       </label>
       {mode === "edit" && <label className="block">
-        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.16em] text-[#5B6B62]">{t("profile.avatarUrl")}</span>
-        <input type="url" value={avatarUrl} onChange={(event) => setAvatarUrl(event.target.value)} className="w-full rounded-lg border border-[#D8DCD3] bg-white px-3 py-3 outline-none focus:border-[#164C3D]" placeholder="https://…" />
+        <span className="mb-2 block font-mono text-xs uppercase tracking-[0.16em] text-text-secondary">{t("profile.avatarUrl")}</span>
+        <input type="url" value={avatarUrl} onChange={(event) => setAvatarUrl(event.target.value)} className="w-full rounded-lg border border-border bg-surface px-3 py-3 outline-none focus:border-accent" placeholder="https://…" />
       </label>}
-      <button type="submit" disabled={availability !== "available" || submitting || !displayName.trim()} className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#164C3D] px-4 py-3 font-semibold text-white transition hover:bg-[#0E3A2E] disabled:cursor-not-allowed disabled:opacity-50">
+      <button type="submit" disabled={availability !== "available" || submitting || !displayName.trim()} className="flex w-full items-center justify-center gap-2 rounded-lg bg-action-primary px-4 py-3 font-semibold text-on-action-primary transition hover:bg-action-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
         {submitting && <LoaderCircle className="h-4 w-4 animate-spin" />}{t(mode === "create" ? "profile.create" : "profile.save")}
       </button>
     </form>

@@ -32,36 +32,36 @@ export default function ProfilePageView({ profile, isOwner, initialFollowing=fal
   },[createOpen]);
   const showPosts=tab==="activity"||tab==="posts",showDecks=tab==="activity"||tab==="decks";
   const empty=(tab==="posts"&&!profile.posts.length)||(tab==="decks"&&!profile.publicDecks.length)||(tab==="activity"&&!profile.posts.length&&!profile.publicDecks.length);
-  return <main className="min-h-screen bg-[#F5F6F3] text-[#16241D]">
-    <header className="border-b border-[#D8DCD3] px-5 py-4 text-center"><h1 className="text-lg font-bold">{profile.displayName}</h1></header>
+  return <main className="min-h-screen bg-bg text-text">
+    <header className="border-b border-border px-5 py-4 text-center"><h1 className="text-lg font-bold">{profile.displayName}</h1></header>
     <div className="mx-auto w-full max-w-[720px] px-5 pb-24 sm:px-0">
       <section className="px-0 pb-2 pt-5 sm:pt-7">
         <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-start">
-          <div className="min-w-0 pt-3 sm:order-1"><h2 className="text-2xl font-bold">{profile.displayName}</h2><p className="mt-1 text-sm text-[#69756E]">@{profile.username}</p>{profile.bio&&<p className="mt-5 max-w-lg whitespace-pre-wrap text-[15px] leading-6 text-[#34433B]">{profile.bio}</p>}<FollowControls targetUserId={profile.userId} username={profile.username} isOwner={isOwner} initialFollowing={initialFollowing} initialFollowers={profile.counts.followers} initialFollowingCount={profile.counts.following}/></div>
+          <div className="min-w-0 pt-3 sm:order-1"><h2 className="text-2xl font-bold">{profile.displayName}</h2><p className="mt-1 text-sm text-text-secondary">@{profile.username}</p>{profile.bio&&<p className="mt-5 max-w-lg whitespace-pre-wrap text-[15px] leading-6 text-text-secondary">{profile.bio}</p>}<FollowControls targetUserId={profile.userId} username={profile.username} isOwner={isOwner} initialFollowing={initialFollowing} initialFollowers={profile.counts.followers} initialFollowingCount={profile.counts.following}/></div>
           <div className="sm:order-2"><UserAvatar src={profile.avatarUrl} name={profile.displayName} size={96} textClassName="text-xl"/></div>
         </div>
         {isOwner&&<div className="mt-6 grid grid-cols-[1fr_1fr_auto] items-start gap-2">
           <div ref={createRef} className="relative">
-            <button type="button" onClick={()=>setCreateOpen(value=>!value)} aria-expanded={createOpen} aria-haspopup="menu" className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#164C3D] text-sm font-bold text-white transition hover:bg-[#1E5B48]">
+            <button type="button" onClick={()=>setCreateOpen(value=>!value)} aria-expanded={createOpen} aria-haspopup="menu" className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-action-primary text-sm font-bold text-on-action-primary transition hover:bg-action-primary-hover">
               Create<ChevronDown className={`h-4 w-4 transition-transform ${createOpen?"rotate-180":""}`}/>
             </button>
-            {createOpen&&<div role="menu" className="absolute left-0 top-full z-50 mt-2 w-full min-w-[208px] overflow-hidden rounded-xl border border-[#D8DCD3] bg-white p-1.5 shadow-[0_14px_34px_rgba(22,36,29,.16)]">
-              <Link href="/desk" role="menuitem" onClick={()=>setCreateOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#16241D] transition hover:bg-[#F0F3EE]"><FilePlus2 className="h-5 w-5 shrink-0"/>Create your deck</Link>
-              <Link href="/home?compose=1" role="menuitem" onClick={()=>setCreateOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-[#16241D] transition hover:bg-[#F0F3EE]"><PenLine className="h-5 w-5 shrink-0"/>Post</Link>
+            {createOpen&&<div role="menu" className="absolute left-0 top-full z-50 mt-2 w-full min-w-[208px] overflow-hidden rounded-xl border border-border bg-surface p-1.5 shadow-[0_14px_34px_rgba(22,36,29,.16)]">
+              <Link href="/desk" role="menuitem" onClick={()=>setCreateOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-text transition hover:bg-surface-hover"><FilePlus2 className="h-5 w-5 shrink-0"/>Create your deck</Link>
+              <Link href="/home?compose=1" role="menuitem" onClick={()=>setCreateOpen(false)} className="flex items-center gap-3 rounded-lg px-3 py-3 text-sm font-semibold text-text transition hover:bg-surface-hover"><PenLine className="h-5 w-5 shrink-0"/>Post</Link>
             </div>}
           </div>
-          <button onClick={()=>setEditing(true)} className="flex h-11 items-center justify-center gap-2 rounded-lg border border-[#D8DCD3] bg-white text-sm font-bold"><Pencil className="h-4 w-4"/>Edit profile</button><button className="flex h-11 w-11 items-center justify-center rounded-lg border border-[#D8DCD3] bg-white" aria-label="More profile options"><MoreHorizontal className="h-5 w-5"/></button>
+          <button onClick={()=>setEditing(true)} className="flex h-11 items-center justify-center gap-2 rounded-lg border border-border bg-surface text-sm font-bold"><Pencil className="h-4 w-4"/>Edit profile</button><button className="flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-surface" aria-label="More profile options"><MoreHorizontal className="h-5 w-5"/></button>
         </div>}
       </section>
 
-      <nav className="mt-3 flex border-b border-[#D8DCD3]">{([['activity','Activity'],['posts','Posts'],['decks','Decks']] as const).map(([value,label])=><button key={value} onClick={()=>setTab(value)} className={`flex-1 border-b-2 px-3 py-4 text-sm font-semibold ${tab===value?"border-[#164C3D] text-[#16241D]":"border-transparent text-[#7A837E]"}`}>{label}</button>)}</nav>
+      <nav className="mt-3 flex border-b border-border">{([['activity','Activity'],['posts','Posts'],['decks','Decks']] as const).map(([value,label])=><button key={value} onClick={()=>setTab(value)} className={`flex-1 border-b-2 px-3 py-4 text-sm font-semibold ${tab===value?"border-accent text-text":"border-transparent text-text-muted"}`}>{label}</button>)}</nav>
 
-      <section className="mt-5 divide-y divide-[#D8DCD3] border-t border-[#D8DCD3]">
+      <section className="mt-5 divide-y divide-border border-t border-border">
         {showPosts&&profile.posts.map(post=><PostCard key={post.id} item={post}/>)}
         {showDecks&&profile.publicDecks.map(deck=><div key={deck.slug} className="pb-6"><DeckFolderCard deck={{slug:deck.slug,title:deck.title,description:`${deck.cardCount} cards · ${deck.completions} completions${deck.averageScore!==null?` · ${deck.averageScore}% average`:""}`,tags:deck.tags}}/></div>)}
       </section>
-      {empty&&<div className="flex min-h-72 flex-col items-center justify-center text-center"><PenLine className="h-6 w-6 text-[#7A837E]"/><h3 className="mt-4 text-sm font-bold">{isOwner?"You haven’t published anything yet.":"Nothing published yet."}</h3><p className="mt-2 text-sm text-[#7A837E]">{isOwner?"Share a learning note or publish a deck to get started.":"Published posts and decks will appear here."}</p>{isOwner&&<Link href="/home?compose=1" className="mt-4 rounded-lg border border-[#D8DCD3] bg-white px-4 py-2 text-sm font-semibold">Create a post</Link>}</div>}
+      {empty&&<div className="flex min-h-72 flex-col items-center justify-center text-center"><PenLine className="h-6 w-6 text-text-muted"/><h3 className="mt-4 text-sm font-bold">{isOwner?"You haven’t published anything yet.":"Nothing published yet."}</h3><p className="mt-2 text-sm text-text-muted">{isOwner?"Share a learning note or publish a deck to get started.":"Published posts and decks will appear here."}</p>{isOwner&&<Link href="/home?compose=1" className="mt-4 rounded-lg border border-border bg-surface px-4 py-2 text-sm font-semibold">Create a post</Link>}</div>}
     </div>
-    {editing&&<div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/45 sm:items-center sm:p-5"><section className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-[#D8DCD3] bg-[#F9FAF7] p-6 sm:p-8"><header className="mb-6 flex items-center justify-between"><h2 className="text-xl font-bold">Edit profile</h2><button onClick={()=>setEditing(false)} className="rounded-full p-2 hover:bg-[#E8ECE6]"><X className="h-5 w-5"/></button></header><ProfileForm mode="edit" initial={profile} onSaved={()=>setEditing(false)}/></section></div>}
+    {editing&&<div className="fixed inset-0 z-[100] flex items-end justify-center bg-overlay sm:items-center sm:p-5"><section className="max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-border bg-surface-raised p-6 sm:p-8"><header className="mb-6 flex items-center justify-between"><h2 className="text-xl font-bold">Edit profile</h2><button onClick={()=>setEditing(false)} className="rounded-full p-2 hover:bg-surface-hover"><X className="h-5 w-5"/></button></header><ProfileForm mode="edit" initial={profile} onSaved={()=>setEditing(false)}/></section></div>}
   </main>;
 }
