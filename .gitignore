@@ -72,3 +72,7 @@ Desktop.ini
 # Generated seed cache and rendered demo images
 /scripts/seed-data/users/*.json
 /scripts/seed-data/images/*.webp
+
+# Agent worktrees and QA artifacts
+/.worktrees/
+/artifacts/
