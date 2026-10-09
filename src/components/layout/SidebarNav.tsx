@@ -114,7 +114,7 @@ export default function SidebarNav() {
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-surface px-4 py-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-bg px-4 py-5 lg:flex">
         <Link href="/home" className="mb-7 flex items-center gap-2 px-2">
           <Image
             src="/logo_yoohoo.png"
@@ -164,7 +164,7 @@ export default function SidebarNav() {
       </aside>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-border bg-surface px-2 py-2 lg:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-border bg-bg px-2 py-2 lg:hidden"
         aria-label="Mobile navigation"
       >
         {[...discovery, workspace[0], workspace[1], identity[0]].map((item) => (

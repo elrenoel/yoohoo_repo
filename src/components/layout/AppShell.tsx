@@ -10,11 +10,11 @@ export default function AppShell({ children }: { children: ReactNode }) {
   const showNavigation = !isPending && Boolean(session?.user);
 
   return (
-    <>
+    <div className="min-h-screen bg-bg text-text">
       {showNavigation && <SidebarNav />}
-      <div className={showNavigation ? "min-h-screen pb-20 lg:ml-60 lg:pb-0" : "min-h-screen"}>
+      <div className={showNavigation ? "min-h-screen bg-bg pb-20 lg:ml-60 lg:pb-0" : "min-h-screen bg-bg"}>
         {children}
       </div>
-    </>
+    </div>
   );
 }

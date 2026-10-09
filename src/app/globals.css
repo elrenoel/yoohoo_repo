@@ -188,6 +188,15 @@ select:-webkit-autofill {
   color: var(--selection-text);
 }
 
+.topic-slider {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.topic-slider::-webkit-scrollbar {
+  display: none;
+}
+
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
   outline: 2px solid var(--focus-ring);
   outline-offset: 2px;

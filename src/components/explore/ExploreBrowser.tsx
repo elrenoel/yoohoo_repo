@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { BookOpen, FileText, LoaderCircle, Search, TrendingUp, Users } from "lucide-react";
+import { BookOpen, ChevronLeft, ChevronRight, FileText, LoaderCircle, Search, TrendingUp, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
@@ -18,7 +18,7 @@ const tabs:{value:Tab;label:string}[] = [{value:"all",label:"Explore"},{value:"d
 export default function ExploreBrowser() {
   const searchParams=useSearchParams(), router=useRouter(), pathname=usePathname(), toast=useToast();
   const urlQ=searchParams.get("q")||"", tab=(searchParams.get("tab")||"all") as Tab, tag=searchParams.get("tag")||"", sort=(searchParams.get("sort")||"newest") as Sort;
-  const [query,setQuery]=useState(urlQ); const sentinel=useRef<HTMLDivElement>(null);
+  const [query,setQuery]=useState(urlQ); const sentinel=useRef<HTMLDivElement>(null); const topicSlider=useRef<HTMLElement>(null);
   const filters=useMemo(()=>({q:urlQ,tab,tag,sort}),[urlQ,tab,tag,sort]);
   const setFilters=useCallback((patch:Record<string,string>)=>{const next=new URLSearchParams(searchParams.toString());for(const [key,value] of Object.entries(patch)){if(value&&value!=="all"&&!(key==="sort"&&value==="newest"))next.set(key,value);else next.delete(key)}const suffix=next.toString();router.push(`${pathname}${suffix?`?${suffix}`:""}`,{scroll:false})},[pathname,router,searchParams]);
   useEffect(()=>{if(query===urlQ)return;const timer=window.setTimeout(()=>setFilters({q:query.trim()}),350);return()=>window.clearTimeout(timer)},[query,urlQ,setFilters]);
@@ -33,12 +33,21 @@ export default function ExploreBrowser() {
   useEffect(()=>{if(explore.error)toast.error(explore.error.message)},[explore.error,toast]);
   useEffect(()=>{const node=sentinel.current;if(!node||!hasNextPage)return;const observer=new IntersectionObserver(entries=>{if(entries[0]?.isIntersecting&&!isFetchingNextPage)void fetchNextPage()},{rootMargin:"300px"});observer.observe(node);return()=>observer.disconnect()},[fetchNextPage,hasNextPage,isFetchingNextPage]);
 
-  return <main className="min-h-screen bg-bg text-text"><div className="flex w-full gap-8 px-8 pb-24 pt-5">
+  const slideTopics=(direction:-1|1)=>topicSlider.current?.scrollBy({left:direction*360,behavior:"smooth"});
+
+  return <main className="min-h-screen bg-bg text-text">
+    <div className="w-full border-b border-border px-4 py-3 sm:px-6 lg:px-8">
+      <div className="flex w-full items-center gap-2">
+        <button type="button" onClick={()=>slideTopics(-1)} aria-label="Previous topics" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text-secondary transition hover:border-border-strong hover:bg-surface-hover hover:text-text"><ChevronLeft className="h-4 w-4"/></button>
+        <nav ref={topicSlider} aria-label="Explore topics" className="topic-slider flex min-w-0 flex-1 snap-x snap-mandatory gap-2 overflow-x-auto px-1 py-1">
+          {tabs.map(item=><button key={item.value} onClick={()=>setFilters({tab:item.value})} className={`shrink-0 snap-start rounded-lg px-3 py-2 text-xs font-semibold transition ${tab===item.value?"bg-action-primary text-on-action-primary":"bg-surface-subtle text-text-secondary hover:bg-surface-hover"}`}>{item.label}</button>)}
+          {tags.map(item=><button key={item.tag} onClick={()=>setFilters({tag:tag===item.tag?"":item.tag})} className={`shrink-0 snap-start rounded-lg px-3 py-2 text-xs font-medium transition ${tag===item.tag?"bg-action-primary text-on-action-primary":"bg-surface-subtle text-text-secondary hover:bg-surface-hover"}`}>{item.tag}</button>)}
+        </nav>
+        <button type="button" onClick={()=>slideTopics(1)} aria-label="Next topics" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-text-secondary transition hover:border-border-strong hover:bg-surface-hover hover:text-text"><ChevronRight className="h-4 w-4"/></button>
+      </div>
+    </div>
+    <div className="flex w-full gap-8 px-4 pb-24 pt-5 sm:px-6 lg:px-8">
     <div className="min-w-0 flex-1"><div className="mx-auto w-full max-w-[900px]">
-      <nav className="flex gap-2 overflow-x-auto pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {tabs.map(item=><button key={item.value} onClick={()=>setFilters({tab:item.value})} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-semibold transition ${tab===item.value?"bg-action-primary text-on-action-primary":"bg-surface-subtle text-text-secondary hover:bg-surface-hover"}`}>{item.label}</button>)}
-        {tags.slice(0,12).map(item=><button key={item.tag} onClick={()=>setFilters({tag:tag===item.tag?"":item.tag})} className={`shrink-0 rounded-lg px-3 py-2 text-xs font-medium ${tag===item.tag?"bg-action-primary text-on-action-primary":"bg-surface-subtle text-text-secondary"}`}>{item.tag}</button>)}
-      </nav>
       <div className="mx-auto w-full max-w-[720px] xl:min-w-[720px]">
         <div className="mb-2 flex items-center justify-between border-b border-border py-3"><p className="text-sm font-semibold">{tag?`#${tag}`:urlQ?`Results for “${urlQ}”`:"Discover what to learn next"}</p><select value={sort} onChange={event=>setFilters({sort:event.target.value})} className="bg-transparent text-xs text-text-secondary outline-none" aria-label="Sort results"><option value="newest">Newest</option><option value="popular">Popular</option><option value="proven" disabled={tab==="post"||tab==="people"}>Proven</option></select></div>
         {explore.isPending?<ExploreSkeleton/>:featured?<><FeaturedCard item={featured} query={urlQ}/><div className="divide-y divide-border border-t border-border">{list.map(item=><ResultRow key={`${item.type}:${item.id}`} item={item} query={urlQ}/>)}</div></>:<div className="py-24 text-center"><Search className="mx-auto h-8 w-8 text-text-muted"/><h2 className="mt-4 text-xl font-semibold">No results found</h2><p className="mt-2 text-sm text-text-secondary">Try another search or choose a different topic.</p></div>}
