@@ -112,26 +112,26 @@ export default function HomeFeed() {
 
   return (
     <AppShell>
-      <main className="min-h-screen bg-[#F5F6F3] text-[#16241D]">
+      <main className="min-h-screen bg-bg text-text">
         <div className="flex w-full gap-8 px-8 pb-24 pt-6 xl:gap-8">
           <div className="shrink-0 flex-1 flex justify-center">
             <section className="w-full min-w-0 max-w-[720px] xl:min-w-[720px]">
-              <div className="[&>section]:rounded-xl [&>section]:border-[#C9CEC5] [&>section]:p-4 [&_textarea]:min-h-14">
+              <div className="[&>section]:rounded-xl [&>section]:border-border-strong [&>section]:p-4 [&_textarea]:min-h-14">
                 <PostComposer onPosted={posted} />
               </div>
-              <div className="mt-5 flex items-center justify-between border-b border-[#D8DCD3] pb-3">
+              <div className="mt-5 flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-5 text-sm">
-                  <button className="border-b-2 border-[#164C3D] pb-3 font-semibold">
+                  <button className="border-b-2 border-accent pb-3 font-semibold">
                     For you
                   </button>
-                  <span className="pb-3 text-[#7A8780]">Following</span>
+                  <span className="pb-3 text-text-muted">Following</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => void refresh()}
                   disabled={feed.isFetching}
                   aria-label="Refresh feed"
-                  className="rounded-full p-2 text-[#5B6B62] transition hover:bg-white hover:text-[#164C3D] disabled:opacity-50"
+                  className="rounded-full p-2 text-text-secondary transition hover:bg-surface-hover hover:text-accent disabled:opacity-50"
                 >
                   <RefreshCw
                     className={`h-4 w-4 ${feed.isFetching ? "animate-spin" : ""}`}
@@ -139,22 +139,22 @@ export default function HomeFeed() {
                 </button>
               </div>
               {!hasFollowing && !loading && (
-                <section className="mt-5 border-l-2 border-[#C24A3D] bg-white p-5">
+                <section className="mt-5 border-l-2 border-danger bg-surface p-5">
                   <h2 className="text-lg font-semibold">
                     Your feed is just getting started
                   </h2>
-                  <p className="mt-1 text-sm text-[#5B6B62]">
+                  <p className="mt-1 text-sm text-text-secondary">
                     Follow other learners to see their posts and decks here.
                   </p>
                   <Link
                     href="/explore"
-                    className="mt-3 inline-block text-sm font-semibold text-[#164C3D]"
+                    className="mt-3 inline-block text-sm font-semibold text-accent"
                   >
                     Explore the community →
                   </Link>
                 </section>
               )}
-              <div className="w-full min-w-0 divide-y divide-[#D8DCD3] [&>article]:border-x-0 [&>article]:border-t-0 [&>article]:bg-transparent [&>article]:px-0 [&>article]:py-6">
+              <div className="w-full min-w-0 divide-y divide-border [&>article]:border-x-0 [&>article]:border-t-0 [&>article]:bg-transparent [&>article]:px-0 [&>article]:py-6">
                 {loading && !shown.length
                   ? [1, 2, 3].map((item) => <Skeleton key={item} />)
                   : shown.map((item) => (
@@ -169,7 +169,7 @@ export default function HomeFeed() {
                 </div>
               )}
               {!loading && !shown.length && (
-                <div className="border-b border-[#D8DCD3] py-16 text-center text-sm text-[#5B6B62]">
+                <div className="border-b border-border py-16 text-center text-sm text-text-secondary">
                   No published content yet.
                 </div>
               )}
@@ -180,20 +180,20 @@ export default function HomeFeed() {
             <div className="sticky top-6 space-y-4">
               <form
                 action="/explore"
-                className="flex items-center gap-2 rounded-xl border border-[#D8DCD3] bg-white px-4 py-3"
+                className="flex items-center gap-2 rounded-xl border border-border bg-surface px-4 py-3"
               >
-                <Search className="h-4 w-4 text-[#5B6B62]" />
+                <Search className="h-4 w-4 text-text-secondary" />
                 <input
                   name="q"
                   placeholder="Search Yoohoo"
                   aria-label="Search Yoohoo"
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#87918B]"
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-text-muted"
                 />
               </form>
-              <section className="rounded-xl border border-[#D8DCD3] bg-white p-5">
+              <section className="rounded-xl border border-border bg-surface p-5">
                 <div className="flex items-center justify-between">
                   <h2 className="font-semibold">Learners to discover</h2>
-                  <Users className="h-4 w-4 text-[#5B6B62]" />
+                  <Users className="h-4 w-4 text-text-secondary" />
                 </div>
                 <div className="mt-4 space-y-4">
                   {people.map((person) => (
@@ -207,11 +207,11 @@ export default function HomeFeed() {
                         <span className="block truncate text-sm font-semibold group-hover:underline">
                           {person.displayName}
                         </span>
-                        <span className="block truncate text-xs text-[#7A8780]">
+                        <span className="block truncate text-xs text-text-muted">
                           @{person.username}
                         </span>
                       </span>
-                      <span className="text-xs font-semibold text-[#164C3D]">
+                      <span className="text-xs font-semibold text-accent">
                         View
                       </span>
                     </Link>
@@ -219,12 +219,12 @@ export default function HomeFeed() {
                   {!people.length && <RightRailSkeleton />}
                 </div>
               </section>
-              <section className="rounded-xl border border-[#D8DCD3] bg-white p-5">
+              <section className="rounded-xl border border-border bg-surface p-5">
                 <div className="flex items-center justify-between">
                   <h2 className="font-semibold">Recommended decks</h2>
                   <Link
                     href="/explore?tab=deck"
-                    className="text-xs text-[#5B6B62] hover:underline"
+                    className="text-xs text-text-secondary hover:underline"
                   >
                     See all
                   </Link>
@@ -241,7 +241,7 @@ export default function HomeFeed() {
                         <span className="block line-clamp-1 text-sm font-semibold group-hover:underline">
                           {deck.title}
                         </span>
-                        <span className="mt-0.5 block truncate text-xs text-[#7A8780]">
+                        <span className="mt-0.5 block truncate text-xs text-text-muted">
                           by @{deck.author.username}
                         </span>
                       </span>
@@ -266,16 +266,16 @@ function Skeleton() {
       aria-label="Loading post"
     >
       <div className="flex w-full gap-3">
-        <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-[#E1E5DF]" />
+        <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-skeleton" />
         <div className="min-w-0 flex-1">
-          <div className="h-4 w-52 animate-pulse rounded bg-[#E1E5DF]" />
-          <div className="mt-4 h-4 w-full animate-pulse rounded bg-[#E1E5DF]" />
-          <div className="mt-2 h-4 w-4/5 animate-pulse rounded bg-[#E1E5DF]" />
-          <div className="mt-5 h-64 w-full animate-pulse rounded-2xl bg-[#E1E5DF]" />
+          <div className="h-4 w-52 animate-pulse rounded bg-skeleton" />
+          <div className="mt-4 h-4 w-full animate-pulse rounded bg-skeleton" />
+          <div className="mt-2 h-4 w-4/5 animate-pulse rounded bg-skeleton" />
+          <div className="mt-5 h-64 w-full animate-pulse rounded-2xl bg-skeleton" />
           <div className="mt-5 flex gap-6">
-            <div className="h-4 w-12 animate-pulse rounded bg-[#E1E5DF]" />
-            <div className="h-4 w-12 animate-pulse rounded bg-[#E1E5DF]" />
-            <div className="h-4 w-12 animate-pulse rounded bg-[#E1E5DF]" />
+            <div className="h-4 w-12 animate-pulse rounded bg-skeleton" />
+            <div className="h-4 w-12 animate-pulse rounded bg-skeleton" />
+            <div className="h-4 w-12 animate-pulse rounded bg-skeleton" />
           </div>
         </div>
       </div>
@@ -285,8 +285,8 @@ function Skeleton() {
 function RightRailSkeleton() {
   return (
     <div className="space-y-3" role="status">
-      <div className="h-9 animate-pulse rounded-lg bg-[#EEF1EB]" />
-      <div className="h-9 animate-pulse rounded-lg bg-[#EEF1EB]" />
+      <div className="h-9 animate-pulse rounded-lg bg-surface-hover" />
+      <div className="h-9 animate-pulse rounded-lg bg-surface-hover" />
     </div>
   );
 }
@@ -301,9 +301,9 @@ function GradientFolderIcon() {
     >
       <defs>
         <linearGradient id={gradientId} x1="8" y1="2" x2="31" y2="33" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#3F9477" />
-          <stop offset="0.52" stopColor="#19705A" />
-          <stop offset="1" stopColor="#0E493B" />
+          <stop stopColor="var(--success)" />
+          <stop offset="0.52" stopColor="var(--accent-hover)" />
+          <stop offset="1" stopColor="var(--accent)" />
         </linearGradient>
       </defs>
       <path
@@ -311,7 +311,7 @@ function GradientFolderIcon() {
         d="M3 7.5A4.5 4.5 0 0 1 7.5 3H16l3.4 4H32.5A4.5 4.5 0 0 1 37 11.5v14A5.5 5.5 0 0 1 31.5 31h-24A4.5 4.5 0 0 1 3 26.5v-19Z"
       />
       <path
-        fill="white"
+        fill="var(--text)"
         fillOpacity="0.16"
         d="M7.5 4.7h7.8l3.4 4H33a2.3 2.3 0 0 1 2.2 1.7H4.8V7.5a2.7 2.7 0 0 1 2.7-2.8Z"
       />
