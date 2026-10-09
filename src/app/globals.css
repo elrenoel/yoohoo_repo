@@ -1,7 +1,5 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
-
 @theme {
   --font-sans: var(--font-plus-jakarta-sans), system-ui, sans-serif;
   --font-serif: var(--font-plus-jakarta-sans), system-ui, sans-serif;
@@ -60,99 +58,6 @@
 }
 
 :root {
-  color-scheme: light;
-
-  /* Canvas and surfaces: preserve the existing light theme exactly. */
-  --bg: #fafafa;
-  --surface: #ffffff;
-  --surface-raised: #ffffff;
-  --surface-subtle: #f5f5f5;
-  --surface-hover: #fafafa;
-  --canvas-soft: #f5f6f3;
-  --overlay: rgb(23 23 23 / 30%);
-
-  /* Content and structure. */
-  --border: #e5e5e5;
-  --border-strong: #a3a3a3;
-  --control-border: #8a948e;
-  --text: #171717;
-  --text-secondary: #525252;
-  --text-muted: #737373;
-
-  /* Brand and interaction. */
-  --accent: #013528;
-  --accent-hover: #164c3d;
-  --accent-subtle: #e4f0e8;
-  --on-accent: #ffffff;
-  --action-primary: #171717;
-  --action-primary-hover: #262626;
-  --on-action-primary: #ffffff;
-
-  /* Feedback states. */
-  --success: #047857;
-  --success-hover: #065f46;
-  --success-subtle: #eef5f0;
-  --success-border: #bfd6c4;
-  --success-text: #2f7651;
-  --on-success: #ffffff;
-  --warning: #b45309;
-  --warning-hover: #92400e;
-  --warning-subtle: #fffbeb;
-  --warning-border: #fde68a;
-  --warning-text: #92400e;
-  --on-warning: #ffffff;
-  --danger: #e11d48;
-  --danger-hover: #be123c;
-  --danger-subtle: #fbedeb;
-  --danger-border: #f0c4be;
-  --danger-text: #aa382f;
-  --on-danger: #ffffff;
-
-  /* System UI. */
-  --focus-ring: #aadd66;
-  --focus-contrast: #013528;
-  --focus-offset: #fafafa;
-  --skeleton: #f5f5f5;
-  --skeleton-highlight: #ffffff;
-  --scrollbar-track: #f5f5f5;
-  --scrollbar-thumb: #a3a3a3;
-  --scrollbar-thumb-hover: #737373;
-  --selection-bg: #171717;
-  --selection-text: #ffffff;
-  --shadow-color: rgb(22 36 29 / 16%);
-  --control-subtle: #fdf7eb;
-  --control-text: #041914;
-  --chrome: #013528;
-  --chrome-text: #fdf7eb;
-  --chrome-muted: rgb(253 247 235 / 70%);
-  --chrome-hover: rgb(253 247 235 / 10%);
-  --chrome-border: rgb(253 247 235 / 20%);
-  --google-blue: #4285f4;
-  --google-green: #34a853;
-  --google-yellow: #fbbc05;
-  --google-red: #ea4335;
-
-  --toast-normal-bg: #f5f6f3;
-  --toast-normal-text: #16241d;
-  --toast-normal-border: #d8dcd3;
-  --toast-success-bg: #eef5f0;
-  --toast-success-text: #2f7651;
-  --toast-success-border: #bfd6c4;
-  --toast-warning-bg: #fffbeb;
-  --toast-warning-text: #92400e;
-  --toast-warning-border: #fde68a;
-  --toast-error-bg: #fbedeb;
-  --toast-error-text: #aa382f;
-  --toast-error-border: #f0c4be;
-
-  /* Compatibility aliases while areas migrate to semantic utilities. */
-  --background: var(--bg);
-  --foreground: var(--text);
-  --card-bg: var(--surface);
-  --border-color: var(--border);
-}
-
-[data-theme="dark"] {
   color-scheme: dark;
 
   --bg: #0c120f;
@@ -228,11 +133,21 @@
   --toast-error-bg: rgb(242 123 107 / 12%);
   --toast-error-text: #f69a8e;
   --toast-error-border: rgb(242 123 107 / 28%);
+
+  /* Compatibility aliases while areas migrate to semantic utilities. */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card-bg: var(--surface);
+  --border-color: var(--border);
 }
 
+html,
 body {
   background-color: var(--bg);
   color: var(--text);
+}
+
+body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -242,6 +157,24 @@ input[type="checkbox"],
 input[type="radio"] {
   border-color: var(--control-border);
   accent-color: var(--accent);
+}
+
+input,
+select,
+textarea,
+button {
+  color-scheme: dark;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--text);
+  caret-color: var(--text);
+  box-shadow: 0 0 0 1000px var(--surface-raised) inset;
+  transition: background-color 9999s ease-out 0s;
 }
 
 ::selection {

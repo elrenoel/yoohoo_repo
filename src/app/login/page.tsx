@@ -291,7 +291,7 @@ export default function LoginPage() {
       <main className="max-w-md mx-auto px-6 py-12 flex-1 w-full flex flex-col justify-center">
         <Suspense
           fallback={
-            <div className="bg-surface border border-border rounded-2xl p-8 shadow-xs dark:shadow-none text-center">
+            <div className="bg-surface border border-border rounded-2xl p-8 shadow-xs shadow-none text-center">
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-text-muted mb-2" />
               <p className="text-xs text-text-muted">{t("auth.loadingForm")}</p>
             </div>

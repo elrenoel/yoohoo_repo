@@ -152,7 +152,7 @@ export default function DocumentAttemptsPage() {
                 <Link
                   key={attempt.id}
                   href={`/desk/${docId}/attempts/${attempt.id}`}
-                  className="group bg-surface border border-border hover:border-border-strong rounded-xl p-5 shadow-2xs dark:shadow-none transition flex items-center justify-between gap-4 block cursor-pointer"
+                  className="group bg-surface border border-border hover:border-border-strong rounded-xl p-5 shadow-2xs shadow-none transition flex items-center justify-between gap-4 block cursor-pointer"
                 >
                   <div className="flex items-start gap-3.5 min-w-0 flex-1">
                     <div className="w-10 h-10 rounded-lg bg-surface-subtle group-hover:bg-action-primary group-hover:text-on-action-primary flex items-center justify-center text-text-secondary shrink-0 transition">
@@ -208,7 +208,7 @@ export default function DocumentAttemptsPage() {
             </p>
             <Link
               href={`/desk/${docId}/quiz`}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-action-primary text-on-action-primary text-xs font-medium hover:bg-action-primary-hover transition shadow-2xs dark:shadow-none"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-action-primary text-on-action-primary text-xs font-medium hover:bg-action-primary-hover transition shadow-2xs shadow-none"
             >
               {t("attempts.startQuiz")}
             </Link>

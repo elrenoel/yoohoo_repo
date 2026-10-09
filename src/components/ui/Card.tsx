@@ -10,13 +10,13 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const variantClasses: Record<CardVariant, string> = {
-  default: "bg-surface border border-border rounded-2xl p-8 shadow-xs dark:shadow-none",
-  compact: "bg-surface border border-border rounded-2xl p-6 shadow-xs dark:shadow-none",
-  list: "bg-surface border border-border hover:border-border-strong rounded-xl p-5 shadow-2xs dark:shadow-none transition",
+  default: "bg-surface border border-border rounded-2xl p-8 shadow-xs shadow-none",
+  compact: "bg-surface border border-border rounded-2xl p-6 shadow-xs shadow-none",
+  list: "bg-surface border border-border hover:border-border-strong rounded-xl p-5 shadow-2xs shadow-none transition",
   dialog:
-    "bg-surface-raised border border-border rounded-2xl p-6 sm:p-8 shadow-lg dark:shadow-none w-full max-w-sm",
+    "bg-surface-raised border border-border rounded-2xl p-6 sm:p-8 shadow-lg shadow-none w-full max-w-sm",
   centered:
-    "bg-surface border border-border rounded-2xl p-10 text-center shadow-xs dark:shadow-none",
+    "bg-surface border border-border rounded-2xl p-10 text-center shadow-xs shadow-none",
 };
 
 /**

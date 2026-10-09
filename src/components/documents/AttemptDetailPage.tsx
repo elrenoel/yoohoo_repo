@@ -249,7 +249,7 @@ export default function AttemptDetailPage() {
                 return (
                   <div
                     key={idx}
-                    className={`bg-surface rounded-xl border p-5 shadow-2xs dark:shadow-none ${statusColor}`}
+                    className={`bg-surface rounded-xl border p-5 shadow-2xs shadow-none ${statusColor}`}
                   >
                     <div className="flex items-start gap-3 mb-4">
                       <div

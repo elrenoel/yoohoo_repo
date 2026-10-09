@@ -177,7 +177,7 @@ export default function TrialQuizPage() {
         </div>
 
         {/* Question Card */}
-        <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs dark:shadow-none mb-6">
+        <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs shadow-none mb-6">
           <h2 className="text-lg sm:text-xl font-semibold text-text tracking-tight leading-snug mb-6">
             {currentQuestion.question}
           </h2>
@@ -192,7 +192,7 @@ export default function TrialQuizPage() {
                   onClick={() => handleSelectOption(optIdx)}
                   className={`w-full p-4 rounded-xl border text-left transition flex items-start gap-3.5 cursor-pointer group ${
                     isSelected
-                      ? "border-action-primary bg-action-primary text-on-action-primary shadow-xs dark:shadow-none"
+                      ? "border-action-primary bg-action-primary text-on-action-primary shadow-xs shadow-none"
                       : "border-control-border bg-surface-subtle hover:bg-surface-hover text-text"
                   }`}
                 >

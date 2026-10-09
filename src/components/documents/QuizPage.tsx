@@ -81,7 +81,7 @@ function quizVariantLabel(variant: QuizSetOption["variant"]) {
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 function QuestionSkeleton() {
   return (
-    <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs dark:shadow-none mb-6 animate-pulse">
+    <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs shadow-none mb-6 animate-pulse">
       <div className="skeleton-shimmer h-5 rounded w-3/4 mb-4" />
       <div className="skeleton-shimmer h-4 rounded w-1/2 mb-6" />
       <div className="space-y-3">
@@ -280,7 +280,7 @@ function QuizContent({
       {/* Question Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between mb-6">
         <div className="flex justify-between w-full">
-          <span className="text-xs font-mono font-medium px-3 py-2 rounded-full bg-action-primary text-on-action-primary shadow-2xs dark:shadow-none">
+          <span className="text-xs font-mono font-medium px-3 py-2 rounded-full bg-action-primary text-on-action-primary shadow-2xs shadow-none">
           {t("quiz.questionOf", {
             current: currentIndex + 1,
             total: questions.length,
@@ -304,7 +304,7 @@ function QuizContent({
       {mode === "time_attack" && <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-border"><div className={`h-full transition-all ${remainingMs < 5_000 ? "bg-danger" : "bg-success"}`} style={{ width: `${(remainingMs / TIME_ATTACK_QUESTION_MS) * 100}%` }} /></div>}
 
       {/* Question Card */}
-      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs dark:shadow-none mb-6">
+      <div className="bg-surface border border-border rounded-2xl p-6 sm:p-8 shadow-xs shadow-none mb-6">
         <h2 className="text-lg sm:text-xl font-semibold text-text leading-relaxed mb-6">
           {currentQuestion.question}
         </h2>
@@ -321,7 +321,7 @@ function QuizContent({
                 onClick={() => handleSelectOption(optIdx)}
                 className={`w-full p-4 rounded-xl border text-left transition flex items-start gap-3.5 cursor-pointer text-xs sm:text-sm ${
                   isSelected
-                    ? "border-action-primary bg-action-primary text-on-action-primary shadow-xs dark:shadow-none"
+                    ? "border-action-primary bg-action-primary text-on-action-primary shadow-xs shadow-none"
                     : "border-control-border bg-surface-subtle hover:bg-surface-hover text-text"
                 }`}
               >
@@ -664,7 +664,7 @@ export default function QuizPage() {
         )}
 
         {!isLoading && !error && !isDemo && questions.length === 0 && (
-          <div className="rounded-2xl border border-border bg-surface p-6 text-center shadow-xs dark:shadow-none sm:p-8">
+          <div className="rounded-2xl border border-border bg-surface p-6 text-center shadow-xs shadow-none sm:p-8">
             <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-success-subtle text-success-text">
               <Sparkles className="h-5 w-5" />
             </div>
@@ -687,7 +687,7 @@ export default function QuizPage() {
         )}
 
         {!isLoading && !error && !isDemo && questions.length > 0 && !started && (
-          <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-xs dark:shadow-none mb-6">
+          <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-xs shadow-none mb-6">
             <h2 className="text-lg font-semibold text-text">Pilih mode pengerjaan</h2>
             {selectedSetLabel && <p className="mt-1 text-xs font-medium text-success-text">Set aktif: {selectedSetLabel}</p>}
             <p className="mt-2 text-sm text-text-secondary">Time Attack memberi waktu {TIME_ATTACK_QUESTION_MS / 1000} detik untuk setiap soal.</p>
@@ -704,7 +704,7 @@ export default function QuizPage() {
         )}
 
         {!isLoading && !error && !isDemo && sets.length > 0 && !started && (
-          <section className="rounded-2xl border border-border bg-surface p-5 shadow-xs dark:shadow-none sm:p-6">
+          <section className="rounded-2xl border border-border bg-surface p-5 shadow-xs shadow-none sm:p-6">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <div className="flex items-center gap-2 text-text">
@@ -784,7 +784,7 @@ export default function QuizPage() {
 
       {showGenerateDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4 backdrop-blur-[2px]" role="presentation" onMouseDown={() => !isRegenerating && setShowGenerateDialog(false)}>
-          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface-raised p-5 shadow-2xl dark:shadow-none sm:p-6" role="dialog" aria-modal="true" aria-labelledby="generate-quiz-title" onMouseDown={(event) => event.stopPropagation()}>
+          <div className="w-full max-w-lg rounded-2xl border border-border bg-surface-raised p-5 shadow-2xl shadow-none sm:p-6" role="dialog" aria-modal="true" aria-labelledby="generate-quiz-title" onMouseDown={(event) => event.stopPropagation()}>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">Generate quiz</p>

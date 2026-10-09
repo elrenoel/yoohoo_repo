@@ -29,8 +29,8 @@ export default function ErrorState({
     : "w-full max-w-sm mx-auto text-center";
 
   const cardClass = compact
-    ? "bg-surface border border-border rounded-2xl p-6 shadow-xs dark:shadow-none"
-    : "bg-surface border border-border rounded-2xl p-8 shadow-xs dark:shadow-none";
+    ? "bg-surface border border-border rounded-2xl p-6 shadow-xs shadow-none"
+    : "bg-surface border border-border rounded-2xl p-8 shadow-xs shadow-none";
 
   return (
     <div className={containerClass}>
@@ -55,7 +55,7 @@ export default function ErrorState({
 
               const variantClass =
                 action.variant === "primary"
-                  ? "bg-action-primary text-on-action-primary hover:bg-action-primary-hover shadow-xs dark:shadow-none"
+                  ? "bg-action-primary text-on-action-primary hover:bg-action-primary-hover shadow-xs shadow-none"
                   : "bg-surface border border-control-border text-text-secondary hover:bg-surface-hover";
 
               if (action.href) {

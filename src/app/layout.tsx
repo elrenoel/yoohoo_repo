@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/i18n";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -10,7 +10,6 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import type { SessionData } from "@/lib/session-provider";
-import ThemeProvider from "@/components/theme/ThemeProvider";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", variable: "--font-plus-jakarta-sans" });
 
@@ -24,6 +23,11 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  colorScheme: "dark",
+  themeColor: "#0c120f",
+};
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -32,27 +36,18 @@ export default async function RootLayout({
   const initialSession = await auth.api.getSession({ headers: await headers() });
 
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${plusJakartaSans.variable} h-full bg-bg antialiased`}>
       <body className="min-h-full bg-bg text-text font-sans flex flex-col">
-        <ThemeProvider
-          attribute="data-theme"
-          defaultTheme="system"
-          enableSystem
-          enableColorScheme
-          disableTransitionOnChange
-          storageKey="yoohoo-theme"
-        >
-          <ErrorBoundary>
-            <QueryProvider>
-              <SessionProvider initialSession={initialSession as SessionData | null}>
-                <LanguageProvider>
-                  {children}
-                  <AppToaster />
-                </LanguageProvider>
-              </SessionProvider>
-            </QueryProvider>
-          </ErrorBoundary>
-        </ThemeProvider>
+        <ErrorBoundary>
+          <QueryProvider>
+            <SessionProvider initialSession={initialSession as SessionData | null}>
+              <LanguageProvider>
+                {children}
+                <AppToaster />
+              </LanguageProvider>
+            </SessionProvider>
+          </QueryProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

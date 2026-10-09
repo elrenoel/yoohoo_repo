@@ -341,7 +341,7 @@ export default function QuizResultsPage() {
         <div className="flex flex-col sm:flex-row gap-3 mb-8">
           <Link
             href={`/desk/${docId}/quiz`}
-            className="flex-1 py-3 px-4 text-sm font-medium rounded-xl bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition text-center flex items-center justify-center gap-2 shadow-xs dark:shadow-none"
+            className="flex-1 py-3 px-4 text-sm font-medium rounded-xl bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition text-center flex items-center justify-center gap-2 shadow-xs shadow-none"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Ulangi Kuis</span>
@@ -382,7 +382,7 @@ export default function QuizResultsPage() {
             return (
               <div
                 key={item.questionId}
-                className={`bg-surface rounded-xl border p-5 shadow-2xs dark:shadow-none ${statusColor}`}
+                className={`bg-surface rounded-xl border p-5 shadow-2xs shadow-none ${statusColor}`}
               >
                 {/* Question Header */}
                 <div className="flex items-start gap-3 mb-4">

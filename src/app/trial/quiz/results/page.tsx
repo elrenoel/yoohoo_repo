@@ -191,7 +191,7 @@ export default function TrialQuizResultsPage() {
             </button>
             <Link
               href="/trial/flashcards"
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-action-primary hover:bg-action-primary-hover text-xs font-medium text-on-action-primary transition flex items-center justify-center gap-1.5 shadow-2xs dark:shadow-none"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-action-primary hover:bg-action-primary-hover text-xs font-medium text-on-action-primary transition flex items-center justify-center gap-1.5 shadow-2xs shadow-none"
             >
               <BookOpen className="w-3.5 h-3.5" />
               <span>{t("trial.openFlashcards")}</span>
@@ -208,7 +208,7 @@ export default function TrialQuizResultsPage() {
           {result.review.map((item, idx) => (
             <div
               key={idx}
-              className={`bg-surface border rounded-xl p-6 shadow-2xs dark:shadow-none transition ${
+              className={`bg-surface border rounded-xl p-6 shadow-2xs shadow-none transition ${
                 item.isCorrect ? "border-border" : "border-danger-border bg-danger-subtle"
               }`}
             >

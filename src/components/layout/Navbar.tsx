@@ -136,7 +136,7 @@ export default function Navbar({
         onClick={() => setMenuOpen(false)}
       />
       <div
-        className={`absolute right-0 mt-2 w-56 rounded-xl border border-border bg-surface-raised text-text shadow-lg dark:shadow-none z-50 overflow-hidden transition-all duration-200 ease-out origin-top-right ${menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"}`}
+        className={`absolute right-0 mt-2 w-56 rounded-xl border border-border bg-surface-raised text-text shadow-lg shadow-none z-50 overflow-hidden transition-all duration-200 ease-out origin-top-right ${menuOpen ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 -translate-y-1 pointer-events-none"}`}
       >
         {/* User info header */}
         <div className="border-b border-border px-4 py-3">
@@ -191,7 +191,7 @@ export default function Navbar({
           </Link>
           <Link
             href="/register"
-            className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-control-subtle text-control-text transition shadow-2xs dark:shadow-none"
+            className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-control-subtle text-control-text transition shadow-2xs shadow-none"
           >
             {t("nav.register")}
           </Link>
@@ -306,7 +306,7 @@ export default function Navbar({
         ref={mobileMenuRef}
         className={`fixed top-[56px] left-0 right-0 z-50 sm:hidden transition-all duration-300 ease-out ${mobileMenuOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-3 pointer-events-none"}`}
       >
-        <div className="bg-chrome border-b border-chrome-border shadow-xl dark:shadow-none max-h-[calc(100vh-56px)] overflow-y-auto">
+        <div className="bg-chrome border-b border-chrome-border shadow-xl shadow-none max-h-[calc(100vh-56px)] overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 py-4 flex flex-col gap-1">
             {/* Nav links for logged-in users */}
             {session?.user && !backHref && (

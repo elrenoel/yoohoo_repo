@@ -63,7 +63,7 @@ export default function ConfirmDialog({
       onClick={onCancel}
     >
       <div
-        className="bg-surface-raised border border-border rounded-2xl p-6 sm:p-8 shadow-lg dark:shadow-none w-full max-w-sm"
+        className="bg-surface-raised border border-border rounded-2xl p-6 sm:p-8 shadow-lg shadow-none w-full max-w-sm"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold text-text mb-2">
@@ -84,7 +84,7 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             disabled={loading}
             aria-busy={loading}
-            className={`py-2.5 px-5 rounded-xl ${confirmColorClass} text-xs sm:text-sm font-medium transition flex items-center gap-2 cursor-pointer shadow-xs dark:shadow-none active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100`}
+            className={`py-2.5 px-5 rounded-xl ${confirmColorClass} text-xs sm:text-sm font-medium transition flex items-center gap-2 cursor-pointer shadow-xs shadow-none active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100`}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : icon ?? <Trash2 className="w-4 h-4" />}
             <span>{confirmLabel}</span>
