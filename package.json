@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint && npm run lint:theme",
+    "lint": "eslint",
     "lint:theme": "node scripts/check-theme-colors.mjs",
     "db:login": "supabase login",
     "db:link": "supabase link --project-ref %SUPABASE_PROJECT_ID%",

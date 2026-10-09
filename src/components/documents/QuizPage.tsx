@@ -136,10 +136,12 @@ function QuizContent({
     ? selectedAnswers[currentQuestion.id]
     : undefined;
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Reset the existing per-question timer when the active question changes. */
   useEffect(() => {
     setQuestionStartedAt(Date.now());
     setRemainingMs(TIME_ATTACK_QUESTION_MS);
   }, [currentIndex, currentQuestion?.id]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (mode !== "time_attack" || !currentQuestion || isSubmitting || answerMeta[currentQuestion.id]) return;
@@ -157,6 +159,7 @@ function QuizContent({
 
   useEffect(() => {
     if (mode === "time_attack" && currentIndex === questions.length - 1 && currentQuestion && answerMeta[currentQuestion.id]?.status === "timeout") {
+      // eslint-disable-next-line react-hooks/immutability -- Submit on the existing timeout transition; declaration remains below with the other handlers.
       void handleSubmitQuiz();
     }
   }, [mode, currentIndex, questions.length, currentQuestion, answerMeta]);
@@ -456,6 +459,7 @@ export default function QuizPage() {
 
   const selectedSetLabel = isDemo ? null : quizData?.quizSetLabel || null;
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- Demo mode intentionally starts immediately after the client mounts.
   useEffect(() => { if (isDemo) setStarted(true); }, [isDemo]);
 
   const handleRetry = () => {

@@ -147,6 +147,7 @@ export default function QuizResultsPage() {
             createdAt: typeof parsed.createdAt === "string" ? parsed.createdAt : undefined,
           };
 
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrate the normalized result fetched by this effect.
           setResult(normalized);
           const hasIncompleteReview = review.some(
             item => item.question === "Pertanyaan tidak tersedia" || item.options.length === 0,

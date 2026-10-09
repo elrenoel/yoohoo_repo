@@ -40,6 +40,7 @@ export default function TrialQuizPage() {
 
   const optionLabels = ["A", "B", "C", "D"];
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Hydrate the client-only trial snapshot from browser storage after mount. */
   useEffect(() => {
     const raw = localStorage.getItem("yoohoo_trial_data");
     if (!raw) {
@@ -57,6 +58,7 @@ export default function TrialQuizPage() {
       setNotFound(true);
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (notFound) {
     return (

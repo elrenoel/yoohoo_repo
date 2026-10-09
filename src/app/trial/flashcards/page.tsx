@@ -37,6 +37,7 @@ export default function TrialFlashcardsPage() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- Hydrate the client-only trial snapshot from browser storage after mount. */
   useEffect(() => {
     const raw = localStorage.getItem("yoohoo_trial_data");
     if (!raw) {
@@ -54,6 +55,7 @@ export default function TrialFlashcardsPage() {
       setNotFound(true);
     }
   }, []);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Keyboard navigation
   useEffect(() => {

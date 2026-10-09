@@ -76,6 +76,7 @@ export default function TrialQuizResultsPage() {
       const stored = sessionStorage.getItem("trial_quiz_result");
       if (stored) {
         try {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrate the client-only result from session storage.
           setResult(JSON.parse(stored));
         } catch {
           router.replace("/");
