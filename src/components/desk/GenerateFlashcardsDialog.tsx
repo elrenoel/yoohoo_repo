@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, CheckCheck, FileText, Loader2, Search, Sparkles, X } from "lucide-react";
@@ -238,27 +238,27 @@ export default function GenerateFlashcardsDialog({
   const stepIndex = step === "documents" ? 1 : step === "keywords" ? 2 : 3;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#16241D]/45 px-4 py-8 backdrop-blur-sm" role="presentation" onClick={() => { if (!submitting) onClose(); }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay px-4 py-8 backdrop-blur-sm" role="presentation" onClick={() => { if (!submitting) onClose(); }}>
       <div role="dialog" aria-modal="true" aria-label={flashcardTitle}
-        className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-[28px] border border-[#D8DCD3] bg-[#F5F6F3] shadow-[0_24px_70px_rgba(22,36,29,0.35)]"
+        className="flex max-h-full w-full max-w-2xl flex-col overflow-hidden rounded-[28px] border border-border bg-bg shadow-none"
         onClick={event => event.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-start justify-between gap-4 border-b border-[#D8DCD3] bg-white px-6 py-5">
+        <div className="flex items-start justify-between gap-4 border-b border-border bg-surface px-6 py-5">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[#5B6B62]"><Sparkles className="h-4 w-4" /><p className="font-mono text-[10px] uppercase tracking-[0.2em]">{flashcardTitle}</p></div>
-            <h2 className="mt-1.5 truncate font-serif text-2xl font-semibold tracking-tight text-[#16241D]">
+            <div className="flex items-center gap-2 text-text-secondary"><Sparkles className="h-4 w-4" /><p className="font-mono text-[10px] uppercase tracking-[0.2em]">{flashcardTitle}</p></div>
+            <h2 className="mt-1.5 truncate font-serif text-2xl font-semibold tracking-tight text-text">
               {step === "documents" ? "1. Choose materials" : step === "keywords" ? "2. Choose keywords" : "3. Confirm"}
             </h2>
-            <p className="mt-1 text-sm text-[#5B6B62]">
+            <p className="mt-1 text-sm text-text-secondary">
               {step === "documents" ? "Choose one or more materials that have finished processing."
                 : step === "keywords" ? "Choose keywords from the selected materials. Duplicate terms are merged automatically."
                 : "Review the summary before starting."}
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full border border-[#D8DCD3] bg-white px-2.5 py-1 font-mono text-[10px] text-[#5B6B62]">{stepIndex}/3</span>
+            <span className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-[10px] text-text-secondary">{stepIndex}/3</span>
             <button type="button" onClick={onClose} disabled={submitting} aria-label="Close"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#D8DCD3] bg-white text-[#16241D] transition hover:bg-[#EFF1EB] disabled:opacity-50">
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-text transition hover:bg-surface-subtle disabled:opacity-50">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -270,50 +270,50 @@ export default function GenerateFlashcardsDialog({
             <div className="space-y-2.5" role="status">
               <span className="sr-only">Loading...</span>
               {Array.from({ length: 4 }, (_, index) => (
-                <div key={index} className="h-14 rounded-2xl border border-[#D8DCD3] bg-white animate-pulse" />
+                <div key={index} className="h-14 rounded-2xl border border-border bg-surface animate-pulse" />
               ))}
             </div>
           ) : error && step !== "confirm" ? (
-            <div className="flex items-start gap-3 rounded-2xl border border-[#F0C4BE] bg-[#FBEDEB] p-4">
-              <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#C24A3D]" />
-              <p className="text-sm text-[#C24A3D]">{error}</p>
+            <div className="flex items-start gap-3 rounded-2xl border border-danger-border bg-danger-subtle p-4">
+              <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-danger-text" />
+              <p className="text-sm text-danger-text">{error}</p>
             </div>
           ) : step === "documents" ? (
             <>
               <div className="flex items-center justify-between gap-3">
-                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#16241D]">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-text">
                   <input type="checkbox" checked={allReadySelected} onChange={toggleAllDocuments}
                     disabled={!readyDocuments.length}
-                    className="h-4 w-4 rounded border-[#D8DCD3] accent-[#123F34]" />
+                    className="h-4 w-4 rounded border-border accent-accent" />
                   Select all ({readyDocuments.length} ready)
                 </label>
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[#5B6B62]">{selectedDocIds.size} SELECTED</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-text-secondary">{selectedDocIds.size} SELECTED</span>
               </div>
               <div className="space-y-2">
                 {documents.map(document => {
                   const checked = selectedDocIds.has(document.id);
                   return (
                     <label key={document.id}
-                      className={`flex items-center gap-3 rounded-2xl border p-3.5 transition ${!document.ready ? "cursor-not-allowed border-[#E3E5DE] bg-white/40 opacity-70" : checked ? "border-[#123F34] bg-white" : "border-[#D8DCD3] bg-white/70 hover:border-[#AAB7AB]"}`}>
+                      className={`flex items-center gap-3 rounded-2xl border p-3.5 transition ${!document.ready ? "cursor-not-allowed border-border bg-surface-subtle opacity-70" : checked ? "border-accent bg-surface" : "border-border bg-surface-raised hover:border-border-strong"}`}>
                       <input type="checkbox" checked={checked} disabled={!document.ready}
                         onChange={() => toggleDocument(document.id)}
-                        className="h-4 w-4 rounded border-[#D8DCD3] accent-[#123F34]" />
+                        className="h-4 w-4 rounded border-border accent-accent" />
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-semibold text-[#16241D]">{document.title}</span>
-                        <span className="mt-0.5 block text-[11px] text-[#5B6B62]">
-                          {document.keywordCount} keywords • {document.keywordWithFlashcard} already have cards
+                        <span className="block truncate text-sm font-semibold text-text">{document.title}</span>
+                        <span className="mt-0.5 block text-[11px] text-text-secondary">
+                          {document.keywordCount} keywords â€¢ {document.keywordWithFlashcard} already have cards
                         </span>
                       </span>
                       {document.ready
-                        ? <span className="rounded-full bg-[#E6EADF] px-2.5 py-1 font-mono text-[10px] text-[#526159]">SIAP</span>
-                        : <span className="rounded-full border border-[#D8DCD3] bg-[#EFF1EB] px-2.5 py-1 font-mono text-[10px] text-[#5B6B62]">
+                        ? <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-[10px] text-text-secondary">SIAP</span>
+                        : <span className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 font-mono text-[10px] text-text-secondary">
                             {document.status === "failed" ? "GAGAL" : document.status === "uploaded" || document.status === "chunking" || document.status === "indexing" ? "DIPROSES" : document.status}
                           </span>}
                     </label>
                   );
                 })}
                 {!documents.length && (
-                  <div className="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-[#D8DCD3] bg-white/50 px-6 text-center text-sm text-[#5B6B62]">
+                  <div className="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-border bg-surface-raised px-6 text-center text-sm text-text-secondary">
                     No materials in this deck yet.
                   </div>
                 )}
@@ -323,31 +323,31 @@ export default function GenerateFlashcardsDialog({
             <>
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="relative min-w-52 flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#7A8780]" />
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
                   <input value={search} onChange={event => setSearch(event.target.value)}
                     placeholder="Search keywords..." aria-label="Search keywords"
-                    className="w-full rounded-xl border border-[#D8DCD3] bg-white py-2.5 pl-9 pr-3 text-sm text-[#16241D] placeholder:text-[#9AA69E] focus:border-[#123F34] focus:outline-none" />
+                    className="w-full rounded-xl border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-text placeholder:text-text-muted focus:border-accent focus:outline-none" />
                 </div>
                 <button type="button" onClick={() => setStep("documents")}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#D8DCD3] bg-white px-3 py-2.5 text-xs font-medium text-[#16241D] transition hover:bg-[#EFF1EB]">
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-3 py-2.5 text-xs font-medium text-text transition hover:bg-surface-subtle">
                   <ArrowLeft className="h-3.5 w-3.5" />Change materials
                 </button>
-                <span className={`rounded-full px-3 py-1.5 font-mono text-[10px] ${overLimit ? "bg-[#FBEDEB] text-[#C24A3D]" : "bg-[#E6EADF] text-[#526159]"}`}>
+                <span className={`rounded-full px-3 py-1.5 font-mono text-[10px] ${overLimit ? "bg-danger-subtle text-danger-text" : "bg-surface-subtle text-text-secondary"}`}>
                   {keywordCount}/{MAX_KEYWORDS} SELECTED
                 </span>
               </div>
 
               {filteredGroups.map(group => (
-                <section key={group.documentId} className="rounded-2xl border border-[#D8DCD3] bg-white/70 p-3.5">
+                <section key={group.documentId} className="rounded-2xl border border-border bg-surface-raised p-3.5">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-2 text-[#16241D]">
-                      <FileText className="h-4 w-4 shrink-0 text-[#5B6B62]" />
+                    <div className="flex min-w-0 items-center gap-2 text-text">
+                      <FileText className="h-4 w-4 shrink-0 text-text-secondary" />
                       <h3 className="truncate text-sm font-semibold">{group.title}</h3>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-mono text-[10px] text-[#5B6B62]">{group.keywords.length} KEYWORD</span>
+                      <span className="font-mono text-[10px] text-text-secondary">{group.keywords.length} KEYWORD</span>
                       <button type="button" onClick={() => toggleDocumentKeywords(group)}
-                        className="text-[11px] font-medium text-[#244E3D] transition hover:underline">
+                        className="text-[11px] font-medium text-accent transition hover:underline">
                         {isDocumentFullySelected(group) ? "Clear all" : "Select all"}
                       </button>
                     </div>
@@ -360,43 +360,43 @@ export default function GenerateFlashcardsDialog({
                       const twinLabel = keyword.twinIds.length > 0 ? `duplicate in ${keyword.twinIds.length + 1} materials` : null;
                       return (
                         <label key={keyword.id}
-                          className={`flex items-start gap-3 rounded-xl border p-3 transition ${disabled ? "cursor-not-allowed border-[#E3E5DE] bg-[#EFF1EB]/60 opacity-75" : checked ? "border-[#123F34] bg-white" : "border-transparent bg-white/60 hover:border-[#D8DCD3]"}`}>
+                          className={`flex items-start gap-3 rounded-xl border p-3 transition ${disabled ? "cursor-not-allowed border-border bg-surface-subtle/60 opacity-75" : checked ? "border-accent bg-surface" : "border-transparent bg-surface-raised hover:border-border"}`}>
                           <input type="checkbox" checked={checked} disabled={disabled || !ids.length}
                             onChange={() => toggleKeyword(keyword)}
-                            className="mt-0.5 h-4 w-4 rounded border-[#D8DCD3] accent-[#123F34]" />
+                            className="mt-0.5 h-4 w-4 rounded border-border accent-accent" />
                           <span className="min-w-0 flex-1">
                             <span className="flex flex-wrap items-center gap-2">
-                              <span className="text-sm font-semibold text-[#16241D]">{keyword.term}</span>
-                              {disabled && <span className="rounded-full border border-[#D8DCD3] bg-[#EFF1EB] px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-[#5B6B62]">already exists</span>}
-                              {!disabled && twinLabel && <span className="rounded-full bg-[#E6EADF] px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-[#526159]">{twinLabel}</span>}
+                              <span className="text-sm font-semibold text-text">{keyword.term}</span>
+                              {disabled && <span className="rounded-full border border-border bg-surface-subtle px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-text-secondary">already exists</span>}
+                              {!disabled && twinLabel && <span className="rounded-full bg-surface-subtle px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-text-secondary">{twinLabel}</span>}
                             </span>
-                            {keyword.snippet && <span className="mt-0.5 line-clamp-2 block text-xs leading-relaxed text-[#66736B]">{keyword.snippet}</span>}
+                            {keyword.snippet && <span className="mt-0.5 line-clamp-2 block text-xs leading-relaxed text-text-secondary">{keyword.snippet}</span>}
                           </span>
                         </label>
                       );
                     })}
-                    {!group.keywords.length && <p className="px-1 py-2 text-xs text-[#5B6B62]">No matching keywords.</p>}
+                    {!group.keywords.length && <p className="px-1 py-2 text-xs text-text-secondary">No matching keywords.</p>}
                   </div>
                 </section>
               ))}
               {!filteredGroups.length && (
-                <div className="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-[#D8DCD3] bg-white/50 px-6 text-center text-sm text-[#5B6B62]">
+                <div className="flex min-h-32 items-center justify-center rounded-2xl border border-dashed border-border bg-surface-raised px-6 text-center text-sm text-text-secondary">
                   {search ? "No keywords match your search." : "The selected materials do not have keywords yet."}
                 </div>
               )}
             </>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-[#D8DCD3] bg-white p-5">
-                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5B6B62]">SUMMARY</p>
+              <div className="rounded-2xl border border-border bg-surface p-5">
+                <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-text-secondary">SUMMARY</p>
                 <div className="mt-3 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-[#D8DCD3] bg-[#F5F6F3] p-4">
-                    <p className="font-serif text-3xl font-semibold text-[#16241D]">{selectedDocIds.size}</p>
-                    <p className="mt-0.5 text-xs text-[#5B6B62]">selected materials</p>
+                  <div className="rounded-xl border border-border bg-bg p-4">
+                    <p className="font-serif text-3xl font-semibold text-text">{selectedDocIds.size}</p>
+                    <p className="mt-0.5 text-xs text-text-secondary">selected materials</p>
                   </div>
-                  <div className="rounded-xl border border-[#D8DCD3] bg-[#F5F6F3] p-4">
-                    <p className={`font-serif text-3xl font-semibold ${overLimit ? "text-[#C24A3D]" : "text-[#16241D]"}`}>{keywordCount}</p>
-                    <p className="mt-0.5 text-xs text-[#5B6B62]">keywords (max {MAX_KEYWORDS})</p>
+                  <div className="rounded-xl border border-border bg-bg p-4">
+                    <p className={`font-serif text-3xl font-semibold ${overLimit ? "text-danger-text" : "text-text"}`}>{keywordCount}</p>
+                    <p className="mt-0.5 text-xs text-text-secondary">keywords (max {MAX_KEYWORDS})</p>
                   </div>
                 </div>
                 <ul className="mt-4 space-y-1.5">
@@ -404,58 +404,58 @@ export default function GenerateFlashcardsDialog({
                     const document = documents.find(item => item.id === id);
                     if (!document) return null;
                     return (
-                      <li key={id} className="flex items-center justify-between gap-3 text-sm text-[#16241D]">
+                      <li key={id} className="flex items-center justify-between gap-3 text-sm text-text">
                         <span className="truncate">{document.title}</span>
-                        <span className="shrink-0 font-mono text-[10px] text-[#5B6B62]">{document.status === "ready_for_selection" ? "SIAP" : document.status.toUpperCase()}</span>
+                        <span className="shrink-0 font-mono text-[10px] text-text-secondary">{document.status === "ready_for_selection" ? "SIAP" : document.status.toUpperCase()}</span>
                       </li>
                     );
                   })}
                 </ul>
               </div>
               {overLimit && (
-                <div className="flex items-start gap-3 rounded-2xl border border-[#F0C4BE] bg-[#FBEDEB] p-4">
-                  <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#C24A3D]" />
-                  <p className="text-sm text-[#C24A3D]">The keyword count exceeds the {MAX_KEYWORDS} limit. Go back and reduce your selection.</p>
+                <div className="flex items-start gap-3 rounded-2xl border border-danger-border bg-danger-subtle p-4">
+                  <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-danger-text" />
+                  <p className="text-sm text-danger-text">The keyword count exceeds the {MAX_KEYWORDS} limit. Go back and reduce your selection.</p>
                 </div>
               )}
               {!canGenerate && !overLimit && (
-                <div className="flex items-start gap-3 rounded-2xl border border-[#D8DCD3] bg-white p-4">
-                  <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#5B6B62]" />
-                  <p className="text-sm text-[#5B6B62]">Select at least one keyword to continue.</p>
+                <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                  <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-text-secondary" />
+                  <p className="text-sm text-text-secondary">Select at least one keyword to continue.</p>
                 </div>
               )}
             </div>
           )}
           {error && step === "confirm" && (
-            <div className="flex items-start gap-3 rounded-2xl border border-[#F0C4BE] bg-[#FBEDEB] p-4">
-              <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-[#C24A3D]" />
-              <p className="text-sm text-[#C24A3D]">{error}</p>
+            <div className="flex items-start gap-3 rounded-2xl border border-danger-border bg-danger-subtle p-4">
+              <AlertCircle className="mt-0.5 h-4.5 w-4.5 shrink-0 text-danger-text" />
+              <p className="text-sm text-danger-text">{error}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 border-t border-[#D8DCD3] bg-white px-6 py-4">
+        <div className="flex items-center justify-between gap-3 border-t border-border bg-surface px-6 py-4">
           <button type="button"
             onClick={() => step === "documents" ? onClose() : step === "keywords" ? setStep("documents") : setStep("keywords")}
             disabled={submitting}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-[#D8DCD3] bg-white px-4 py-2.5 text-sm font-medium text-[#16241D] transition hover:bg-[#F5F6F3] disabled:opacity-50">
+            className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-surface px-4 py-2.5 text-sm font-medium text-text transition hover:bg-bg disabled:opacity-50">
             <ArrowLeft className="h-4 w-4" />{step === "documents" ? "Cancel" : "Back"}
           </button>
 
           {step === "documents" ? (
             <button type="button" onClick={() => void goToKeywords()} disabled={!selectedDocIds.size}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#123F34] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244E3D] disabled:cursor-not-allowed disabled:opacity-50">
+              className="inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-5 py-2.5 text-sm font-semibold text-on-action-primary transition hover:bg-action-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
               Choose keywords <ArrowRight className="h-4 w-4" />
             </button>
           ) : step === "keywords" ? (
             <button type="button" onClick={() => setStep("confirm")} disabled={!keywordCount}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#123F34] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244E3D] disabled:cursor-not-allowed disabled:opacity-50">
+              className="inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-5 py-2.5 text-sm font-semibold text-on-action-primary transition hover:bg-action-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
               Review <ArrowRight className="h-4 w-4" />
             </button>
           ) : (
             <button type="button" onClick={() => void submit()} disabled={!canGenerate || submitting} aria-busy={submitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#123F34] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#244E3D] disabled:cursor-not-allowed disabled:opacity-50">
+              className="inline-flex items-center gap-2 rounded-xl bg-action-primary px-5 py-2.5 text-sm font-semibold text-on-action-primary transition hover:bg-action-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCheck className="h-4 w-4" />}
               {submitting ? "Starting..." : `Generate ${keywordCount} flashcards`}
             </button>

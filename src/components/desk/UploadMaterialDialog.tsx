@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { AlertCircle, Loader2, Plus, RefreshCw, Upload, X } from "lucide-react";
@@ -65,7 +65,7 @@ async function waitForDocumentReady(documentId: string) {
       if (!response.ok) continue;
       snapshot = await response.json().catch(() => ({}));
     } catch {
-      continue; // transient network hiccup — keep polling
+      continue; // transient network hiccup â€” keep polling
     }
     if (READY_STATUSES.includes(snapshot.status ?? "")) return;
     if (snapshot.status === "failed") throw new Error(snapshot.errorMessage || "");
@@ -117,7 +117,7 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
   }, []);
 
   // Block closing while the file is still being sent; allow it once the server
-  // has it (processing) — the toast keeps reporting status either way.
+  // has it (processing) â€” the toast keeps reporting status either way.
   function requestClose() {
     if (phase === "uploading" || busyRef.current) return;
     onCloseRef.current();
@@ -150,7 +150,7 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
     const fail = (cause: unknown) => {
       const raw = cause instanceof Error ? cause.message : "";
       const fallback = raw === "__TIMEOUT__"
-        ? "Processing is taking longer than usual. Your material is still being processed—check the material list again shortly."
+        ? "Processing is taking longer than usual. Your material is still being processedâ€”check the material list again shortly."
         : raw || "Upload failed. Please try again.";
       if (mountedRef.current) { setPhase("failed"); setError(fallback); }
       const options: { id: string | number; action?: { label: string; onClick: () => void } } = { id: toastId };
@@ -202,62 +202,62 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#183229]/45 px-4 py-8 backdrop-blur-sm" onClick={requestClose} role="presentation">
-      <div role="dialog" aria-modal="true" aria-label={heading} className="flex max-h-full w-full max-w-xl flex-col overflow-hidden rounded-[28px] border border-[#D8D9D0] bg-[#FBFBF7] shadow-[0_24px_70px_rgba(24,50,41,0.35)]" onClick={event => event.stopPropagation()}>
-        <div className="flex items-start justify-between gap-4 border-b border-[#E4E6DE] bg-[#DDE9D4] px-6 py-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-overlay px-4 py-8 backdrop-blur-sm" onClick={requestClose} role="presentation">
+      <div role="dialog" aria-modal="true" aria-label={heading} className="flex max-h-full w-full max-w-xl flex-col overflow-hidden rounded-[28px] border border-border bg-surface shadow-none" onClick={event => event.stopPropagation()}>
+        <div className="flex items-start justify-between gap-4 border-b border-border bg-surface-raised px-6 py-5">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[#516757]"><Upload className="h-4 w-4" /><p className="font-mono text-[10px] uppercase tracking-[0.2em]">{eyebrow}</p></div>
+            <div className="flex items-center gap-2 text-text-secondary"><Upload className="h-4 w-4" /><p className="font-mono text-[10px] uppercase tracking-[0.2em]">{eyebrow}</p></div>
             <h2 className="mt-1.5 truncate text-2xl font-semibold tracking-tight">{heading}</h2>
-            {sub && <p className="mt-1 truncate text-sm text-[#5E6D63]">{sub}</p>}
+            {sub && <p className="mt-1 truncate text-sm text-text-secondary">{sub}</p>}
           </div>
-          <button type="button" onClick={requestClose} disabled={phase === "uploading"} aria-label="Close" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white/70 text-[#466050] transition hover:bg-white hover:text-[#183229] disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
+          <button type="button" onClick={requestClose} disabled={phase === "uploading"} aria-label="Close" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-text-secondary transition hover:bg-surface hover:text-text disabled:cursor-not-allowed disabled:opacity-50"><X className="h-4 w-4" /></button>
         </div>
 
         <div className="grid flex-1 content-start gap-4 overflow-y-auto px-6 py-5">
-          {phase === "processing" ? <div className="rounded-2xl border border-[#C5D2BE] bg-white/75 p-6 text-center">
-            <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#244E3D]" />
-            <p className="mt-3 text-sm font-semibold text-[#183229]">AI is processing the material</p>
-            <p className="mt-1 text-xs leading-relaxed text-[#66736B]">Keywords are extracted automatically from the PDF. You can close this panel—the status will remain in the toast and the material will appear in the list.</p>
-            <button type="button" onClick={onClose} className="mt-4 inline-flex rounded-xl bg-[#123F34] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#244E3D]">Close for now</button>
-          </div> : phase === "failed" ? <div className="rounded-2xl border border-rose-200 bg-rose-50/60 p-6 text-center">
-            <AlertCircle className="mx-auto h-6 w-6 text-rose-600" />
-            <p className="mt-3 text-sm font-semibold text-rose-700">Upload failed</p>
-            <p className="mt-1 text-xs leading-relaxed text-rose-600">{error}</p>
+          {phase === "processing" ? <div className="rounded-2xl border border-border-strong bg-surface-raised p-6 text-center">
+            <Loader2 className="mx-auto h-6 w-6 animate-spin text-accent" />
+            <p className="mt-3 text-sm font-semibold text-text">AI is processing the material</p>
+            <p className="mt-1 text-xs leading-relaxed text-text-secondary">Keywords are extracted automatically from the PDF. You can close this panelâ€”the status will remain in the toast and the material will appear in the list.</p>
+            <button type="button" onClick={onClose} className="mt-4 inline-flex rounded-xl bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary transition hover:bg-action-primary-hover">Close for now</button>
+          </div> : phase === "failed" ? <div className="rounded-2xl border border-danger-border bg-danger-subtle p-6 text-center">
+            <AlertCircle className="mx-auto h-6 w-6 text-danger-text" />
+            <p className="mt-3 text-sm font-semibold text-danger-text">Upload failed</p>
+            <p className="mt-1 text-xs leading-relaxed text-danger-text">{error}</p>
             <div className="mt-4 flex justify-center gap-2">
-              <button type="button" onClick={() => { setPhase("form"); setError(""); }} className="inline-flex items-center gap-1.5 rounded-xl bg-[#123F34] px-4 py-2 text-xs font-medium text-white transition hover:bg-[#244E3D]"><RefreshCw className="h-3.5 w-3.5" />{t("toast.retry")}</button>
-              <button type="button" onClick={onClose} className="inline-flex rounded-xl border border-rose-200 px-4 py-2 text-xs font-medium text-rose-700 transition hover:bg-rose-100/60">{t("toast.dismiss")}</button>
+              <button type="button" onClick={() => { setPhase("form"); setError(""); }} className="inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary transition hover:bg-action-primary-hover"><RefreshCw className="h-3.5 w-3.5" />{t("toast.retry")}</button>
+              <button type="button" onClick={onClose} className="inline-flex rounded-xl border border-danger-border px-4 py-2 text-xs font-medium text-danger-text transition hover:bg-danger-subtle/60">{t("toast.dismiss")}</button>
             </div>
           </div> : <>
             <div onDragOver={event => { event.preventDefault(); if (!busyRef.current) setDrag(true); }} onDragLeave={() => setDrag(false)}
               onDrop={event => { event.preventDefault(); setDrag(false); if (!busyRef.current) pickFile(event.dataTransfer.files.item(0)); }}
-              className={`relative rounded-2xl border-2 border-dashed p-6 text-center transition ${drag ? "border-[#244E3D] bg-[#E7F0DF]" : file ? "border-[#B8C4B8] bg-white/70" : "border-[#C8CDC4] bg-white/40 hover:border-[#B8C4B8]"}`}>
+              className={`relative rounded-2xl border-2 border-dashed p-6 text-center transition ${drag ? "border-accent bg-accent-subtle" : file ? "border-border-strong bg-surface-raised" : "border-border bg-surface-subtle hover:border-border-strong"}`}>
               <input type="file" accept="application/pdf,.pdf" disabled={phase === "uploading"} onChange={event => pickFile(event.target.files?.item(0) ?? null)} className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" aria-label="Choose a PDF file" />
               <div className="pointer-events-none flex flex-col items-center">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#EFF1EB] text-[#526159]"><Upload className="h-5 w-5" /></div>
-                {file ? <><p className="mt-2 max-w-full truncate text-sm font-medium text-[#183229]">{file.name}</p><p className="mt-0.5 text-[11px] text-[#66736B]">{formatBytes(file.size)} • Choose another PDF to replace it</p></>
-                  : <><p className="mt-2 text-sm font-medium text-[#183229]">Drag a PDF here, or choose a file</p><p className="mt-0.5 text-[11px] text-[#66736B]">Supports lecture slides, ebooks, and PDF notes</p></>}
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-subtle text-text-secondary"><Upload className="h-5 w-5" /></div>
+                {file ? <><p className="mt-2 max-w-full truncate text-sm font-medium text-text">{file.name}</p><p className="mt-0.5 text-[11px] text-text-secondary">{formatBytes(file.size)} â€¢ Choose another PDF to replace it</p></>
+                  : <><p className="mt-2 text-sm font-medium text-text">Drag a PDF here, or choose a file</p><p className="mt-0.5 text-[11px] text-text-secondary">Supports lecture slides, ebooks, and PDF notes</p></>}
               </div>
             </div>
 
             <input value={name} onChange={event => setName(event.target.value)} placeholder="Material name (optional)" maxLength={200} disabled={phase === "uploading"}
-              className="w-full rounded-xl border border-[#D8D9D0] bg-white/70 px-3.5 py-2.5 text-sm focus:border-[#244E3D] focus:outline-none disabled:opacity-50" />
+              className="w-full rounded-xl border border-border bg-surface-raised px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none disabled:opacity-50" />
 
             <label className="grid gap-1.5">
-              <span className="text-xs font-medium text-[#526159]">Material language</span>
-              <select value={lang} onChange={event => setLang(event.target.value)} disabled={phase === "uploading"} className="w-full cursor-pointer rounded-xl border border-[#D8D9D0] bg-white/70 px-3.5 py-2.5 text-sm focus:border-[#244E3D] focus:outline-none disabled:opacity-50">
+              <span className="text-xs font-medium text-text-secondary">Material language</span>
+              <select value={lang} onChange={event => setLang(event.target.value)} disabled={phase === "uploading"} className="w-full cursor-pointer rounded-xl border border-border bg-surface-raised px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none disabled:opacity-50">
                 <option value="auto">Match the source PDF language</option><option value="id">Indonesian</option><option value="en">English</option>
               </select>
             </label>
 
             {phase === "uploading" && <div className="space-y-1.5" role="status">
-              <div className="flex justify-between text-xs text-[#526159]"><span>{message}</span><span className="font-mono">{progress}%</span></div>
-              <div className="h-2 overflow-hidden rounded-full bg-[#E6EADF]" role="progressbar" aria-valuenow={progress}><div className="h-full rounded-full bg-[#244E3D] transition-[width]" style={{ width: `${progress}%` }} /></div>
+              <div className="flex justify-between text-xs text-text-secondary"><span>{message}</span><span className="font-mono">{progress}%</span></div>
+              <div className="h-2 overflow-hidden rounded-full bg-surface-subtle" role="progressbar" aria-valuenow={progress}><div className="h-full rounded-full bg-action-primary-hover transition-[width]" style={{ width: `${progress}%` }} /></div>
             </div>}
 
-            {phase === "form" && error && <p className="text-xs text-rose-600" role="alert">{error}</p>}
+            {phase === "form" && error && <p className="text-xs text-danger-text" role="alert">{error}</p>}
 
             <button type="button" onClick={() => void submit()} disabled={!file || phase === "uploading"} aria-busy={phase === "uploading"}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-[#123F34] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#244E3D] disabled:cursor-not-allowed disabled:opacity-50">
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-action-primary px-5 py-3 text-sm font-semibold text-on-action-primary transition hover:bg-action-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
               {phase === "uploading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {phase === "uploading" ? "Uploading..." : attaching ? "Upload & process material" : "Upload & create desk"}
             </button>

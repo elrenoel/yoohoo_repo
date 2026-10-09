@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
@@ -259,74 +259,74 @@ export default function RagUploadPage() {
 
   return (
     <AppShell>
-      <div className="min-h-screen bg-[#fafafa] flex flex-col text-neutral-900 selection:bg-neutral-900 selection:text-white">
+      <div className="min-h-screen bg-bg flex flex-col text-text selection:bg-accent selection:text-on-action-primary">
         <main className="max-w-3xl mx-auto px-6 py-12 pb-24 sm:py-16 flex-1 w-full flex flex-col items-center text-center">
         <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium bg-neutral-100 text-neutral-700 border border-neutral-200">
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium bg-surface-subtle text-text-secondary border border-border">
             <BookOpen className="w-3.5 h-3.5" /><span>{t("upload.badge")}</span>
           </div>
-          {quotaInfo && <div className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium border ${quotaInfo.remainingToday > 0 ? "bg-emerald-50 text-emerald-800 border-emerald-200" : "bg-rose-50 text-rose-800 border-rose-200"}`}>
-            <span className={`w-2 h-2 rounded-full ${quotaInfo.remainingToday > 0 ? "bg-emerald-500 animate-pulse" : "bg-rose-500"}`} />
+          {quotaInfo && <div className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-medium border ${quotaInfo.remainingToday > 0 ? "bg-success-subtle text-success-text border-success-border" : "bg-danger-subtle text-danger-text border-danger-border"}`}>
+            <span className={`w-2 h-2 rounded-full ${quotaInfo.remainingToday > 0 ? "bg-success-subtle0 animate-pulse" : "bg-danger-subtle0"}`} />
             <span>{t("upload.quotaRemaining", { remaining: quotaInfo.remainingToday, limit: quotaInfo.dailyLimit })}</span>
           </div>}
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-neutral-900 max-w-2xl mb-4 leading-[1.15]">{t("upload.title")}</h1>
-        <p className="text-neutral-600 text-base sm:text-lg max-w-xl mb-10 leading-relaxed">{t("upload.subtitle")}</p>
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-text max-w-2xl mb-4 leading-[1.15]">{t("upload.title")}</h1>
+        <p className="text-text-secondary text-base sm:text-lg max-w-xl mb-10 leading-relaxed">{t("upload.subtitle")}</p>
 
         {isProcessing ? (
           <Card className="w-full max-w-xl text-left space-y-6">
             <div className="flex items-start gap-4">
-              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${processingFailed ? "bg-rose-100 text-rose-700" : "bg-emerald-100 text-emerald-700"}`}>
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${processingFailed ? "bg-danger-subtle text-danger-text" : "bg-success-subtle text-success-text"}`}>
                 {processingFailed ? <AlertCircle className="w-5 h-5" /> : <Loader2 className="w-5 h-5 animate-spin" />}
               </div>
               <div className="min-w-0">
                 <h2 className="font-semibold">{processingFailed ? "Document processing failed" : "Document is being processed"}</h2>
-                <p className={`mt-1 text-sm leading-relaxed ${processingFailed ? "text-rose-700" : "text-neutral-600"}`} role="status">
+                <p className={`mt-1 text-sm leading-relaxed ${processingFailed ? "text-danger-text" : "text-text-secondary"}`} role="status">
                   {pollTimedOut ? "Proses lebih lama dari biasanya. Pemrosesan di server tetap berjalan." : processingMessage}
                 </p>
-                <p className="mt-2 text-[11px] font-mono text-neutral-400 break-all">ID: {pending?.documentId}</p>
+                <p className="mt-2 text-[11px] font-mono text-text-muted break-all">ID: {pending?.documentId}</p>
               </div>
             </div>
-            {!processingFailed && !pollTimedOut && <div className="h-1.5 overflow-hidden rounded-full bg-neutral-100"><div className="h-full w-1/3 rounded-full bg-emerald-600 animate-pulse" /></div>}
-            {error && !processingFailed && <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800"><AlertCircle className="w-4 h-4 mt-0.5" />{error} Mencoba lagi otomatis...</div>}
+            {!processingFailed && !pollTimedOut && <div className="h-1.5 overflow-hidden rounded-full bg-surface-subtle"><div className="h-full w-1/3 rounded-full bg-success animate-pulse" /></div>}
+            {error && !processingFailed && <div className="flex items-start gap-2 rounded-xl border border-warning-border bg-warning-subtle p-3 text-sm text-warning-text"><AlertCircle className="w-4 h-4 mt-0.5" />{error} Mencoba lagi otomatis...</div>}
             <div className="flex flex-col sm:flex-row gap-3">
               {pollTimedOut && !processingFailed && <Button onClick={resumePolling} size="lg"><RefreshCw className="w-4 h-4" />Check again</Button>}
               {processingFailed && <Button onClick={resetUpload} size="lg"><RefreshCw className="w-4 h-4" />Try again</Button>}
-              <Link href="/desk" className="inline-flex items-center justify-center rounded-xl border border-neutral-200 px-5 py-2.5 text-sm font-medium text-neutral-700 hover:bg-neutral-50">Back to Your Desk</Link>
+              <Link href="/desk" className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-text-secondary hover:bg-surface-hover">Back to Your Desk</Link>
             </div>
           </Card>
         ) : (
           <Card className="w-full max-w-xl text-left mb-6">
             <div onDragOver={event => { event.preventDefault(); if (!busy) setIsDragging(true); }} onDragLeave={() => setIsDragging(false)}
               onDrop={event => { event.preventDefault(); setIsDragging(false); if (!busy) selectFile(event.dataTransfer.files.item(0)); }}
-              className={`relative rounded-xl border-2 border-dashed p-8 text-center transition ${isDragging ? "border-neutral-900 bg-neutral-50" : file ? "border-neutral-300 bg-neutral-50/50" : "border-neutral-200 bg-neutral-50/30 hover:border-neutral-400"}`}>
+              className={`relative rounded-xl border-2 border-dashed p-8 text-center transition ${isDragging ? "border-accent bg-surface-hover" : file ? "border-border-strong bg-surface-raised" : "border-border bg-surface-subtle hover:border-border-strong"}`}>
               <input ref={inputRef} type="file" accept="application/pdf,.pdf" disabled={busy}
                 onChange={event => selectFile(event.target.files?.item(0) ?? null)}
                 className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed" aria-label="Choose a PDF file" />
               <div className="pointer-events-none flex flex-col items-center">
-                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-neutral-200 bg-neutral-100 text-neutral-700"><Upload className="w-5 h-5" /></div>
-                {file ? <><div className="flex max-w-full items-center justify-center gap-2 text-sm font-medium"><FileText className="w-4 h-4 shrink-0 text-neutral-600" /><span className="truncate">{file.name}</span></div><p className="mt-1 text-xs text-neutral-500">{formatBytes(file.size)} · {t("upload.fileSelected")}</p></>
-                  : <><p className="text-sm font-medium">{t("upload.dropTitle")}</p><p className="mt-1 text-xs text-neutral-500">{t("upload.dropHint")}</p></>}
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-border bg-surface-subtle text-text-secondary"><Upload className="w-5 h-5" /></div>
+                {file ? <><div className="flex max-w-full items-center justify-center gap-2 text-sm font-medium"><FileText className="w-4 h-4 shrink-0 text-text-secondary" /><span className="truncate">{file.name}</span></div><p className="mt-1 text-xs text-text-muted">{formatBytes(file.size)} Â· {t("upload.fileSelected")}</p></>
+                  : <><p className="text-sm font-medium">{t("upload.dropTitle")}</p><p className="mt-1 text-xs text-text-muted">{t("upload.dropHint")}</p></>}
               </div>
             </div>
 
             <input value={documentName} onChange={event => setDocumentName(event.target.value)} placeholder={t("upload.documentName")}
-              disabled={busy} maxLength={200} className="mt-4 w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-900 disabled:opacity-50" />
-            <p className="mt-1.5 text-[11px] text-neutral-400">{t("upload.documentNameHint")}</p>
+              disabled={busy} maxLength={200} className="mt-4 w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-raised text-sm focus:outline-none focus:ring-2 focus:ring-focus-ring/30 focus:border-accent disabled:opacity-50" />
+            <p className="mt-1.5 text-[11px] text-text-muted">{t("upload.documentNameHint")}</p>
 
             <div className="mt-4">
-              <label htmlFor="content-language" className="block text-xs font-medium text-neutral-700 mb-1.5">{t("upload.contentLanguage")}</label>
+              <label htmlFor="content-language" className="block text-xs font-medium text-text-secondary mb-1.5">{t("upload.contentLanguage")}</label>
               <select id="content-language" value={contentLanguage} onChange={event => setContentLanguage(event.target.value)} disabled={busy}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 bg-neutral-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900/10 focus:border-neutral-900 disabled:opacity-50 cursor-pointer">
+                className="w-full px-3.5 py-2.5 rounded-xl border border-border bg-surface-raised text-sm focus:outline-none focus:ring-2 focus:ring-focus-ring/30 focus:border-accent disabled:opacity-50 cursor-pointer">
                 <option value="auto">{t("upload.contentLanguageAuto")}</option><option value="id">{t("upload.contentLanguageId")}</option><option value="en">{t("upload.contentLanguageEn")}</option>
               </select>
-              <p className="mt-1.5 text-[11px] text-neutral-400">{t("upload.contentLanguageHint")}</p>
+              <p className="mt-1.5 text-[11px] text-text-muted">{t("upload.contentLanguageHint")}</p>
             </div>
 
-            {busy && <div className="mt-4 space-y-2" role="status"><div className="flex justify-between text-xs text-neutral-600"><span>{uploadMessage}</span><span className="font-mono">{progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-neutral-100" role="progressbar" aria-valuenow={progress}><div className="h-full rounded-full bg-emerald-700 transition-[width]" style={{ width: `${progress}%` }} /></div></div>}
-            {error && <div className="mt-4 flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700" role="alert"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error}</span></div>}
-            {uploadedId && error && <div className="mt-3 flex items-center gap-2 text-xs text-neutral-500"><CheckCircle2 className="w-4 h-4 text-emerald-700" />The PDF is already in S3. You can retry confirmation without uploading it again.</div>}
+            {busy && <div className="mt-4 space-y-2" role="status"><div className="flex justify-between text-xs text-text-secondary"><span>{uploadMessage}</span><span className="font-mono">{progress}%</span></div><div className="h-2 overflow-hidden rounded-full bg-surface-subtle" role="progressbar" aria-valuenow={progress}><div className="h-full rounded-full bg-success transition-[width]" style={{ width: `${progress}%` }} /></div></div>}
+            {error && <div className="mt-4 flex items-start gap-2 rounded-xl border border-danger-border bg-danger-subtle p-3 text-sm text-danger-text" role="alert"><AlertCircle className="w-4 h-4 mt-0.5 shrink-0" /><span>{error}</span></div>}
+            {uploadedId && error && <div className="mt-3 flex items-center gap-2 text-xs text-text-muted"><CheckCircle2 className="w-4 h-4 text-success-text" />The PDF is already in S3. You can retry confirmation without uploading it again.</div>}
             <Button onClick={upload} disabled={!file || busy} size="lg" className="mt-6 w-full">
               <span>{busy ? "Processing..." : uploadedId ? "Retry confirmation" : t("upload.submit")}</span>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
             </Button>
@@ -334,9 +334,9 @@ export default function RagUploadPage() {
         )}
 
         {!isProcessing && <>
-          <div className="flex items-center gap-2 text-xs text-neutral-500"><span>{t("upload.demoPrompt")}</span><Link href="/desk/demo" className="font-medium text-neutral-900 underline underline-offset-4 inline-flex items-center gap-1">{t("upload.demoLink")}<ArrowRight className="w-3 h-3" /></Link></div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-16 text-left w-full border-t border-neutral-200 pt-12">
-            {steps.map((step, index) => <div className="space-y-2" key={step.title}><div className="w-7 h-7 rounded-md bg-neutral-100 border border-neutral-200 text-xs font-mono font-bold flex items-center justify-center">{index + 1}</div><h3 className="font-semibold text-sm">{t(step.title)}</h3><p className="text-xs text-neutral-600 leading-relaxed">{t(step.description)}</p></div>)}
+          <div className="flex items-center gap-2 text-xs text-text-muted"><span>{t("upload.demoPrompt")}</span><Link href="/desk/demo" className="font-medium text-text underline underline-offset-4 inline-flex items-center gap-1">{t("upload.demoLink")}<ArrowRight className="w-3 h-3" /></Link></div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-16 text-left w-full border-t border-border pt-12">
+            {steps.map((step, index) => <div className="space-y-2" key={step.title}><div className="w-7 h-7 rounded-md bg-surface-subtle border border-border text-xs font-mono font-bold flex items-center justify-center">{index + 1}</div><h3 className="font-semibold text-sm">{t(step.title)}</h3><p className="text-xs text-text-secondary leading-relaxed">{t(step.description)}</p></div>)}
           </div>
         </>}
         </main>
