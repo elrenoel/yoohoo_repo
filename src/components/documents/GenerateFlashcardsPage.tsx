@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -79,31 +79,31 @@ export default function GenerateFlashcardsPage() {
     return () => window.clearInterval(timer);
   }, [activeJobId, activeJobStatus, readJob]);
 
-  return <main className="min-h-screen w-full bg-[#F5F6F3] px-4 py-12 pb-28 text-[#16241D] sm:px-6">
+  return <main className="min-h-screen w-full bg-bg px-4 py-12 pb-28 text-text sm:px-6">
       <div className="mx-auto w-full max-w-xl">
-      <Card variant="centered" className="border-[#D8DCD3] bg-white shadow-none">
+      <Card variant="centered" className="border-border bg-surface shadow-none">
         {error ? <>
-          <AlertCircle className="mx-auto h-10 w-10 text-rose-600" />
+          <AlertCircle className="mx-auto h-10 w-10 text-danger-text" />
           <h1 className="mt-4 text-xl font-semibold">Materi belum berhasil dibuat</h1>
-          <p className="mt-2 text-sm text-neutral-600">{error}</p>
+          <p className="mt-2 text-sm text-text-secondary">{error}</p>
           <div className="mt-6 flex justify-center gap-3">
-            <Link href={`/desk/${id}/keywords`} className="rounded-xl border border-neutral-200 px-4 py-2.5 text-sm font-medium">Ubah pilihan</Link>
+            <Link href={`/desk/${id}/keywords`} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium">Ubah pilihan</Link>
             {!limitReached ? (
-              <button onClick={() => start().catch(cause => setError(cause instanceof Error ? cause.message : "Terjadi kesalahan."))} className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Coba lagi</button>
+              <button onClick={() => start().catch(cause => setError(cause instanceof Error ? cause.message : "Terjadi kesalahan."))} className="rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary">Coba lagi</button>
             ) : (
-              <Link href="/desk" className="rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Kembali</Link>
+              <Link href="/desk" className="rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary">Kembali</Link>
             )}
           </div>
         </> : <>
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-accent-subtle text-accent">
             {takingLong ? <RefreshCw className="h-6 w-6" /> : <Sparkles className="h-6 w-6 animate-pulse" />}
           </div>
-          <h1 className="mt-4 text-xl font-semibold text-neutral-900">{takingLong ? "Proses lebih lama dari biasanya" : "Menyusun flashcard dan quiz..."}</h1>
-          <p className="mt-2 text-sm leading-relaxed text-neutral-600">{takingLong
+          <h1 className="mt-4 text-xl font-semibold text-text">{takingLong ? "Proses lebih lama dari biasanya" : "Menyusun flashcard dan quiz..."}</h1>
+          <p className="mt-2 text-sm leading-relaxed text-text-secondary">{takingLong
             ? "Proses di belakang layar tetap berjalan. Kamu bisa memeriksa kembali kapan saja."
             : "Gemini sedang membaca konteks asli setiap keyword. Setelah selesai, kamu akan masuk ke flashcard terlebih dahulu."}</p>
-          {!takingLong && <div className="mt-6 flex items-center justify-center gap-2 text-xs text-neutral-500"><Loader2 className="h-4 w-4 animate-spin" /> Status diperbarui setiap 3 detik</div>}
-          {takingLong && job && <button onClick={() => { setTakingLong(false); readJob(job.id).catch(cause => setError(cause instanceof Error ? cause.message : "Terjadi kesalahan.")); }} className="mt-6 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-medium text-white">Periksa sekarang</button>}
+          {!takingLong && <div className="mt-6 flex items-center justify-center gap-2 text-xs text-text-muted"><Loader2 className="h-4 w-4 animate-spin" /> Status diperbarui setiap 3 detik</div>}
+          {takingLong && job && <button onClick={() => { setTakingLong(false); readJob(job.id).catch(cause => setError(cause instanceof Error ? cause.message : "Terjadi kesalahan.")); }} className="mt-6 rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary">Periksa sekarang</button>}
         </>}
       </Card>
       </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -17,7 +17,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 
 /**
- * Landing page — shown to unauthenticated visitors.
+ * Landing page â€” shown to unauthenticated visitors.
  * Ando-inspired hero + about section.
  */
 export default function LandingPage() {
@@ -39,22 +39,22 @@ export default function LandingPage() {
 
   if (isPending || session?.user) {
     return (
-      <div className="min-h-screen bg-[#fafafa] flex flex-col">
+      <div className="min-h-screen bg-bg flex flex-col">
         <Navbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="w-6 h-6 border-2 border-neutral-300 border-t-neutral-900 rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-border-strong border-t-accent rounded-full animate-spin" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col text-neutral-900 selection:bg-neutral-900 selection:text-white">
+    <div className="min-h-screen bg-surface flex flex-col text-text selection:bg-action-primary selection:text-on-accent">
       <Navbar />
 
-      {/* ═══════════════════════════════════════════════════════════════
-          HERO — Ando-style: pill tag, serif headline, CTA, mockup
-      ═══════════════════════════════════════════════════════════════ */}
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+          HERO â€” Ando-style: pill tag, serif headline, CTA, mockup
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
       <section className="relative flex flex-col items-center px-6 pt-16 sm:pt-24 pb-0 text-center overflow-hidden">
         {/* Background video */}
         <video
@@ -66,12 +66,12 @@ export default function LandingPage() {
           src="/make_looping_video_for_backgro.mp4"
         />
         {/* Overlay for readability */}
-        <div className="absolute inset-0 bg-white/20 z-0" />
+        <div className="absolute inset-0 z-0 bg-overlay" />
 
         {/* Pill tag */}
         <Link
           href="/desk/demo"
-          className={`relative z-10 inline-flex items-center gap-1.5 px-4 py-1.5 mb-8 text-[13px] font-medium text-neutral-600 bg-neutral-100 rounded-full hover:bg-neutral-200 transition-all duration-500 ${
+          className={`relative z-10 inline-flex items-center gap-1.5 px-4 py-1.5 mb-8 text-[13px] font-medium text-text-secondary bg-surface-subtle rounded-full hover:bg-skeleton-highlight transition-all duration-500 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
           }`}
         >
@@ -79,9 +79,9 @@ export default function LandingPage() {
           <ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
 
-        {/* Main headline — serif-style, large, centered */}
+        {/* Main headline â€” serif-style, large, centered */}
         <h1
-          className={`relative z-10 max-w-[720px] text-[clamp(2.5rem,5.5vw,4.5rem)] font-medium tracking-[-0.02em] leading-[1.1] text-neutral-900 mb-8 transition-all duration-700 delay-100 ${
+          className={`relative z-10 max-w-[720px] text-[clamp(2.5rem,5.5vw,4.5rem)] font-medium tracking-[-0.02em] leading-[1.1] text-text mb-8 transition-all duration-700 delay-100 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
@@ -99,65 +99,65 @@ export default function LandingPage() {
           <Link
             href="/register"
             className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-medium rounded-full transition"
-            style={{ backgroundColor: '#041914', color: '#FDF7EB' }}
+            style={{ backgroundColor: 'var(--action-primary)', color: 'var(--on-action-primary)' }}
           >
             {t("landing.ctaGetStarted")}
             <ArrowRight className="w-4 h-4" />
           </Link>
           <Link
             href="/desk/demo"
-            className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-medium rounded-full border backdrop-blur-md transition hover:bg-white/40"
-            style={{ borderColor: '#013528', color: '#013528', backgroundColor: 'rgba(255,255,255,0.2)' }}
+            className="inline-flex items-center gap-2 px-7 py-3.5 text-sm font-medium rounded-full border backdrop-blur-md transition hover:bg-surface-hover/40"
+            style={{ borderColor: 'var(--accent)', color: 'var(--accent)', backgroundColor: 'var(--accent-subtle)' }}
           >
             {t("landing.ctaSeeDemo")}
           </Link>
         </div>
 
-        {/* App mockup — rounded card with fake UI */}
+        {/* App mockup â€” rounded card with fake UI */}
         <div
           className={`relative z-10 w-full max-w-[960px] transition-all duration-700 delay-300 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"
           }`}
         >
-          <div className="relative rounded-t-2xl rounded-b-0 border border-neutral-200 bg-white shadow-2xl shadow-neutral-200/50 overflow-hidden">
+          <div className="relative rounded-t-2xl rounded-b-0 border border-border bg-surface shadow-2xl shadow-none overflow-hidden">
             {/* Browser chrome */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-100">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
               <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-neutral-200" />
-                <div className="w-3 h-3 rounded-full bg-neutral-200" />
-                <div className="w-3 h-3 rounded-full bg-neutral-200" />
+                <div className="w-3 h-3 rounded-full bg-skeleton-highlight" />
+                <div className="w-3 h-3 rounded-full bg-skeleton-highlight" />
+                <div className="w-3 h-3 rounded-full bg-skeleton-highlight" />
               </div>
               <div className="flex-1 flex">
-                <div className="px-4 py-1 text-xs text-neutral-400 bg-neutral-50 rounded-md">
+                <div className="px-4 py-1 text-xs text-text-muted bg-surface-subtle rounded-md">
                   yoohoo.my.id
                 </div>
               </div>
             </div>
             {/* Fake app content */}
-            <div className="p-6 sm:p-10 bg-gradient-to-br from-neutral-50 to-white min-h-[320px] sm:min-h-[420px] flex flex-col items-center justify-center gap-6">
+            <div className="p-6 sm:p-10 bg-gradient-to-br from-surface-subtle to-surface min-h-[320px] sm:min-h-[420px] flex flex-col items-center justify-center gap-6">
               {/* Upload area mockup */}
-              <div className="w-full max-w-md border-2 border-dashed border-neutral-200 rounded-xl p-8 text-center">
-                <Upload className="w-10 h-10 text-neutral-300 mx-auto mb-3" />
-                <p className="text-sm font-medium text-neutral-500 mb-1">
+              <div className="w-full max-w-md border-2 border-dashed border-border rounded-xl p-8 text-center">
+                <Upload className="w-10 h-10 text-text-secondary mx-auto mb-3" />
+                <p className="text-sm font-medium text-text-muted mb-1">
                   {t("landing.mockupDrop")}
                 </p>
-                <p className="text-xs text-neutral-400">
+                <p className="text-xs text-text-muted">
                   {t("landing.mockupHint")}
                 </p>
               </div>
               {/* Fake flashcard previews */}
               <div className="flex gap-3 w-full max-w-md">
-                <div className="flex-1 h-20 rounded-lg bg-white border border-neutral-200 p-3 flex flex-col justify-between">
-                  <div className="w-16 h-2 rounded bg-neutral-200" />
-                  <div className="w-24 h-2 rounded bg-neutral-100" />
+                <div className="flex-1 h-20 rounded-lg bg-surface border border-border p-3 flex flex-col justify-between">
+                  <div className="w-16 h-2 rounded bg-skeleton-highlight" />
+                  <div className="w-24 h-2 rounded bg-surface-subtle" />
                 </div>
-                <div className="flex-1 h-20 rounded-lg bg-white border border-neutral-200 p-3 flex flex-col justify-between">
-                  <div className="w-20 h-2 rounded bg-neutral-200" />
-                  <div className="w-14 h-2 rounded bg-neutral-100" />
+                <div className="flex-1 h-20 rounded-lg bg-surface border border-border p-3 flex flex-col justify-between">
+                  <div className="w-20 h-2 rounded bg-skeleton-highlight" />
+                  <div className="w-14 h-2 rounded bg-surface-subtle" />
                 </div>
-                <div className="flex-1 h-20 rounded-lg bg-white border border-neutral-200 p-3 flex flex-col justify-between">
-                  <div className="w-12 h-2 rounded bg-neutral-200" />
-                  <div className="w-20 h-2 rounded bg-neutral-100" />
+                <div className="flex-1 h-20 rounded-lg bg-surface border border-border p-3 flex flex-col justify-between">
+                  <div className="w-12 h-2 rounded bg-skeleton-highlight" />
+                  <div className="w-20 h-2 rounded bg-surface-subtle" />
                 </div>
               </div>
             </div>
@@ -165,10 +165,10 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 2 — About the App
-      ═══════════════════════════════════════════════════════════════ */}
-      <section className="bg-white">
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+          SECTION 2 â€” About the App
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      <section className="bg-surface">
         <div className="max-w-6xl mx-auto px-6 py-24">
           {/* Section header */}
           <div
@@ -176,13 +176,13 @@ export default function LandingPage() {
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase text-neutral-500 bg-neutral-100 rounded-full border border-neutral-200">
+            <span className="inline-block px-3 py-1 mb-4 text-xs font-medium tracking-wide uppercase text-text-muted bg-surface-subtle rounded-full border border-border">
               {t("landing.aboutTag")}
             </span>
-            <h2 className="text-3xl sm:text-5xl font-medium tracking-[-0.02em] text-neutral-900 leading-[1.15] whitespace-pre-line mb-6">
+            <h2 className="text-3xl sm:text-5xl font-medium tracking-[-0.02em] text-text leading-[1.15] whitespace-pre-line mb-6">
               {t("landing.aboutTitle")}
             </h2>
-            <p className="text-base sm:text-lg text-neutral-500 leading-relaxed max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg text-text-muted leading-relaxed max-w-2xl mx-auto">
               {t("landing.aboutDesc")}
             </p>
           </div>
@@ -190,17 +190,17 @@ export default function LandingPage() {
           {/* Feature grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: Upload, title: t("landing.feature1Title"), desc: t("landing.feature1Desc"), delay: "delay-100", cardBg: '#fff', iconBg: '#111', iconColor: '#fff', textColor: '#111', descColor: '#111' },
-              { icon: BookOpen, title: t("landing.feature2Title"), desc: t("landing.feature2Desc"), delay: "delay-200", cardBg: '#fff', iconBg: '#111', iconColor: '#fff', textColor: '#111', descColor: '#111' },
-              { icon: Brain, title: t("landing.feature3Title"), desc: t("landing.feature3Desc"), delay: "delay-300", cardBg: '#fff', iconBg: '#111', iconColor: '#fff', textColor: '#111', descColor: '#111' },
-              { icon: BarChart3, title: t("landing.feature4Title"), desc: t("landing.feature4Desc"), delay: "delay-[400ms]", cardBg: '#fff', iconBg: '#111', iconColor: '#fff', textColor: '#111', descColor: '#111' },
+              { icon: Upload, title: t("landing.feature1Title"), desc: t("landing.feature1Desc"), delay: "delay-100", cardBg: 'var(--surface)', iconBg: 'var(--text)', iconColor: 'var(--surface)', textColor: 'var(--text)', descColor: 'var(--text)' },
+              { icon: BookOpen, title: t("landing.feature2Title"), desc: t("landing.feature2Desc"), delay: "delay-200", cardBg: 'var(--surface)', iconBg: 'var(--text)', iconColor: 'var(--surface)', textColor: 'var(--text)', descColor: 'var(--text)' },
+              { icon: Brain, title: t("landing.feature3Title"), desc: t("landing.feature3Desc"), delay: "delay-300", cardBg: 'var(--surface)', iconBg: 'var(--text)', iconColor: 'var(--surface)', textColor: 'var(--text)', descColor: 'var(--text)' },
+              { icon: BarChart3, title: t("landing.feature4Title"), desc: t("landing.feature4Desc"), delay: "delay-[400ms]", cardBg: 'var(--surface)', iconBg: 'var(--text)', iconColor: 'var(--surface)', textColor: 'var(--text)', descColor: 'var(--text)' },
             ].map((feature) => (
               <div
                 key={feature.title}
                 className={`group p-6 rounded-2xl hover:shadow-lg transition-all duration-500 ${feature.delay} ${
                   mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
-                style={{ backgroundColor: feature.cardBg, border: '1px solid rgba(0,0,0,0.06)' }}
+                style={{ backgroundColor: feature.cardBg, border: '1px solid var(--border)' }}
               >
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform" style={{ backgroundColor: feature.iconBg }}>
                   <feature.icon className="w-5 h-5" style={{ color: feature.iconColor }} />
@@ -217,20 +217,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══════════════════════════════════════════════════════════════
-          SECTION 3 — How It Works
-      ═══════════════════════════════════════════════════════════════ */}
-      <section className="border-t border-neutral-100">
+      {/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+          SECTION 3 â€” How It Works
+      â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */}
+      <section className="border-t border-border">
         <div className="max-w-5xl mx-auto px-6 py-24">
           <div
             className={`text-center mb-16 transition-all duration-700 ${
               mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            <h2 className="text-3xl sm:text-4xl font-medium tracking-[-0.02em] text-neutral-900 mb-4">
+            <h2 className="text-3xl sm:text-4xl font-medium tracking-[-0.02em] text-text mb-4">
               {t("upload.title")}
             </h2>
-            <p className="text-neutral-500 max-w-xl mx-auto">
+            <p className="text-text-muted max-w-xl mx-auto">
               {t("upload.subtitle")}
             </p>
           </div>
@@ -247,13 +247,13 @@ export default function LandingPage() {
                   mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
                 }`}
               >
-                <span className="inline-block text-5xl font-bold text-neutral-200 mb-4">
+                <span className="inline-block text-5xl font-bold text-text-muted mb-4">
                   {step.num}
                 </span>
-                <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+                <h3 className="text-lg font-semibold text-text mb-2">
                   {step.title}
                 </h3>
-                <p className="text-sm text-neutral-500 leading-relaxed max-w-xs mx-auto">
+                <p className="text-sm text-text-muted leading-relaxed max-w-xs mx-auto">
                   {step.desc}
                 </p>
               </div>
@@ -268,7 +268,7 @@ export default function LandingPage() {
             <Link
               href="/register"
               className="inline-flex items-center gap-2 px-8 py-4 text-sm font-medium rounded-full transition"
-              style={{ backgroundColor: '#041914', color: '#FDF7EB' }}
+              style={{ backgroundColor: 'var(--action-primary)', color: 'var(--on-action-primary)' }}
             >
               {t("landing.ctaGetStarted")}
               <ArrowRight className="w-4 h-4" />

@@ -121,6 +121,12 @@
   --chrome-hover: #202d27;
   --chrome-border: #3a4b43;
 
+  /* Brand colors used only by the Google sign-in mark. */
+  --google-blue: #4285f4;
+  --google-green: #34a853;
+  --google-yellow: #fbbc05;
+  --google-red: #ea4335;
+
   --toast-normal-bg: #1a2420;
   --toast-normal-text: #e8eee9;
   --toast-normal-border: #26332d;

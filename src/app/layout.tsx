@@ -10,6 +10,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import type { SessionData } from "@/lib/session-provider";
+import { DARK_THEME } from "@/lib/theme-tokens";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", variable: "--font-plus-jakarta-sans" });
 
@@ -21,11 +22,21 @@ export const metadata: Metadata = {
     shortcut: "/logo_yoohoo.png",
     apple: "/logo_yoohoo.png",
   },
+  openGraph: {
+    title: "Yoohoo — AI Flashcard & Quiz Generator",
+    description: "Turn course PDFs and books into interactive AI-generated flashcards and quizzes.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Yoohoo — AI Flashcard & Quiz Generator",
+    description: "Turn course PDFs and books into interactive AI-generated flashcards and quizzes.",
+  },
 };
 
 export const viewport: Viewport = {
   colorScheme: "dark",
-  themeColor: "#0c120f",
+  themeColor: DARK_THEME.bg,
 };
 
 export default async function RootLayout({

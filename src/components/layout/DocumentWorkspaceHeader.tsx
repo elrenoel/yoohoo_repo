@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -58,20 +58,20 @@ export default function DocumentWorkspaceHeader({ documentId, title, pageCount, 
   }, [menuOpen]);
 
   return (
-    <header className="sticky top-0 z-20 border-b border-[#0b4b3c] bg-[#013528] text-[#FDF7EB] shadow-sm">
+    <header className="sticky top-0 z-20 border-b border-chrome-border bg-chrome text-chrome-text shadow-sm">
       <div className="flex min-h-16 items-center gap-3 px-4 py-2 sm:px-6">
         <Link
           href={backHref}
           aria-label="Back"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#FDF7EB] text-[#013528] transition hover:bg-white"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-chrome-text text-accent transition hover:bg-surface-hover"
         >
           <ChevronLeft className="h-4 w-4" />
         </Link>
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold sm:text-base">{title}</p>
-          <p className="truncate text-[11px] text-[#FDF7EB]/70 sm:text-xs">
-            {sectionLabel}{pageCount ? ` · ${pageCount} halaman` : ""}
+          <p className="truncate text-[11px] text-chrome-text/70 sm:text-xs">
+            {sectionLabel}{pageCount ? ` Â· ${pageCount} halaman` : ""}
           </p>
         </div>
 
@@ -84,16 +84,16 @@ export default function DocumentWorkspaceHeader({ documentId, title, pageCount, 
                 onClick={() => setMenuOpen((open) => !open)}
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
-                className="inline-flex max-w-48 items-center gap-2 rounded-lg bg-[#FDF7EB] px-2.5 py-2 text-xs font-medium text-[#041914]"
+                className="inline-flex max-w-48 items-center gap-2 rounded-lg bg-chrome-text px-2.5 py-2 text-xs font-medium text-on-accent"
               >
                 <User className="h-3.5 w-3.5 shrink-0" />
                 <span className="truncate">{session.user.name || session.user.email}</span>
                 <EllipsisVertical className="h-3.5 w-3.5 shrink-0" />
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-neutral-200 bg-white p-1.5 text-neutral-800 shadow-xl" role="menu">
-                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-neutral-100">Profile</Link>
-                  <button type="button" role="menuitem" disabled={isLoggingOut} onClick={() => { setMenuOpen(false); void handleLogout(); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-neutral-100 disabled:opacity-50">
+                <div className="absolute right-0 top-full mt-2 w-52 rounded-xl border border-border bg-surface p-1.5 text-text shadow-xl" role="menu">
+                  <Link href="/profile" onClick={() => setMenuOpen(false)} className="block rounded-lg px-3 py-2 text-sm hover:bg-surface-subtle">Profile</Link>
+                  <button type="button" role="menuitem" disabled={isLoggingOut} onClick={() => { setMenuOpen(false); void handleLogout(); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm hover:bg-surface-subtle disabled:opacity-50">
                     <LogOut className="h-4 w-4" /> {isLoggingOut ? "Logging out..." : "Log out"}
                   </button>
                 </div>
@@ -105,7 +105,7 @@ export default function DocumentWorkspaceHeader({ documentId, title, pageCount, 
         <div className="flex items-center gap-2 sm:hidden">
           <LanguageSwitcher compact />
           {session?.user && (
-            <Link href="/profile" aria-label="Profile" className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FDF7EB] text-[#013528]"><User className="h-4 w-4" /></Link>
+            <Link href="/profile" aria-label="Profile" className="flex h-9 w-9 items-center justify-center rounded-xl bg-chrome-text text-accent"><User className="h-4 w-4" /></Link>
           )}
         </div>
       </div>
