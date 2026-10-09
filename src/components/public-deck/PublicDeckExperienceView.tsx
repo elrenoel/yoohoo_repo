@@ -125,12 +125,12 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
   if (error) {
     return (
       <AppShell>
-        <main className="flex min-h-screen items-center justify-center bg-[#F5F6F3]">
-          <div className="rounded-2xl border border-[#D8DCD3] bg-white p-10 text-center shadow-[0_8px_24px_rgba(22,36,29,0.05)]">
+        <main className="flex min-h-screen items-center justify-center bg-bg">
+          <div className="rounded-2xl border border-border bg-surface p-10 text-center shadow-none">
             <p className="font-serif text-3xl">Deck tidak ditemukan</p>
             <Link
               href="/explore"
-              className="mt-5 inline-block text-[#164C3D]"
+              className="mt-5 inline-block text-accent"
             >
               Kembali ke Jelajah
             </Link>
@@ -147,10 +147,10 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
 
   return (
     <AppShell>
-      <main className="min-h-screen bg-[#F5F6F3] px-4 py-8 text-[#16241D] sm:px-8">
+      <main className="min-h-screen bg-bg px-4 py-8 text-text sm:px-8">
         <div className="mx-auto max-w-5xl">
-          <header className="rounded-2xl border border-[#D8DCD3] bg-[#FAFBF8] p-6 shadow-[0_8px_24px_rgba(22,36,29,0.04)] sm:p-9">
-            <div className="font-mono text-xs text-[#5B6B62]">
+          <header className="rounded-2xl border border-border bg-surface-raised p-6 shadow-none sm:p-9">
+            <div className="font-mono text-xs text-text-secondary">
               DECK PUBLIK · V{data.deck.version}
             </div>
             <h1 className="mt-3 font-serif text-4xl font-semibold">
@@ -158,24 +158,24 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
             </h1>
             <Link
               href={`/u/${data.deck.owner.username}`}
-              className="mt-2 inline-block text-sm text-[#164C3D]"
+              className="mt-2 inline-block text-sm text-accent"
             >
               oleh @{data.deck.owner.username}
             </Link>
-            <p className="mt-4 max-w-3xl text-[#5B6B62]">
+            <p className="mt-4 max-w-3xl text-text-secondary">
               {data.deck.description}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               {data.deck.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="rounded-full border border-[#D8DCD3] bg-white px-2.5 py-1 font-mono text-xs"
+                  className="rounded-full border border-border bg-surface px-2.5 py-1 font-mono text-xs"
                 >
                   #{tag}
                 </span>
               ))}
             </div>
-            <div className="mt-7 flex flex-wrap items-center gap-5 border-t border-[#D8DCD3] pt-5 font-mono text-xs text-[#5B6B62]">
+            <div className="mt-7 flex flex-wrap items-center gap-5 border-t border-border pt-5 font-mono text-xs text-text-secondary">
               <span className="flex gap-1">
                 <Eye className="h-4 w-4" /> {data.deck.viewCount}
               </span>
@@ -192,22 +192,22 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
                 type="button"
                 onClick={fork}
                 disabled={busy}
-                className="ml-auto flex items-center gap-2 rounded-xl bg-[#164C3D] px-4 py-2.5 font-sans font-semibold text-white transition hover:bg-[#244E3D] disabled:opacity-50"
+                className="ml-auto flex items-center gap-2 rounded-xl bg-action-primary px-4 py-2.5 font-sans font-semibold text-on-action-primary transition hover:bg-action-primary-hover disabled:opacity-50"
               >
                 <Copy className="h-4 w-4" /> Fork ke Your Desk
               </button>
             </div>
           </header>
 
-          <section className="mt-7 overflow-hidden rounded-2xl border border-[#D8DCD3] bg-white shadow-[0_8px_24px_rgba(22,36,29,0.04)]">
-            <div className="flex border-b border-[#D8DCD3]">
+          <section className="mt-7 overflow-hidden rounded-2xl border border-border bg-surface shadow-none">
+            <div className="flex border-b border-border">
               <button
                 type="button"
                 onClick={() => setTab("cards")}
-                className={`flex-1 p-4 font-semibold transition hover:bg-[#F7F8F5] ${
+                className={`flex-1 p-4 font-semibold transition hover:bg-surface-hover ${
                   tab === "cards"
-                    ? "border-b-2 border-[#164C3D]"
-                    : "text-[#5B6B62]"
+                    ? "border-b-2 border-accent"
+                    : "text-text-secondary"
                 }`}
               >
                 Flashcard ({data.cards.length})
@@ -215,10 +215,10 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
               <button
                 type="button"
                 onClick={() => setTab("quiz")}
-                className={`flex-1 p-4 font-semibold transition hover:bg-[#F7F8F5] ${
+                className={`flex-1 p-4 font-semibold transition hover:bg-surface-hover ${
                   tab === "quiz"
-                    ? "border-b-2 border-[#164C3D]"
-                    : "text-[#5B6B62]"
+                    ? "border-b-2 border-accent"
+                    : "text-text-secondary"
                 }`}
               >
                 Quiz ({data.questions.length})
@@ -250,7 +250,7 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
                           setCard(card - 1);
                           setFlipped(false);
                         }}
-                        className="rounded-full p-2 transition hover:bg-[#EEF5F0] disabled:opacity-35"
+                        className="rounded-full p-2 transition hover:bg-accent-subtle disabled:opacity-35"
                       >
                         <ArrowLeft />
                       </button>
@@ -265,7 +265,7 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
                           setCard(card + 1);
                           setFlipped(false);
                         }}
-                        className="rounded-full p-2 transition hover:bg-[#EEF5F0] disabled:opacity-35"
+                        className="rounded-full p-2 transition hover:bg-accent-subtle disabled:opacity-35"
                       >
                         <ArrowRight />
                       </button>
@@ -288,8 +288,8 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
                           key={review.questionId}
                           className={`border-l-2 p-4 ${
                             review.isCorrect
-                              ? "border-emerald-600 bg-emerald-50"
-                              : "border-[#C24A3D] bg-red-50"
+                              ? "border-success bg-success-subtle"
+                              : "border-danger bg-danger-subtle"
                           }`}
                         >
                           <p className="font-semibold">
@@ -304,7 +304,7 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
                             }
                           </p>
                           {review.explanation && (
-                            <p className="mt-2 text-sm text-[#5B6B62]">
+                            <p className="mt-2 text-sm text-text-secondary">
                               {review.explanation}
                             </p>
                           )}
@@ -314,7 +314,7 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
                   </div>
                 ) : currentQuestion ? (
                   <div>
-                    <div className="font-mono text-xs text-[#5B6B62]">
+                    <div className="font-mono text-xs text-text-secondary">
                       SOAL {question + 1}/{data.questions.length} ·{" "}
                       {currentQuestion.difficulty}
                     </div>
@@ -328,7 +328,7 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
                           type="button"
                           disabled={busy}
                           onClick={() => void answer(index)}
-                          className="rounded-xl border border-[#D8DCD3] p-4 text-left transition hover:border-[#164C3D] hover:bg-[#EEF5F0]"
+                          className="rounded-xl border border-border p-4 text-left transition hover:border-accent hover:bg-accent-subtle"
                         >
                           {String.fromCharCode(65 + index)}. {option}
                         </button>
@@ -353,10 +353,10 @@ export default function PublicDeckExperienceView({ slug }: { slug: string }) {
 function PublicDeckSkeleton() {
   return (
     <AppShell>
-      <main className="min-h-screen animate-pulse bg-[#F5F6F3] p-8">
+      <main className="min-h-screen animate-pulse bg-bg p-8">
         <div className="mx-auto max-w-5xl">
-          <div className="h-72 rounded-2xl border border-[#D8DCD3] bg-white" />
-          <div className="mt-7 h-96 rounded-2xl border border-[#D8DCD3] bg-white" />
+          <div className="h-72 rounded-2xl border border-border bg-surface" />
+          <div className="mt-7 h-96 rounded-2xl border border-border bg-surface" />
         </div>
       </main>
     </AppShell>

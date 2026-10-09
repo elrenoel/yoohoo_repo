@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/i18n";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -10,6 +10,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import type { SessionData } from "@/lib/session-provider";
+import { DARK_THEME } from "@/lib/theme-tokens";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", variable: "--font-plus-jakarta-sans" });
 
@@ -21,6 +22,21 @@ export const metadata: Metadata = {
     shortcut: "/logo_yoohoo.png",
     apple: "/logo_yoohoo.png",
   },
+  openGraph: {
+    title: "Yoohoo — AI Flashcard & Quiz Generator",
+    description: "Turn course PDFs and books into interactive AI-generated flashcards and quizzes.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Yoohoo — AI Flashcard & Quiz Generator",
+    description: "Turn course PDFs and books into interactive AI-generated flashcards and quizzes.",
+  },
+};
+
+export const viewport: Viewport = {
+  colorScheme: "dark",
+  themeColor: DARK_THEME.bg,
 };
 
 export default async function RootLayout({
@@ -31,8 +47,8 @@ export default async function RootLayout({
   const initialSession = await auth.api.getSession({ headers: await headers() });
 
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} h-full antialiased`}>
-      <body className="min-h-full bg-neutral-50 text-neutral-900 font-sans flex flex-col selection:bg-neutral-900 selection:text-white">
+    <html lang="en" className={`${plusJakartaSans.variable} h-full bg-bg antialiased`}>
+      <body className="min-h-full bg-bg text-text font-sans flex flex-col">
         <ErrorBoundary>
           <QueryProvider>
             <SessionProvider initialSession={initialSession as SessionData | null}>

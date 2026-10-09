@@ -11,11 +11,11 @@ export const DECK_CARD_THEMES: Record<DeckCardColor, {
   ink: string;
   muted: string;
 }> = {
-  green: { label: "Green", shell: "#EDF2F4", folder: "#4E8B75", tab: "#5A9982", border: "#2E6D58", ink: "#FFFFFF", muted: "rgba(255,255,255,.78)" },
-  blue: { label: "Blue", shell: "#EEF3F8", folder: "#7699BE", tab: "#88A9CA", border: "#557A9F", ink: "#FFFFFF", muted: "rgba(255,255,255,.82)" },
-  peach: { label: "Peach", shell: "#FAF1EB", folder: "#D99A78", tab: "#E5AA8B", border: "#BB7958", ink: "#35251D", muted: "rgba(53,37,29,.72)" },
-  lavender: { label: "Lavender", shell: "#F2EFF9", folder: "#9B8BC2", tab: "#AB9BCF", border: "#7868A0", ink: "#FFFFFF", muted: "rgba(255,255,255,.82)" },
-  rose: { label: "Rose", shell: "#FAEFF1", folder: "#C88998", tab: "#D49AA7", border: "#A96676", ink: "#FFFFFF", muted: "rgba(255,255,255,.82)" },
+  green: { label: "Green", shell: "#101914", folder: "#1d4d3d", tab: "#28624f", border: "#3f806a", ink: "#e8eee9", muted: "rgba(232,238,233,.78)" },
+  blue: { label: "Blue", shell: "#10161d", folder: "#24415f", tab: "#315676", border: "#52789e", ink: "#f0f5fa", muted: "rgba(240,245,250,.80)" },
+  peach: { label: "Peach", shell: "#1b1512", folder: "#6a3f2e", tab: "#80523c", border: "#a76f52", ink: "#fff3eb", muted: "rgba(255,243,235,.80)" },
+  lavender: { label: "Lavender", shell: "#17141d", folder: "#44365f", tab: "#584873", border: "#79689a", ink: "#f5f0ff", muted: "rgba(245,240,255,.80)" },
+  rose: { label: "Rose", shell: "#1c1316", folder: "#673441", tab: "#7e4352", border: "#a45c6e", ink: "#fff0f3", muted: "rgba(255,240,243,.80)" },
 };
 
 export function deckCardColor(value: unknown): DeckCardColor {

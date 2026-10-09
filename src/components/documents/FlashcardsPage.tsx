@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -20,7 +20,7 @@ import Button from "@/components/ui/Button";
 import { Flashcard as FlashcardView } from "@/components/flashcard/Flashcard";
 import { resolveBlobVariant } from "@/lib/flashcard-variant";
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface Flashcard {
   id: string;
   term: string;
@@ -30,16 +30,16 @@ interface Flashcard {
 }
 type RelatedTerm = { term: string; type: "linked" | "suggested"; flashcard_id?: string; source_chunk_id?: string; definition?: string };
 
-// ─── Loading skeleton ────────────────────────────────────────────────────────
+// â”€â”€â”€ Loading skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CardSkeleton() {
   return (
-    <div className="w-full aspect-[4/3] sm:aspect-[16/10] max-h-[380px] rounded-2xl bg-white border border-[#D8D9D0] shadow-xs animate-pulse flex flex-col justify-between p-8">
-      <div className="h-3 bg-[#E6EADF] rounded w-1/4" />
+    <div className="w-full aspect-[4/3] sm:aspect-[16/10] max-h-[380px] rounded-2xl bg-surface border border-border shadow-xs animate-pulse flex flex-col justify-between p-8">
+      <div className="h-3 bg-surface-subtle rounded w-1/4" />
       <div className="space-y-3 text-center py-6">
-        <div className="h-8 bg-[#E6EADF] rounded w-2/3 mx-auto" />
-        <div className="h-4 bg-[#E6EADF] rounded w-1/3 mx-auto" />
+        <div className="h-8 bg-surface-subtle rounded w-2/3 mx-auto" />
+        <div className="h-4 bg-surface-subtle rounded w-1/3 mx-auto" />
       </div>
-      <div className="h-3 bg-[#E6EADF] rounded w-1/3 mx-auto" />
+      <div className="h-3 bg-surface-subtle rounded w-1/3 mx-auto" />
     </div>
   );
 }
@@ -62,7 +62,7 @@ async function fetchFlashcards(docId: string): Promise<FlashcardsApiResponse> {
   return data;
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function FlashcardsPage() {
   const params = useParams();
   const queryClient = useQueryClient();
@@ -71,7 +71,7 @@ export default function FlashcardsPage() {
 
   const isDemo = docId === "demo-os-memory";
 
-  // ── Fetch flashcards with useQuery ─────────────────────────────────────────
+  // â”€â”€ Fetch flashcards with useQuery â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const {
     data: flashcardsData,
     isLoading,
@@ -105,7 +105,7 @@ export default function FlashcardsPage() {
   const setIsFlipped = (flipped: boolean | ((previous: boolean) => boolean)) =>
     setViewState(previous => ({ ...previous, flipped: typeof flipped === "function" ? flipped(previous.flipped) : flipped }));
 
-  // ── Keyboard navigation ────────────────────────────────────────────────────
+  // â”€â”€ Keyboard navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
@@ -174,14 +174,14 @@ export default function FlashcardsPage() {
     finally { setAddingSuggested(false); }
   };
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // â”€â”€ Render â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   return (
-    <div className="min-h-screen bg-[#F2F0E8] flex flex-col justify-between text-[#183229] selection:bg-[#123F34] selection:text-white">
+    <div className="min-h-screen bg-bg flex flex-col justify-between text-text selection:bg-action-primary selection:text-on-accent">
       <>
         <div className="mx-auto w-full max-w-3xl px-4 pt-5 sm:px-6">
-          <div className="h-1 w-full overflow-hidden rounded-full bg-[#E6EADF]"><div className="h-full bg-[#123F34] transition-all" style={{ width: `${progressPercent}%` }} /></div>
+          <div className="h-1 w-full overflow-hidden rounded-full bg-surface-subtle"><div className="h-full bg-action-primary transition-all" style={{ width: `${progressPercent}%` }} /></div>
           <div className="mb-4 mt-3 flex w-full justify-end">
-            <Link href={`/desk/${docId}/quiz`} className="inline-flex items-center gap-1.5 rounded-xl bg-[#123F34] px-4 py-2 text-xs font-medium text-white hover:bg-[#244E3D]"><span>{t("flashcards.startQuiz")}</span><ArrowRight className="h-3.5 w-3.5" /></Link>
+            <Link href={`/desk/${docId}/quiz`} className="inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary hover:bg-action-primary-hover"><span>{t("flashcards.startQuiz")}</span><ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
         </div>
       </>
@@ -190,22 +190,22 @@ export default function FlashcardsPage() {
         subtitle={
           <>
             Flashcards
-            {!isLoading && cards.length > 0 && ` · ${cards.length} ${t("flashcards.konsep")}`}
+            {!isLoading && cards.length > 0 && ` Â· ${cards.length} ${t("flashcards.konsep")}`}
           </>
         }
         rightContent={
           <Link
             href={`/desk/${docId}/quiz`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-[#123F34] text-white hover:bg-[#244E3D] transition active:scale-[0.98] shadow-xs"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition active:scale-[0.98] shadow-xs"
           >
             <span>{t("flashcards.startQuiz")}</span>
             <Play className="w-3.5 h-3.5 fill-current" />
           </Link>
         }
         bottomBar={
-          <div className="w-full bg-[#E6EADF] h-1">
+          <div className="w-full bg-surface-subtle h-1">
             <div
-              className="bg-[#123F34] h-1 transition-all duration-300 ease-out"
+              className="bg-action-primary h-1 transition-all duration-300 ease-out"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -218,7 +218,7 @@ export default function FlashcardsPage() {
         {/* Loading state */}
         {isLoading && (
           <div className="w-full flex flex-col items-center gap-6">
-            <div className="flex items-center gap-2 text-sm text-[#66736B]">
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>{t("flashcards.loading")}</span>
             </div>
@@ -244,12 +244,12 @@ export default function FlashcardsPage() {
             {/* Counter Badge */}
             <div className="flex items-center justify-between w-full mb-6">
               <div className="flex flex-1 justify-between w-full">
-                <span className="text-xs font-mono text-[#526159] bg-[#E6EADF] px-3 py-1 rounded-full border border-[#D8D9D0]">
+                <span className="text-xs font-mono text-text-secondary bg-surface-subtle px-3 py-1 rounded-full border border-border">
                   {t("flashcards.kartu")} {currentIndex + 1} {t("flashcards.of")} {cards.length}
                 </span>
                 <Link
                   href={`/desk/${docId}/quiz`}
-                  className="inline-flex sm:hidden items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-[#123F34] text-white hover:bg-[#244E3D] transition active:scale-[0.98] shadow-xs"
+                  className="inline-flex sm:hidden items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition active:scale-[0.98] shadow-xs"
                 >
                   <span>{t("flashcards.startQuiz")}</span>
                   <Play className="w-3.5 h-3.5 fill-current" />
@@ -257,7 +257,7 @@ export default function FlashcardsPage() {
               </div>
               
 
-              <span className="text-xs text-[#7B877F] font-mono hidden sm:inline sm:flex-2  ">
+              <span className="text-xs text-text-muted font-mono hidden sm:inline sm:flex-2  ">
                 {t("flashcards.kbTips")}
               </span>
             </div>
@@ -278,8 +278,8 @@ export default function FlashcardsPage() {
             </div>
 
             {activeRelated?.type === "suggested" && (
-              <div className="mt-5 w-full rounded-2xl border border-[#D8D9D0] bg-white p-4">
-                <p className="text-xs text-[#526159]">
+              <div className="mt-5 w-full rounded-2xl border border-border bg-surface p-4">
+                <p className="text-xs text-text-secondary">
                   <strong>{activeRelated.term}</strong> ada di materi tetapi belum
                   menjadi flashcard.
                 </p>
@@ -294,7 +294,7 @@ export default function FlashcardsPage() {
                     : "Tambahkan flashcard ini"}
                 </Button>
                 {suggestedError && (
-                  <p className="mt-2 text-xs text-rose-600">{suggestedError}</p>
+                  <p className="mt-2 text-xs text-danger-text">{suggestedError}</p>
                 )}
               </div>
             )}
@@ -315,7 +315,7 @@ export default function FlashcardsPage() {
               <Button
                 size="lg"
                 onClick={handleToggleFlip}
-                className="bg-[#E6EADF] hover:bg-[#DDE9D4] text-[#183229]"
+                className="bg-surface-subtle hover:bg-surface-hover text-text"
               >
                 <RotateCw className="w-4 h-4" />
                 <span className="hidden sm:inline">{t("flashcards.flipButton")}</span>
@@ -325,7 +325,7 @@ export default function FlashcardsPage() {
                 size="lg"
                 onClick={handleNext}
                 disabled={currentIndex === cards.length - 1}
-                className="flex-1 bg-[#123F34] text-white hover:bg-[#244E3D]"
+                className="flex-1 bg-action-primary text-on-action-primary hover:bg-action-primary-hover"
               >
                 <span>{t("flashcards.next")}</span>
                 <ChevronRight className="w-4 h-4" />
@@ -334,13 +334,13 @@ export default function FlashcardsPage() {
 
             {/* End of Deck CTA */}
             {currentIndex === cards.length - 1 && (
-              <div className="mt-8 p-4 bg-[#E7F0DF] border border-[#B8C4B8] rounded-2xl text-center w-full">
-                <p className="text-xs text-[#244E3D] font-medium mb-2">
-                  🎉 {t("flashcards.endMessage")}
+              <div className="mt-8 p-4 bg-success-subtle border border-success-border rounded-2xl text-center w-full">
+                <p className="text-xs text-success-text font-medium mb-2">
+                  ðŸŽ‰ {t("flashcards.endMessage")}
                 </p>
                 <Link
                   href={`/desk/${docId}/quiz`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-[#123F34] text-white hover:bg-[#244E3D] transition"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition"
                 >
                   <span>{t("flashcards.startQuizButton")}</span>
                   <ArrowRight className="w-3.5 h-3.5" />

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import AppShell from "@/components/layout/AppShell";
@@ -24,14 +24,14 @@ export default async function PublicPostPage({ params }: { params: Promise<{ slu
   if (!post) notFound();
   const images = await sql`select id,width,height,alt_text from public.post_images where post_id=${post.id} order by position`;
 
-  return <AppShell><main className="min-h-screen bg-[#F5F6F3] px-5 py-8 text-[#16241D]"><div className="mx-auto max-w-[720px]">
-    <article className="border-b border-[#D8DCD3] pb-7">
-      <p className="text-sm font-bold">{post.display_name}<Link href={`/u/${post.username}`} className="ml-2 font-normal text-[#6A776F]">@{post.username}</Link></p>
+  return <AppShell><main className="min-h-screen bg-bg px-5 py-8 text-text"><div className="mx-auto max-w-[720px]">
+    <article className="border-b border-border pb-7">
+      <p className="text-sm font-bold">{post.display_name}<Link href={`/u/${post.username}`} className="ml-2 font-normal text-text-secondary">@{post.username}</Link></p>
       <p className="mt-4 whitespace-pre-wrap text-base leading-7">{post.body || post.body_md}</p>
       <PostImageGallery images={images.map(image => ({ id: String(image.id), url: `/api/post-images/${image.id}`, width: Number(image.width), height: Number(image.height), altText: image.alt_text ? String(image.alt_text) : null }))} />
       {post.deck_slug && <DeckFolderCard deck={{ slug: String(post.deck_slug), title: String(post.deck_title), description: String(post.deck_description || ""), tags: Array.isArray(post.deck_tags) ? post.deck_tags : [], color: post.embedded_deck_color }} />}
       <div className="mt-5"><SocialActions targetType="post" targetId={String(post.id)} slug={slug} compact commentCount={Number(post.comment_count)} initialLikeCount={Number(post.like_count)} initialLiked={Boolean(post.liked_by_me)} initialBookmarked={Boolean(post.bookmarked_by_me)} initialRepostCount={Number(post.repost_count)} initialReposted={Boolean(post.reposted_by_me)} /></div>
-      <p className="mt-5 text-xs text-[#7A8780]">{new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(post.published_at))}</p>
+      <p className="mt-5 text-xs text-text-muted">{new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(post.published_at))}</p>
     </article>
     <CommentsSection targetType="post" targetId={String(post.id)} />
   </div></main></AppShell>;

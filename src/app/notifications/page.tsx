@@ -17,9 +17,9 @@ import {
 import { useNotifications } from "@/hooks/use-notifications";
 
 const severityStyles = {
-  info: "bg-[#DDE9D4] text-[#516757] border-[#C5D2BE]",
-  success: "bg-[#EEF5F0] text-[#2F7651] border-[#BFD6C4]",
-  error: "bg-[#FBEDEB] text-[#C24A3D] border-[#F0C4BE]",
+  info: "bg-accent-subtle text-text-secondary border-border-strong",
+  success: "bg-success-subtle text-success-text border-success-border",
+  error: "bg-danger-subtle text-danger-text border-danger-border",
 } as const;
 
 const severityIcons = {
@@ -29,6 +29,10 @@ const severityIcons = {
 } as const;
 
 const interactionIcons = { repost: Repeat2, save: Bookmark } as const;
+const interactionStyles = {
+  repost: "border-accent bg-accent-subtle text-accent",
+  save: "border-success-border bg-success-subtle text-success-text",
+} as const;
 
 type NotificationRow = {
   id: string;
@@ -67,6 +71,9 @@ function NotificationItem({
   const Icon = notification.type === "repost" || notification.type === "save"
     ? interactionIcons[notification.type]
     : severityIcons[severity as keyof typeof severityIcons] || Info;
+  const iconStyle = notification.type === "repost" || notification.type === "save"
+    ? interactionStyles[notification.type]
+    : severityStyles[severity as keyof typeof severityStyles];
   const isRead = !!notification.read_at;
 
   return (
@@ -75,35 +82,35 @@ function NotificationItem({
       onClick={() => onNotificationClick(notification)}
       className={`flex gap-3 rounded-xl border p-4 transition ${
         isRead
-          ? "border-neutral-200 bg-white/50 hover:bg-white"
-          : "border-[#C9D2C8] bg-white hover:border-[#9EAE9E]"
+          ? "border-border bg-surface/50 hover:bg-surface"
+          : "border-border bg-surface hover:border-border-strong"
       }`}
     >
       <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${severityStyles[severity as keyof typeof severityStyles]}`}
+        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border ${iconStyle}`}
       >
         <Icon className="h-5 w-5" />
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <h4
-            className={`text-sm font-semibold ${isRead ? "text-neutral-600" : "text-[#16241D]"}`}
+            className={`text-sm font-semibold ${isRead ? "text-text-secondary" : "text-text"}`}
           >
             {notification.title || "Notifikasi"}
           </h4>
-          {!isRead && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[#C24A3D]" />}
+          {!isRead && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-danger" />}
         </div>
         {notification.body && (
-          <p className="mt-1 text-xs leading-relaxed text-neutral-600">
+          <p className="mt-1 text-xs leading-relaxed text-text-secondary">
             {notification.body}
           </p>
         )}
-        <div className="mt-2 flex items-center gap-2 text-[10px] text-neutral-500">
+        <div className="mt-2 flex items-center gap-2 text-[10px] text-text-muted">
           <Bell className="h-3 w-3" />
           <span>{timeAgo(notification.created_at)}</span>
         </div>
       </div>
-      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#DDE9D4] text-[#516757]">
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-subtle text-text-secondary">
         <ArrowUpRight className="h-4 w-4" />
       </span>
     </Link>
@@ -131,16 +138,16 @@ export default function NotificationsPage() {
 
   if (!session?.user) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-[#F5F6F3] px-5">
-        <div className="rounded-xl border border-[#D8DCD3] bg-white p-8 text-center">
-          <Bell className="mx-auto h-10 w-10 text-[#7A8780]" />
+      <main className="flex min-h-screen items-center justify-center bg-bg px-5">
+        <div className="rounded-xl border border-border bg-surface p-8 text-center">
+          <Bell className="mx-auto h-10 w-10 text-text-muted" />
           <h2 className="mt-4 font-semibold">Notifikasi</h2>
-          <p className="mt-1 text-sm text-[#5B6B62]">
+          <p className="mt-1 text-sm text-text-secondary">
             Silakan masuk untuk melihat notifikasi Anda.
           </p>
           <Link
             href="/login"
-            className="mt-5 inline-flex rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white"
+            className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary"
           >
             Masuk sekarang
           </Link>
@@ -150,17 +157,17 @@ export default function NotificationsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#F5F6F3] px-5 py-10 pb-28 text-[#16241D] sm:px-8">
+    <main className="min-h-screen bg-bg px-5 py-10 pb-28 text-text sm:px-8">
       <div className="mx-auto max-w-4xl">
         <header className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5B6B62]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-text-secondary">
               NOTIFIKASI
             </p>
             <h1 className="mt-1 font-serif text-4xl font-semibold tracking-tight">
               Notifikasi
             </h1>
-            <p className="mt-1 text-sm text-[#5B6B62]">
+            <p className="mt-1 text-sm text-text-secondary">
               {unreadCount === 0
                 ? "Semua notifikasi sudah kamu baca."
                 : `${unreadCount} notifikasi belum dibaca.`}
@@ -170,7 +177,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={handleMarkAllRead}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#123F34] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#244E3D]"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover"
             >
               <CheckCheck className="h-4 w-4" />
               Tandai semua dibaca
@@ -184,21 +191,21 @@ export default function NotificationsPage() {
             {Array.from({ length: 3 }, (_, i) => (
               <div
                 key={i}
-                className="flex gap-3 rounded-xl border border-[#D8DCD3] bg-white/50 p-4 animate-pulse"
+                className="flex gap-3 rounded-xl border border-border bg-surface/50 p-4 animate-pulse"
               >
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#E6EADF]" />
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-skeleton" />
                 <div className="flex-1 space-y-2">
-                  <div className="h-4 rounded bg-[#E6EADF] w-2/3" />
-                  <div className="h-3 rounded bg-[#E6EADF] w-1/2" />
+                  <div className="h-4 rounded bg-skeleton w-2/3" />
+                  <div className="h-3 rounded bg-skeleton w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#C8CDC4] bg-white/40 px-6 py-12 text-center">
-            <Bell className="h-10 w-10 text-[#A4ADA6]" />
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-strong bg-surface/40 px-6 py-12 text-center">
+            <Bell className="h-10 w-10 text-text-muted" />
             <h2 className="mt-4 font-semibold">Tidak ada notifikasi</h2>
-            <p className="mt-1 text-sm text-[#5B6B62]">
+            <p className="mt-1 text-sm text-text-secondary">
               Aktivitas belajar dan interaksi sosial akan muncul di sini.
             </p>
           </div>
@@ -216,14 +223,14 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => setVisibleCount((count) => count + 10)}
-                  className="rounded-xl border border-[#C9D2C8] bg-white px-5 py-2.5 text-sm font-semibold text-[#164C3D] transition hover:bg-[#EEF3ED]"
+                  className="rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-accent transition hover:bg-surface-hover"
                 >
                   Lihat lebih banyak
                 </button>
               </div>
             )}
             {notifications.length === 0 && unreadCount === 0 && (
-              <div className="text-center py-8 text-sm text-[#5B6B62]">
+              <div className="text-center py-8 text-sm text-text-secondary">
                 Belum ada notifikasi untuk ditampilkan.
               </div>
             )}

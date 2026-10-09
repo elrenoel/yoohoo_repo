@@ -52,31 +52,31 @@ export default function ConfirmDialog({
 
   const confirmColorClass =
     confirmVariant === "danger"
-      ? "bg-rose-600 hover:bg-rose-700"
-      : "bg-emerald-700 hover:bg-emerald-800";
+      ? "bg-danger hover:bg-danger-hover text-on-danger"
+      : "bg-success hover:bg-success-hover text-on-success";
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-900/30 backdrop-blur-sm px-6"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-overlay backdrop-blur-sm px-6"
       role="dialog"
       aria-modal="true"
       onClick={onCancel}
     >
       <div
-        className="bg-white border border-neutral-200 rounded-2xl p-6 sm:p-8 shadow-lg w-full max-w-sm"
+        className="bg-surface-raised border border-border rounded-2xl p-6 sm:p-8 shadow-lg shadow-none w-full max-w-sm"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+        <h3 className="text-lg font-semibold text-text mb-2">
           {title}
         </h3>
-        <p className="text-sm text-neutral-600 leading-relaxed">{message}</p>
+        <p className="text-sm text-text-secondary leading-relaxed">{message}</p>
 
         <div className="flex items-center justify-end gap-3 mt-6">
           <button
             autoFocus
             onClick={onCancel}
             disabled={loading}
-            className="py-2.5 px-5 rounded-xl bg-white border border-neutral-200 text-xs sm:text-sm font-medium text-neutral-700 hover:bg-neutral-50 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="py-2.5 px-5 rounded-xl bg-surface border border-control-border text-xs sm:text-sm font-medium text-text-secondary hover:bg-surface-hover transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Batal
           </button>
@@ -84,7 +84,7 @@ export default function ConfirmDialog({
             onClick={onConfirm}
             disabled={loading}
             aria-busy={loading}
-            className={`py-2.5 px-5 rounded-xl ${confirmColorClass} text-white text-xs sm:text-sm font-medium transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100`}
+            className={`py-2.5 px-5 rounded-xl ${confirmColorClass} text-xs sm:text-sm font-medium transition flex items-center gap-2 cursor-pointer shadow-xs shadow-none active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100`}
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : icon ?? <Trash2 className="w-4 h-4" />}
             <span>{confirmLabel}</span>

@@ -12,7 +12,7 @@ export function FlashcardDurationDemo() {
       <h1 id="flashcard-duration-title" className="text-2xl font-semibold">
         Perbandingan durasi flip
       </h1>
-      <p className="mt-2 text-sm text-[#5B6B62]">
+      <p className="mt-2 text-sm text-text-secondary">
         Klik setiap kartu untuk membandingkan 450, 600, dan 750 ms.
       </p>
       <div className="mt-8 grid gap-8 md:grid-cols-3">

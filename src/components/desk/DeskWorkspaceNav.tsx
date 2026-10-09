@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -40,5 +40,5 @@ export default function DeskWorkspaceNav({ deckId }: { deckId: string }) {
     return () => { cancelled = true; };
   }, [deckId]);
 
-  return <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 pb-2 pt-5 sm:px-6"><Link href={backHref(pathname, deckId, parentDeckId)} aria-label="Back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#D8DCD3] bg-white text-[#013528] transition hover:bg-[#EAF2E8]"><ChevronLeft className="h-4 w-4" /></Link><div className="min-w-0"><p className="truncate text-sm font-semibold text-[#16241D] sm:text-base">{title}</p><p className="truncate text-[11px] text-[#5B6B62] sm:text-xs">{section(pathname)}</p></div></div>;
+  return <div className="mx-auto flex w-full max-w-6xl items-center gap-3 px-4 pb-2 pt-5 sm:px-6"><Link href={backHref(pathname, deckId, parentDeckId)} aria-label="Back" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-accent transition hover:bg-surface-hover"><ChevronLeft className="h-4 w-4" /></Link><div className="min-w-0"><p className="truncate text-sm font-semibold text-text sm:text-base">{title}</p><p className="truncate text-[11px] text-text-secondary sm:text-xs">{section(pathname)}</p></div></div>;
 }

@@ -35,12 +35,12 @@ interface AttemptsApiResponse {
 
 function attemptGrade(percentage: number): { label: string; className: string } {
   if (percentage >= 85)
-    return { label: st("attempt.grade.great"), className: "bg-emerald-100 text-emerald-800 border-emerald-200" };
+    return { label: st("attempt.grade.great"), className: "bg-success-subtle text-success-text border-success-border" };
   if (percentage >= 70)
-    return { label: st("attempt.grade.good"), className: "bg-blue-100 text-blue-800 border-blue-200" };
+    return { label: st("attempt.grade.good"), className: "bg-accent-subtle text-accent border-accent" };
   if (percentage >= 50)
-    return { label: st("attempt.grade.practice"), className: "bg-amber-100 text-amber-800 border-amber-200" };
-  return { label: st("attempt.grade.study"), className: "bg-rose-100 text-rose-800 border-rose-200" };
+    return { label: st("attempt.grade.practice"), className: "bg-warning-subtle text-warning-text border-warning-border" };
+  return { label: st("attempt.grade.study"), className: "bg-danger-subtle text-danger-text border-danger-border" };
 }
 
 async function fetchAttempts(docId: string): Promise<AttemptsApiResponse> {
@@ -76,7 +76,7 @@ export default function DocumentAttemptsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fafafa] flex flex-col justify-between text-neutral-900 selection:bg-neutral-900 selection:text-white">
+    <div className="min-h-screen bg-bg flex flex-col justify-between text-text">
       {/*
       <Navbar
         backHref="/desk"
@@ -94,10 +94,10 @@ export default function DocumentAttemptsPage() {
       <main className="max-w-2xl mx-auto px-6 py-10 flex-1 w-full">
         {/* Page Header */}
         <div className="mb-6">
-          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 mb-1">
+          <h2 className="text-lg sm:text-xl font-bold tracking-tight text-text mb-1">
             {t("attempts.pageTitle")}
           </h2>
-          <p className="text-xs sm:text-sm text-neutral-500">
+          <p className="text-xs sm:text-sm text-text-muted">
             {t("attempts.pageDesc")}
           </p>
         </div>
@@ -112,10 +112,10 @@ export default function DocumentAttemptsPage() {
                 className="animate-pulse flex items-center justify-between"
               >
                 <div className="space-y-2 flex-1">
-                  <div className="h-4 bg-neutral-100 rounded w-1/2" />
-                  <div className="h-3 bg-neutral-100 rounded w-1/4" />
+                  <div className="skeleton-shimmer h-4 rounded w-1/2" />
+                  <div className="skeleton-shimmer h-3 rounded w-1/4" />
                 </div>
-                <div className="w-6 h-6 bg-neutral-100 rounded-lg" />
+                <div className="skeleton-shimmer w-6 h-6 rounded-lg" />
               </Card>
             ))}
           </div>
@@ -152,15 +152,15 @@ export default function DocumentAttemptsPage() {
                 <Link
                   key={attempt.id}
                   href={`/desk/${docId}/attempts/${attempt.id}`}
-                  className="group bg-white border border-neutral-200 hover:border-neutral-400 rounded-xl p-5 shadow-2xs transition flex items-center justify-between gap-4 block cursor-pointer"
+                  className="group bg-surface border border-border hover:border-border-strong rounded-xl p-5 shadow-2xs shadow-none transition flex items-center justify-between gap-4 block cursor-pointer"
                 >
                   <div className="flex items-start gap-3.5 min-w-0 flex-1">
-                    <div className="w-10 h-10 rounded-lg bg-neutral-100 group-hover:bg-neutral-900 group-hover:text-white flex items-center justify-center text-neutral-700 shrink-0 transition">
+                    <div className="w-10 h-10 rounded-lg bg-surface-subtle group-hover:bg-action-primary group-hover:text-on-action-primary flex items-center justify-center text-text-secondary shrink-0 transition">
                       <ClipboardList className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-                        <span className="text-sm font-semibold text-neutral-900 tracking-tight">
+                        <span className="text-sm font-semibold text-text tracking-tight">
                           {t("attempts.score")} {attempt.score}/{attempt.total}
                         </span>
                         <span
@@ -169,23 +169,23 @@ export default function DocumentAttemptsPage() {
                           {percentage}% · {grade.label}
                         </span>
                         {attempt.quizSetLabel && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-neutral-100 text-neutral-600 border border-neutral-200">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-surface-subtle text-text-secondary border border-border">
                             {attempt.quizSetLabel}
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-neutral-400 mt-1 font-mono">
+                      <div className="flex items-center gap-1.5 text-xs text-text-muted mt-1 font-mono">
                         <span>{formatDateTime(attempt.createdAt)}</span>
                       </div>
                       {idx === 0 && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 mt-1">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-success-text mt-1">
                           {t("attempts.latestAttempt")}
                         </span>
                       )}
                     </div>
                   </div>
 
-                  <div className="w-8 h-8 rounded-lg bg-neutral-50 group-hover:bg-neutral-100 flex items-center justify-center text-neutral-400 group-hover:text-neutral-900 transition shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-surface-subtle group-hover:bg-surface-hover flex items-center justify-center text-text-muted group-hover:text-text transition shrink-0">
                     <ChevronRight className="w-4 h-4" />
                   </div>
                 </Link>
@@ -197,18 +197,18 @@ export default function DocumentAttemptsPage() {
         {/* Empty State */}
         {!isLoading && !error && attempts.length === 0 && (
           <Card variant="centered" className="p-12">
-            <div className="w-12 h-12 rounded-2xl bg-neutral-100 flex items-center justify-center mx-auto mb-4 text-neutral-500">
+            <div className="w-12 h-12 rounded-2xl bg-surface-subtle flex items-center justify-center mx-auto mb-4 text-text-muted">
               <ClipboardList className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-semibold text-neutral-900 mb-1.5">
+            <h3 className="text-base font-semibold text-text mb-1.5">
               {t("attempts.emptyTitle")}
             </h3>
-            <p className="text-xs text-neutral-500 max-w-sm mx-auto mb-6">
+            <p className="text-xs text-text-muted max-w-sm mx-auto mb-6">
               {t("attempts.emptyMessage")}
             </p>
             <Link
               href={`/desk/${docId}/quiz`}
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-neutral-900 text-white text-xs font-medium hover:bg-neutral-800 transition shadow-2xs"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-action-primary text-on-action-primary text-xs font-medium hover:bg-action-primary-hover transition shadow-2xs shadow-none"
             >
               {t("attempts.startQuiz")}
             </Link>

@@ -197,22 +197,22 @@ export default function YourDeskLanding() {
   const emptyState = (
     <Card variant="centered">
       <p className="font-serif text-xl font-semibold">No study desk yet — create your first one</p>
-      <button type="button" onClick={openNewDesk} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><Plus className="h-4 w-4" />New desk</button>
+      <button type="button" onClick={openNewDesk} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover"><Plus className="h-4 w-4" />New desk</button>
     </Card>
   );
 
   return (
     <AppShell>
-      <main className="min-h-screen bg-[#F5F6F3] px-5 py-10 pb-28 text-[#16241D] sm:px-8">
+      <main className="min-h-screen bg-bg px-5 py-10 pb-28 text-text sm:px-8">
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 flex items-center justify-between gap-4">
-            <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5B6B62]">WORKSPACE</p><h1 className="mt-1 font-serif text-4xl font-semibold tracking-tight">Your Desk</h1></div>
-            <button type="button" onClick={openNewDesk} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><Plus className="h-4 w-4" />New desk</button>
+            <div><p className="font-mono text-[10px] uppercase tracking-[0.2em] text-text-secondary">WORKSPACE</p><h1 className="mt-1 font-serif text-4xl font-semibold tracking-tight text-text">Your Desk</h1></div>
+            <button type="button" onClick={openNewDesk} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover"><Plus className="h-4 w-4" />New desk</button>
           </header>
 
-          {!sessionPending && !session?.user ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-[#5B6B62]" /><h2 className="font-semibold">Log in to view Your Desk</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-[#013528] px-4 py-2 text-sm font-medium text-white">Log in now</Link></Card>
+          {!sessionPending && !session?.user ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-text-secondary" /><h2 className="font-semibold">Log in to view Your Desk</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2 text-sm font-medium text-on-action-primary">Log in now</Link></Card>
             : loading ? skeletonGrid
-            : error ? <Card variant="centered"><p className="text-sm text-red-600">{error}</p><button type="button" onClick={retryLoad} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><RefreshCw className="h-4 w-4" />{t("toast.retry")}</button></Card>
+            : error ? <Card variant="centered"><p className="text-sm text-danger-text">{error}</p><button type="button" onClick={retryLoad} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover"><RefreshCw className="h-4 w-4" />{t("toast.retry")}</button></Card>
             : desks.length === 0 ? emptyState
             : <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">{desks.map(desk => <DeckCard key={desk.id} deck={desk} busy={busyIds.has(desk.id)} removing={removingIds.has(desk.id)} onTogglePriority={togglePriority} onRequestDelete={setConfirmDeck} onPublish={handlePublish} onRefreshSnapshot={refreshSnapshot} onUnpublish={unpublish} setCardRef={setCardRef} />)}</div>}
         </div>

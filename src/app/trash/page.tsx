@@ -180,31 +180,31 @@ export default function DeckTrashPage() {
 
   const emptyState = (
     <Card variant="centered" className="rotate-[-1deg]">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[#D8DCD3] bg-[#F5F6F3]">
-        <Trash2 className="h-6 w-6 text-[#7A8780]" />
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
+        <Trash2 className="h-6 w-6 text-text-muted" />
       </div>
       <p className="font-serif text-xl font-semibold">Trash kosong</p>
-      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-[#7A8780]">{t("trash.emptyDesc")}</p>
-      <Link href="/desk" className="mt-5 inline-flex rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]">Kembali ke Your Desk</Link>
+      <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-muted">{t("trash.emptyDesc")}</p>
+      <Link href="/desk" className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover">Kembali ke Your Desk</Link>
     </Card>
   );
 
   return (
     <AppShell>
-      <main className="min-h-screen bg-[#F5F6F3] px-5 py-10 pb-28 text-[#16241D] sm:px-8">
+      <main className="min-h-screen bg-canvas-soft px-5 py-10 pb-28 text-text sm:px-8">
         <div className="mx-auto max-w-6xl">
           <header className="mb-8 flex items-start justify-between gap-4">
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#5B6B62]">TRASH</p>
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-text-secondary">TRASH</p>
               <h1 className="mt-1 font-serif text-4xl font-semibold tracking-tight">{t("trash.pageTitle")}</h1>
-              <p className="mt-1 text-sm text-[#5B6B62]">{t("trash.pageDesc")}</p>
+              <p className="mt-1 text-sm text-text-secondary">{t("trash.pageDesc")}</p>
             </div>
             {decks.length > 0 && session?.user && (
               <button
                 type="button"
                 onClick={() => setConfirmEmpty(true)}
                 disabled={actionInProgress}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-[#D8DCD3] bg-white px-4 py-2.5 text-sm font-medium text-[#16241D] transition hover:border-[#AAB7AB] hover:bg-[#F5F6F3] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-control-border bg-surface px-4 py-2.5 text-sm font-medium text-text transition hover:bg-surface-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Trash2 className="h-4 w-4" />
                 {t("trash.emptyTrash")}
@@ -213,9 +213,9 @@ export default function DeckTrashPage() {
           </header>
 
           {!sessionPending && !session?.user
-            ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-[#5B6B62]" /><h2 className="font-semibold">Masuk untuk melihat trash</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-[#013528] px-4 py-2 text-sm font-medium text-white">Masuk sekarang</Link></Card>
+            ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-text-secondary" /><h2 className="font-semibold">Masuk untuk melihat trash</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2 text-sm font-medium text-on-action-primary">Masuk sekarang</Link></Card>
             : loading ? skeletonGrid
-            : error ? <Card variant="centered"><p className="text-sm text-red-600">{error}</p><button type="button" onClick={retryLoad} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-[#013528] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#07543F]"><RefreshCw className="h-4 w-4" />{t("toast.retry")}</button></Card>
+            : error ? <Card variant="centered"><p className="text-sm text-danger-text">{error}</p><button type="button" onClick={retryLoad} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover"><RefreshCw className="h-4 w-4" />{t("toast.retry")}</button></Card>
             : decks.length === 0 ? emptyState
             : <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">{decks.map(deck => <TrashDeckCard key={deck.id} deck={deck} busy={busyIds.has(deck.id)} removing={removingIds.has(deck.id)} onRequestRestore={restoreDeck} onRequestPermanentDelete={setConfirmDeck} />)}</div>}
         </div>

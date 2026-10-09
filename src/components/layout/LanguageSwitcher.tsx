@@ -9,7 +9,7 @@ export default function LanguageSwitcher({ mobile = false, compact = false }: { 
 
   return (
     <label
-      className={`inline-flex items-center gap-2 rounded-lg bg-[#FDF7EB] px-3 py-2 text-xs font-medium text-[#041914] ${mobile ? "w-full" : ""}`}
+      className={`inline-flex items-center gap-2 rounded-lg bg-control-subtle px-3 py-2 text-xs font-medium text-control-text ${mobile ? "w-full" : ""}`}
       title="Language"
     >
       <Languages className="h-4 w-4 shrink-0" />
@@ -17,10 +17,10 @@ export default function LanguageSwitcher({ mobile = false, compact = false }: { 
         value={lang}
         onChange={(event) => setLang(event.target.value as Lang)}
         aria-label="Language"
-        className="min-w-0 flex-1 cursor-pointer bg-transparent text-xs font-medium text-[#041914] focus:outline-none"
+        className="min-w-0 flex-1 cursor-pointer bg-transparent text-xs font-medium text-control-text focus:outline-none"
       >
-        <option value="id" className="bg-[#FDF7EB] text-[#041914]">{compact ? "ID" : "Indonesian"}</option>
-        <option value="en" className="bg-[#FDF7EB] text-[#041914]">{compact ? "EN" : "English"}</option>
+        <option value="id" className="bg-control-subtle text-control-text">{compact ? "ID" : "Indonesian"}</option>
+        <option value="en" className="bg-control-subtle text-control-text">{compact ? "EN" : "English"}</option>
       </select>
     </label>
   );
