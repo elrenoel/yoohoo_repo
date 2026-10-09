@@ -3,6 +3,10 @@
   --flashcard-background: #013528;
   --flashcard-accent: #aadd66;
   --flashcard-blob: #edeabf;
+  --flashcard-linked: #e8eee9;
+  --flashcard-suggested: #e8c87c;
+  --flashcard-overlay: #131b17;
+  --flashcard-overlay-border: #3a4b43;
   --flip-duration: 600ms;
   aspect-ratio: 5 / 7;
   container-type: inline-size;
@@ -49,6 +53,8 @@
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   background: var(--flashcard-background);
+  border: max(1px, calc(3 * var(--u))) solid
+    color-mix(in srgb, var(--flashcard-accent) 28%, var(--flashcard-background));
   border-radius: calc(220 * var(--u));
   color: var(--flashcard-accent);
   inset: 0;
@@ -196,18 +202,26 @@
 }
 
 .relatedTerm {
-  color: #ffffff;
+  color: var(--flashcard-linked);
   cursor: pointer;
   font-weight: 800;
-  text-decoration-color: color-mix(in srgb, #ffffff 70%, transparent);
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--flashcard-linked) 70%,
+    transparent
+  );
   text-decoration-line: underline;
   text-decoration-thickness: calc(5 * var(--u));
   text-underline-offset: calc(10 * var(--u));
 }
 
 .relatedTermSuggested {
-  color: #ffe36e;
-  text-decoration-color: color-mix(in srgb, #ffe36e 75%, transparent);
+  color: var(--flashcard-suggested);
+  text-decoration-color: color-mix(
+    in srgb,
+    var(--flashcard-suggested) 75%,
+    transparent
+  );
 }
 
 .relatedTerm:focus-visible {
@@ -217,11 +231,11 @@
 }
 
 .relatedOverlay {
-  background: #ffffff;
-  border: calc(3 * var(--u)) solid color-mix(in srgb, #aadd66 55%, #013528);
+  background: var(--flashcard-overlay);
+  border: max(1px, calc(3 * var(--u))) solid var(--flashcard-overlay-border);
   border-radius: calc(42 * var(--u));
   bottom: calc(150 * var(--u));
-  color: #013528;
+  color: var(--flashcard-linked);
   font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif;
   font-size: calc(40 * var(--u));
   left: calc(125 * var(--u));
