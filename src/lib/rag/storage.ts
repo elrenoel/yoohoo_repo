@@ -6,8 +6,36 @@ import { MAX_PDF_BYTES, RagError } from "./core";
 
 let client: S3Client | undefined;
 let workflowClient: SFNClient | undefined;
-export function s3() { return client ??= new S3Client({ region: process.env.AWS_REGION, requestChecksumCalculation: "WHEN_REQUIRED" }); }
-function sfn() { return workflowClient ??= new SFNClient({ region: process.env.AWS_REGION }); }
+
+function cleanEnvCredential(value: string | undefined) {
+  const cleaned = value?.trim();
+  if (!cleaned) return undefined;
+  const quoted = (cleaned.startsWith('"') && cleaned.endsWith('"'))
+    || (cleaned.startsWith("'") && cleaned.endsWith("'"));
+  return quoted ? cleaned.slice(1, -1) : cleaned;
+}
+
+function awsClientCredentials() {
+  const accessKeyId = cleanEnvCredential(process.env.AWS_ACCESS_KEY_ID);
+  const secretAccessKey = cleanEnvCredential(process.env.AWS_SECRET_ACCESS_KEY);
+  const sessionToken = cleanEnvCredential(process.env.AWS_SESSION_TOKEN);
+  if (!accessKeyId || !secretAccessKey) return undefined;
+  return { accessKeyId, secretAccessKey, ...(sessionToken ? { sessionToken } : {}) };
+}
+
+export function s3() {
+  return client ??= new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: awsClientCredentials(),
+    requestChecksumCalculation: "WHEN_REQUIRED",
+  });
+}
+function sfn() {
+  return workflowClient ??= new SFNClient({
+    region: process.env.AWS_REGION,
+    credentials: awsClientCredentials(),
+  });
+}
 export function bucket() {
   if (!process.env.RAG_BUCKET_NAME) throw new Error("RAG_BUCKET_NAME is required");
   return process.env.RAG_BUCKET_NAME;
