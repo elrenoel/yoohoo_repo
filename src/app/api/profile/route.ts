@@ -32,7 +32,8 @@ export async function POST(request: Request) {
     const profile = await sql.begin(async (tx) => {
       const rows = await tx`
         insert into public.profiles (user_id, username, display_name, bio, avatar_url)
-        values (${userId}, ${input.username}, ${input.displayName}, ${input.bio}, ${input.avatarUrl || null})
+        values (${userId}, ${input.username}, ${input.displayName}, ${input.bio},
+          coalesce(${input.avatarUrl || null}, (select image from public."user" where id = ${userId})))
         returning user_id as "userId", username, display_name as "displayName", bio, avatar_url as "avatarUrl"
       `;
       await tx`
@@ -59,7 +60,9 @@ export async function PATCH(request: Request) {
       const username = input.username ?? current[0].username;
       const displayName = input.displayName ?? current[0].display_name;
       const bio = input.bio ?? current[0].bio;
-      const avatarUrl = input.avatarUrl === undefined ? current[0].avatar_url : (input.avatarUrl || null);
+      const avatarUrl = input.avatarUrl === undefined
+        ? current[0].avatar_url
+        : input.avatarUrl || (await tx`select image from public."user" where id = ${userId}`)[0]?.image || null;
       const rows = await tx`
         update public.profiles set username = ${username}, display_name = ${displayName},
           bio = ${bio}, avatar_url = ${avatarUrl}

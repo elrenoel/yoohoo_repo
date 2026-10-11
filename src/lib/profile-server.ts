@@ -25,9 +25,11 @@ export interface OwnProfile {
 export async function getOwnProfile(userId: string): Promise<OwnProfile | null> {
   const sql = ragSql();
   const rows = await sql<OwnProfile[]>`
-    select user_id as "userId", username, display_name as "displayName",
-           bio, avatar_url as "avatarUrl"
-    from public.profiles where user_id = ${userId} limit 1
+    select p.user_id as "userId", p.username, p.display_name as "displayName",
+           p.bio, coalesce(p.avatar_url, u.image) as "avatarUrl"
+    from public.profiles p
+    join public."user" u on u.id = p.user_id
+    where p.user_id = ${userId} limit 1
   `;
   return rows[0] ?? null;
 }
