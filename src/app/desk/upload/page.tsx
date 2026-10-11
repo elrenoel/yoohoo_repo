@@ -86,7 +86,7 @@ export default function RagUploadPage() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [documentName, setDocumentName] = useState("");
-  const [contentLanguage, setContentLanguage] = useState("auto");
+  const [contentLanguage, setContentLanguage] = useState("en");
   const [isDragging, setIsDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -283,7 +283,7 @@ export default function RagUploadPage() {
               <div className="min-w-0">
                 <h2 className="font-semibold">{processingFailed ? "Document processing failed" : "Document is being processed"}</h2>
                 <p className={`mt-1 text-sm leading-relaxed ${processingFailed ? "text-danger-text" : "text-text-secondary"}`} role="status">
-                  {pollTimedOut ? "Proses lebih lama dari biasanya. Pemrosesan di server tetap berjalan." : processingMessage}
+                  {pollTimedOut ? "Processing is taking longer than usual. It is still running on the server." : processingMessage}
                 </p>
                 <p className="mt-2 text-[11px] font-mono text-text-muted break-all">ID: {pending?.documentId}</p>
               </div>

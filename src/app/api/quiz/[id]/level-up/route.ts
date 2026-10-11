@@ -65,7 +65,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
       variant: "harder",
       sourceQuizSetId: quizId,
     });
-    return NextResponse.json({ success: true, quizSet: { id: value.id, label: value.label, questionCount: value.question_count }, generatedAdditional: value.created ? allQuestions.length : 0, remainingToday: value.remaining, message: `Set quiz lebih sulit berhasil dibuat (${value.label}).` }, { status: value.created ? 201 : 200 });
+    return NextResponse.json({ success: true, quizSet: { id: value.id, label: value.label, questionCount: value.question_count }, generatedAdditional: value.created ? allQuestions.length : 0, remainingToday: value.remaining, message: `A harder quiz set was created (${value.label}).` }, { status: value.created ? 201 : 200 });
   } catch (error) {
     if (error instanceof Error && error.message.includes("DAILY_LIMIT_REACHED")) return NextResponse.json({ success: false, error: "Limit harian sudah tercapai. Coba lagi besok.", limitReached: true, remainingToday: 0, dailyLimit: DAILY_LIMIT }, { status: 429 });
     console.error("[quiz/level-up]", { errorType: error instanceof Error ? error.name : "Unknown" });

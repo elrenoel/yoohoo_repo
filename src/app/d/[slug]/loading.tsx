@@ -1,1 +1,0 @@
-﻿export default function Loading(){return <main className="min-h-screen animate-pulse bg-bg p-8"><div className="mx-auto max-w-5xl"><div className="h-72 border border-border bg-surface"/><div className="mt-7 h-96 border border-border bg-surface"/></div></main>}

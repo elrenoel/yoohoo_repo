@@ -17,7 +17,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { MOCK_DOCUMENT } from "@/lib/mock-data";
 import Button from "@/components/ui/Button";
-import { Flashcard as FlashcardView } from "@/components/flashcard/Flashcard";
+import {
+  Flashcard as FlashcardView,
+  FlashcardSkeleton,
+} from "@/components/flashcard/Flashcard";
 import { resolveBlobVariant } from "@/lib/flashcard-variant";
 
 // â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -33,13 +36,8 @@ type RelatedTerm = { term: string; type: "linked" | "suggested"; flashcard_id?: 
 // â”€â”€â”€ Loading skeleton â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function CardSkeleton() {
   return (
-    <div className="w-full aspect-[4/3] sm:aspect-[16/10] max-h-[380px] rounded-2xl bg-surface border border-border shadow-xs animate-pulse flex flex-col justify-between p-8">
-      <div className="h-3 bg-surface-subtle rounded w-1/4" />
-      <div className="space-y-3 text-center py-6">
-        <div className="h-8 bg-surface-subtle rounded w-2/3 mx-auto" />
-        <div className="h-4 bg-surface-subtle rounded w-1/3 mx-auto" />
-      </div>
-      <div className="h-3 bg-surface-subtle rounded w-1/3 mx-auto" />
+    <div className="mx-auto w-full max-w-[420px]">
+      <FlashcardSkeleton />
     </div>
   );
 }
@@ -167,10 +165,10 @@ export default function FlashcardsPage() {
     try {
       const response = await fetch(`/api/flashcards/${currentCard.id}/add-suggested`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ suggested_term: activeRelated.term, source_chunk_id: activeRelated.source_chunk_id }) });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || "Gagal menambahkan flashcard.");
+      if (!response.ok) throw new Error(body.error || "Could not add the flashcard.");
       setActiveRelated({ ...activeRelated, type: "linked", flashcard_id: body.flashcard?.id, definition: body.flashcard?.definition });
       await queryClient.invalidateQueries({ queryKey: queryKeys.flashcards(docId) });
-    } catch (error) { setSuggestedError(error instanceof Error ? error.message : "Gagal menambahkan flashcard."); }
+    } catch (error) { setSuggestedError(error instanceof Error ? error.message : "Could not add the flashcard."); }
     finally { setAddingSuggested(false); }
   };
 
@@ -214,10 +212,10 @@ export default function FlashcardsPage() {
       */}
 
       {/* Main Content */}
-      <main className="max-w-xl mx-auto px-6 py-10 flex-1 w-full flex flex-col items-center justify-center">
+      <main className="max-w-xl mx-auto px-6 pt-3 pb-10 flex-1 w-full flex flex-col items-center justify-start">
         {/* Loading state */}
         {isLoading && (
-          <div className="w-full flex flex-col items-center gap-6">
+          <div className="w-full flex flex-col items-center gap-4">
             <div className="flex items-center gap-2 text-sm text-text-secondary">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>{t("flashcards.loading")}</span>
@@ -280,8 +278,8 @@ export default function FlashcardsPage() {
             {activeRelated?.type === "suggested" && (
               <div className="mt-5 w-full rounded-2xl border border-border bg-surface p-4">
                 <p className="text-xs text-text-secondary">
-                  <strong>{activeRelated.term}</strong> ada di materi tetapi belum
-                  menjadi flashcard.
+                  <strong>{activeRelated.term}</strong> appears in the material but has not
+                  been turned into a flashcard yet.
                 </p>
                 <Button
                   size="sm"
@@ -290,8 +288,8 @@ export default function FlashcardsPage() {
                   disabled={addingSuggested}
                 >
                   {addingSuggested
-                    ? "Membuat flashcard..."
-                    : "Tambahkan flashcard ini"}
+                    ? "Creating flashcard..."
+                    : "Add this flashcard"}
                 </Button>
                 {suggestedError && (
                   <p className="mt-2 text-xs text-danger-text">{suggestedError}</p>

@@ -64,8 +64,8 @@ async function fetchQuiz(docId: string, setId?: string): Promise<QuizApiResponse
 
 function formatQuizSetDate(value: string) {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Tanggal tidak tersedia";
-  return new Intl.DateTimeFormat("id-ID", {
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+  return new Intl.DateTimeFormat("en-US", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -73,9 +73,9 @@ function formatQuizSetDate(value: string) {
 }
 
 function quizVariantLabel(variant: QuizSetOption["variant"]) {
-  if (variant === "harder") return "Lebih sulit";
-  if (variant === "different") return "Soal berbeda";
-  return "Set awal";
+  if (variant === "harder") return "Harder";
+  if (variant === "different") return "Different questions";
+  return "Original set";
 }
 
 // ─── Skeleton ────────────────────────────────────────────────────────────────
@@ -230,7 +230,7 @@ function QuizContent({
 
     try {
       const sessionId = getOrCreateSessionId();
-      if (!selectedSetId) throw new Error("Set quiz tidak ditemukan.");
+      if (!selectedSetId) throw new Error("Quiz set not found.");
 
       const answers = questions.map(question => {
         const meta = answerMeta[question.id];
@@ -483,7 +483,7 @@ export default function QuizPage() {
   const handleGenerateSet = async (variant: QuizGenerationVariant) => {
     if (regenerateLimitReached) return;
     if (variant === "harder" && !selectedSetId) {
-      setRegenerateError("Buat set quiz pertama sebelum menaikkan tingkat kesulitan.");
+      setRegenerateError("Create the first quiz set before increasing the difficulty.");
       return;
     }
     setIsRegenerating(true);
@@ -510,11 +510,11 @@ export default function QuizPage() {
         if (body.requireAuth) {
           router.push(
             "/login?message=" +
-              encodeURIComponent("Login dulu untuk membuat soal baru")
+              encodeURIComponent("Log in to create a new question set")
           );
           return;
         }
-        if (res.status === 429 || body.limitReached) { setRegenerateLimitReached(true); throw new Error(body.error || "Limit harian sudah tercapai. Coba lagi besok."); }
+        if (res.status === 429 || body.limitReached) { setRegenerateLimitReached(true); throw new Error(body.error || "The daily limit has been reached. Try again tomorrow."); }
         throw new Error(body.error || t("quiz.newSetError"));
       }
 
@@ -530,7 +530,7 @@ export default function QuizPage() {
       setStarted(false);
       setQuizProgress({ answeredCount: 0, total: 0, progressPercent: 0 });
       setShowGenerateDialog(false);
-      setRegenerateMessage(data.message || (variant === "harder" ? "Set quiz lebih sulit berhasil dibuat." : t("quiz.newSetSuccess")));
+      setRegenerateMessage(data.message || (variant === "harder" ? "A harder quiz set was created." : t("quiz.newSetSuccess")));
     } catch (err: unknown) {
       setRegenerateError(
         err instanceof Error ? err.message : t("quiz.newSetError")
@@ -552,9 +552,9 @@ export default function QuizPage() {
         title={isLoading ? undefined : documentTitle}
         subtitle={
           <>
-            Quiz Pilihan Ganda
+            Multiple-choice Quiz
             {!isLoading && selectedSetLabel && ` · ${selectedSetLabel}`}
-            {!isLoading && totalQuestions > 0 && ` · ${totalQuestions} Soal`}
+            {!isLoading && totalQuestions > 0 && ` · ${totalQuestions} Questions`}
           </>
         }
         rightContent={
@@ -579,7 +579,7 @@ export default function QuizPage() {
       */}
 
       <div className="mx-auto flex w-full max-w-2xl items-center gap-3 px-6 pt-6 text-xs text-text-muted">
-        <span className="shrink-0 font-mono">{answeredCount} / {totalQuestions} terjawab</span>
+        <span className="shrink-0 font-mono">{answeredCount} / {totalQuestions} answered</span>
         <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-border"><div className="h-full bg-accent transition-all" style={{ width: `${progressPercent}%` }} /></div>
       </div>
 
@@ -622,7 +622,7 @@ export default function QuizPage() {
                 >
                   {sets.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.label} ({s.questionCount} Soal)
+                      {s.label} ({s.questionCount} Questions)
                     </option>
                   ))}
                 </select>
@@ -672,9 +672,9 @@ export default function QuizPage() {
             <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-2xl bg-success-subtle text-success-text">
               <Sparkles className="h-5 w-5" />
             </div>
-            <h2 className="mt-4 text-lg font-semibold text-text">Quiz belum tersedia</h2>
+            <h2 className="mt-4 text-lg font-semibold text-text">Quiz not available yet</h2>
             <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-muted">
-              Buat set quiz dari flashcard materi ini. Prosesnya dapat membutuhkan beberapa saat.
+              Create a quiz set from this material&apos;s flashcards. This may take a moment.
             </p>
             {regenerateError && <p className="mt-4 text-xs font-medium text-danger-text">{regenerateError}</p>}
             <Button
@@ -685,25 +685,25 @@ export default function QuizPage() {
               disabled={isRegenerating || regenerateLimitReached}
             >
               {isRegenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {isRegenerating ? "Membuat quiz..." : "Buat quiz sekarang"}
+              {isRegenerating ? "Creating quiz..." : "Create quiz now"}
             </Button>
           </div>
         )}
 
         {!isLoading && !error && !isDemo && questions.length > 0 && !started && (
           <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8 shadow-xs shadow-none mb-6">
-            <h2 className="text-lg font-semibold text-text">Pilih mode pengerjaan</h2>
-            {selectedSetLabel && <p className="mt-1 text-xs font-medium text-success-text">Set aktif: {selectedSetLabel}</p>}
-            <p className="mt-2 text-sm text-text-secondary">Time Attack memberi waktu {TIME_ATTACK_QUESTION_MS / 1000} detik untuk setiap soal.</p>
+            <h2 className="text-lg font-semibold text-text">Choose a quiz mode</h2>
+            {selectedSetLabel && <p className="mt-1 text-xs font-medium text-success-text">Active set: {selectedSetLabel}</p>}
+            <p className="mt-2 text-sm text-text-secondary">Time Attack gives you {TIME_ATTACK_QUESTION_MS / 1000} seconds for each question.</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {(["normal", "time_attack"] as QuizMode[]).map(value => (
                 <button key={value} type="button" onClick={() => setMode(value)} className={`rounded-xl border p-4 text-left transition ${mode === value ? "border-action-primary bg-action-primary text-on-action-primary" : "border-control-border bg-surface-subtle hover:bg-surface-hover"}`}>
                   <span className="block text-sm font-semibold">{value === "normal" ? "Normal" : "Time Attack"}</span>
-                  <span className={`mt-1 block text-xs ${mode === value ? "opacity-75" : "text-text-muted"}`}>{value === "normal" ? "Tanpa batas waktu per soal" : `${TIME_ATTACK_QUESTION_MS / 1000} detik per soal`}</span>
+                  <span className={`mt-1 block text-xs ${mode === value ? "opacity-75" : "text-text-muted"}`}>{value === "normal" ? "No time limit per question" : `${TIME_ATTACK_QUESTION_MS / 1000} seconds per question`}</span>
                 </button>
               ))}
             </div>
-            <Button className="mt-5 w-full" size="lg" variant="success" onClick={() => setStarted(true)}>Mulai Quiz</Button>
+            <Button className="mt-5 w-full" size="lg" variant="success" onClick={() => setStarted(true)}>Start Quiz</Button>
           </div>
         )}
 
@@ -713,10 +713,10 @@ export default function QuizPage() {
               <div>
                 <div className="flex items-center gap-2 text-text">
                   <History className="h-4 w-4" />
-                  <h2 className="text-base font-semibold">Riwayat set soal</h2>
+                  <h2 className="text-base font-semibold">Question set history</h2>
                 </div>
                 <p className="mt-1 text-xs leading-relaxed text-text-muted">
-                  Semua set yang pernah dibuat tetap tersimpan. Pilih satu untuk dilihat dan dikerjakan lagi.
+                  Every generated set stays saved. Select one to review or take it again.
                 </p>
               </div>
               <span className="shrink-0 rounded-full bg-surface-subtle px-2.5 py-1 text-[11px] font-medium text-text-secondary">
@@ -736,23 +736,23 @@ export default function QuizPage() {
                           <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${set.variant === "harder" ? "bg-warning-subtle text-warning-text" : set.variant === "different" ? "bg-accent-subtle text-accent" : "bg-surface-raised text-text-secondary"}`}>
                             {quizVariantLabel(set.variant)}
                           </span>
-                          {isActive && <span className="rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold text-on-success">Aktif</span>}
+                          {isActive && <span className="rounded-full bg-success px-2 py-0.5 text-[10px] font-semibold text-on-success">Active</span>}
                         </div>
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-muted">
                           <span className="inline-flex items-center gap-1"><Clock3 className="h-3 w-3" />{formatQuizSetDate(set.createdAt)}</span>
-                          <span>{set.questionCount} soal</span>
-                          <span>Mudah {set.difficultyCounts.easy}</span>
-                          <span>Sedang {set.difficultyCounts.medium}</span>
-                          <span>Sulit {set.difficultyCounts.hard}</span>
+                          <span>{set.questionCount} questions</span>
+                          <span>Easy {set.difficultyCounts.easy}</span>
+                          <span>Medium {set.difficultyCounts.medium}</span>
+                          <span>Hard {set.difficultyCounts.hard}</span>
                         </div>
                       </div>
                       <Button type="button" size="sm" variant={isActive ? "secondary" : "primary"} disabled={isActive || isRegenerating} onClick={() => selectQuizSet(set.id)}>
-                        {isActive ? "Sedang dibuka" : "Lihat set"}
+                        {isActive ? "Currently open" : "View set"}
                       </Button>
                     </div>
                     {isActive && questions.length > 0 && (
                       <div className="mt-4 border-t border-success-border pt-4">
-                        <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">Daftar soal dalam set ini</p>
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-text-muted">Questions in this set</p>
                         <ol className="mt-2 max-h-48 space-y-2 overflow-y-auto pr-2">
                           {questions.map((question, index) => (
                             <li key={question.id} className="flex gap-2 text-xs leading-relaxed text-text-secondary">
@@ -792,10 +792,10 @@ export default function QuizPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">Generate quiz</p>
-                <h2 id="generate-quiz-title" className="mt-1 text-xl font-semibold text-text">Pilih set berikutnya</h2>
-                <p className="mt-2 text-sm leading-relaxed text-text-muted">Set sebelumnya tidak dihapus dan tetap bisa dibuka dari riwayat.</p>
+                <h2 id="generate-quiz-title" className="mt-1 text-xl font-semibold text-text">Choose the next set</h2>
+                <p className="mt-2 text-sm leading-relaxed text-text-muted">Previous sets remain available in your history.</p>
               </div>
-              <button type="button" aria-label="Tutup" disabled={isRegenerating} onClick={() => setShowGenerateDialog(false)} className="rounded-lg p-2 text-text-muted transition hover:bg-surface-hover disabled:opacity-40">
+              <button type="button" aria-label="Close" disabled={isRegenerating} onClick={() => setShowGenerateDialog(false)} className="rounded-lg p-2 text-text-muted transition hover:bg-surface-hover disabled:opacity-40">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -803,22 +803,22 @@ export default function QuizPage() {
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <button type="button" disabled={isRegenerating || regenerateLimitReached} onClick={() => handleGenerateSet("different")} className="group rounded-2xl border border-control-border bg-surface-subtle p-4 text-left transition hover:border-accent hover:bg-accent-subtle disabled:cursor-not-allowed disabled:opacity-50">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-subtle text-accent"><Shuffle className="h-4 w-4" /></span>
-                <span className="mt-4 block text-sm font-semibold text-text">Soal berbeda</span>
-                <span className="mt-1 block text-xs leading-relaxed text-text-muted">Buat variasi pertanyaan baru tanpa mengulang soal yang pernah dibuat.</span>
-                {generatingVariant === "different" && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-accent"><Loader2 className="h-3.5 w-3.5 animate-spin" />Membuat set...</span>}
+                <span className="mt-4 block text-sm font-semibold text-text">Different questions</span>
+                <span className="mt-1 block text-xs leading-relaxed text-text-muted">Create a new variation without repeating previous questions.</span>
+                {generatingVariant === "different" && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-accent"><Loader2 className="h-3.5 w-3.5 animate-spin" />Creating set...</span>}
               </button>
 
               <button type="button" disabled={isRegenerating || regenerateLimitReached || !selectedSetId} onClick={() => handleGenerateSet("harder")} className="group rounded-2xl border border-control-border bg-surface-subtle p-4 text-left transition hover:border-warning hover:bg-warning-subtle disabled:cursor-not-allowed disabled:opacity-50">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning-subtle text-warning-text"><TrendingUp className="h-4 w-4" /></span>
-                <span className="mt-4 block text-sm font-semibold text-text">Lebih sulit</span>
-                <span className="mt-1 block text-xs leading-relaxed text-text-muted">Buat set hard baru berbasis analisis kasus dan gabungan beberapa konsep.</span>
-                {generatingVariant === "harder" && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-warning-text"><Loader2 className="h-3.5 w-3.5 animate-spin" />Menaikkan level...</span>}
+                <span className="mt-4 block text-sm font-semibold text-text">Harder</span>
+                <span className="mt-1 block text-xs leading-relaxed text-text-muted">Create a hard set based on case analysis and combined concepts.</span>
+                {generatingVariant === "harder" && <span className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-warning-text"><Loader2 className="h-3.5 w-3.5 animate-spin" />Increasing difficulty...</span>}
               </button>
             </div>
 
-            {!selectedSetId && <p className="mt-3 text-xs text-text-muted">Opsi lebih sulit tersedia setelah set quiz pertama dibuat.</p>}
+            {!selectedSetId && <p className="mt-3 text-xs text-text-muted">The harder option becomes available after the first quiz set is created.</p>}
             {regenerateError && <p className="mt-4 rounded-xl border border-danger-border bg-danger-subtle p-3 text-xs font-medium text-danger-text">{regenerateError}</p>}
-            {regenerateLimitReached && <p className="mt-4 text-xs font-medium text-warning-text">Limit generate harian sudah tercapai. Coba lagi besok.</p>}
+            {regenerateLimitReached && <p className="mt-4 text-xs font-medium text-warning-text">The daily generation limit has been reached. Try again tomorrow.</p>}
           </div>
         </div>
       )}

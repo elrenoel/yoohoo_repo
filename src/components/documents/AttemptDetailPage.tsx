@@ -233,7 +233,7 @@ export default function AttemptDetailPage() {
                 {t("attempt.reviewTitle")}
               </h2>
               <span className="text-xs text-text-muted font-mono">
-                {review.length} Soal
+                {review.length} Questions
               </span>
             </div>
 
@@ -271,7 +271,7 @@ export default function AttemptDetailPage() {
                       </div>
                       <div>
                         <p className="text-[10px] font-mono font-medium text-text-muted uppercase tracking-wider mb-1">
-                          Soal {idx + 1}
+                          Question {idx + 1}
                         </p>
                         <p className="text-sm font-semibold text-text leading-relaxed">
                           {item.question}

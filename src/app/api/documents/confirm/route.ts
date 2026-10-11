@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     if (title.length > 200) throw new RagError("Judul maksimal 200 karakter.");
     const contentLanguage = typeof body.contentLanguage === "string" && ["auto", "id", "en"].includes(body.contentLanguage)
       ? body.contentLanguage
-      : "auto";
+      : "en";
     // Optional: attach the new material to an existing deck instead of creating its own.
     let deckId: string | null = null;
     if (typeof body.deckId === "string" && body.deckId) {

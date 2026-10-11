@@ -13,7 +13,7 @@ export function FlashcardDurationDemo() {
         Perbandingan durasi flip
       </h1>
       <p className="mt-2 text-sm text-text-secondary">
-        Klik setiap kartu untuk membandingkan 450, 600, dan 750 ms.
+        Click each card to compare 450, 600, and 750 ms.
       </p>
       <div className="mt-8 grid gap-8 md:grid-cols-3">
         {durations.map((duration, index) => (

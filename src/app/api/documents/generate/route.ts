@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const customTitle = (formData.get("title") as string) || null;
-    const contentLanguage = (formData.get("contentLanguage") as string) || "auto";
+    const contentLanguage = (formData.get("contentLanguage") as string) || "en";
 
     if (!file) {
       return NextResponse.json(

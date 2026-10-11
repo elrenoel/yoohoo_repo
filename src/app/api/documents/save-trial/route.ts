@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const saved=await db.rpc("create_generated_document",{p_user_id:session.user.id,p_title:body.title,p_raw_text:body.raw_text,p_content_language:body.content_language||"auto",p_flashcards:body.flashcards as unknown as Json,p_questions:body.quiz as unknown as Json,p_daily_limit:DAILY_LIMIT});
+  const saved=await db.rpc("create_generated_document",{p_user_id:session.user.id,p_title:body.title,p_raw_text:body.raw_text,p_content_language:body.content_language||"en",p_flashcards:body.flashcards as unknown as Json,p_questions:body.quiz as unknown as Json,p_daily_limit:DAILY_LIMIT});
     if(saved.error){if(isQuotaError(saved.error))return NextResponse.json({success:false,error:`Limit harian ${DAILY_LIMIT}x generate sudah tercapai. Data trial kamu masih tersimpan di browser ini, akan otomatis disimpan besok setelah limit reset.`,limitReached:true,remainingToday:0,resetDate:quota.today},{status:429});throw saved.error;}
     const result=saved.data as {id:string;remaining:number};
 

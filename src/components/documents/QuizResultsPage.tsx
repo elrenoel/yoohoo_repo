@@ -70,7 +70,7 @@ function normalizeReview(raw: unknown): ReviewItem[] {
       question:
         typeof item.question === "string" && item.question.trim()
           ? item.question
-          : "Pertanyaan tidak tersedia",
+          : "Question unavailable",
       options,
       selectedIndex,
       correctIndex,
@@ -86,27 +86,27 @@ function ScoreGrade({ percentage }: { percentage: number }) {
   if (percentage >= 85) {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-success-subtle text-success-text border border-success-border">
-        Sangat Baik 🎉
+        Excellent 🎉
       </span>
     );
   }
   if (percentage >= 70) {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-accent-subtle text-accent border border-accent">
-        Baik
+        Good
       </span>
     );
   }
   if (percentage >= 50) {
     return (
       <span className="text-xs font-semibold px-3 py-1 rounded-full bg-warning-subtle text-warning-text border border-warning-border">
-        Perlu Berlatih Lagi
+        Keep Practicing
       </span>
     );
   }
   return (
     <span className="text-xs font-semibold px-3 py-1 rounded-full bg-danger-subtle text-danger-text border border-danger-border">
-      Pelajari Lagi Materi
+      Review the Material
     </span>
   );
 }
@@ -142,7 +142,7 @@ export default function QuizResultsPage() {
             documentTitle:
               typeof parsed.documentTitle === "string" && parsed.documentTitle.trim()
                 ? parsed.documentTitle
-                : "Hasil Kuis",
+                : "Quiz Results",
             review,
             createdAt: typeof parsed.createdAt === "string" ? parsed.createdAt : undefined,
           };
@@ -150,7 +150,7 @@ export default function QuizResultsPage() {
           // eslint-disable-next-line react-hooks/set-state-in-effect -- Hydrate the normalized result fetched by this effect.
           setResult(normalized);
           const hasIncompleteReview = review.some(
-            item => item.question === "Pertanyaan tidak tersedia" || item.options.length === 0,
+            item => item.question === "Question unavailable" || item.options.length === 0,
           );
           if (hasIncompleteReview) {
             fetch(`/api/documents/${docId}/quiz`, { cache: "no-store" })
@@ -215,7 +215,7 @@ export default function QuizResultsPage() {
   if (!result) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
-        <p className="text-sm text-text-muted font-mono">Memuat hasil kuis...</p>
+        <p className="text-sm text-text-muted font-mono">Loading quiz results...</p>
       </div>
     );
   }
@@ -234,11 +234,11 @@ export default function QuizResultsPage() {
       sessionStorage.setItem(storageKey, idempotencyKey);
       const response = await fetch(`/api/quiz/${currentResult.quizId}/level-up`, { method: "POST", headers: { "Idempotency-Key": idempotencyKey } });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) { if (response.status === 429 || body.limitReached) setLevelUpLimitReached(true); throw new Error(body.error || "Level up gagal."); }
+      if (!response.ok) { if (response.status === 429 || body.limitReached) setLevelUpLimitReached(true); throw new Error(body.error || "Could not increase the difficulty."); }
       sessionStorage.removeItem(storageKey);
       router.push(`/desk/${docId}/quiz?setId=${body.quizSet.id}`);
     } catch (error) {
-      setLevelUpError(error instanceof Error ? error.message : "Level up gagal.");
+      setLevelUpError(error instanceof Error ? error.message : "Could not increase the difficulty.");
       setLevelingUp(false);
     }
   }
@@ -249,9 +249,9 @@ export default function QuizResultsPage() {
     try {
       const response = await fetch(`/api/documents/${docId}/star`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ is_starred: true }) });
       const body = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(body.error || "Gagal menandai materi.");
+      if (!response.ok) throw new Error(body.error || "Could not mark the material.");
       setStarredFromResult(true);
-    } catch (error) { setLevelUpError(error instanceof Error ? error.message : "Gagal menandai materi."); }
+    } catch (error) { setLevelUpError(error instanceof Error ? error.message : "Could not mark the material."); }
     finally { setStarSaving(false); }
   }
 
@@ -261,7 +261,7 @@ export default function QuizResultsPage() {
       <Navbar
         backHref="/"
         title={result.documentTitle}
-        subtitle="Hasil Kuis"
+        subtitle="Quiz Results"
       />
       */}
 
@@ -279,15 +279,15 @@ export default function QuizResultsPage() {
           </div>
 
           <p className="text-sm text-text-secondary mb-3">
-            <strong className="text-text">{result.score}</strong> dari{" "}
-            <strong className="text-text">{result.total}</strong> soal benar
+            <strong className="text-text">{result.score}</strong> of{" "}
+            <strong className="text-text">{result.total}</strong> correct answers
           </p>
 
           <ScoreGrade percentage={result.percentage} />
 
           {result.createdAt && (
             <p className="text-[11px] text-text-muted font-mono mt-3">
-              Dikerjakan pada {formatDateTime(result.createdAt)}
+              Completed on {formatDateTime(result.createdAt)}
             </p>
           )}
 
@@ -295,37 +295,37 @@ export default function QuizResultsPage() {
           <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-border text-xs">
             <div className="text-center">
               <div className="text-2xl font-bold text-success-text">{correctItems.length}</div>
-              <div className="text-text-muted mt-0.5">Benar</div>
+              <div className="text-text-muted mt-0.5">Correct</div>
             </div>
             <div className="text-center border-x border-border">
               <div className="text-2xl font-bold text-danger-text">{wrongItems.length}</div>
-              <div className="text-text-muted mt-0.5">Salah</div>
+              <div className="text-text-muted mt-0.5">Incorrect</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-text-muted">{skippedItems.length}</div>
-              <div className="text-text-muted mt-0.5">Dilewati</div>
+              <div className="text-text-muted mt-0.5">Skipped</div>
             </div>
           </div>
         </Card>
 
         {summary && !suggestionHidden && (
           <Card className="mb-6">
-            <h2 className="text-sm font-semibold text-text">Analisis performa</h2>
+            <h2 className="text-sm font-semibold text-text">Performance analysis</h2>
             <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-              <div className="rounded-xl bg-surface-subtle p-3"><div className="text-lg font-bold">{Math.round(summary.accuracy * 100)}%</div><div className="text-[11px] text-text-muted">Akurasi</div></div>
-              <div className="rounded-xl bg-surface-subtle p-3"><div className="text-lg font-bold">{summary.avg_time_per_question === null ? "-" : `${Math.round(summary.avg_time_per_question / 1000)}s`}</div><div className="text-[11px] text-text-muted">Rata-rata waktu</div></div>
+              <div className="rounded-xl bg-surface-subtle p-3"><div className="text-lg font-bold">{Math.round(summary.accuracy * 100)}%</div><div className="text-[11px] text-text-muted">Accuracy</div></div>
+              <div className="rounded-xl bg-surface-subtle p-3"><div className="text-lg font-bold">{summary.avg_time_per_question === null ? "-" : `${Math.round(summary.avg_time_per_question / 1000)}s`}</div><div className="text-[11px] text-text-muted">Average time</div></div>
               <div className="rounded-xl bg-surface-subtle p-3"><div className="text-lg font-bold">{Math.round(summary.timeout_or_skip_rate * 100)}%</div><div className="text-[11px] text-text-muted">Skip/timeout</div></div>
-              <div className="rounded-xl bg-surface-subtle p-3"><div className="text-lg font-bold">{Object.keys(summary.breakdown_by_difficulty).length}</div><div className="text-[11px] text-text-muted">Level dianalisis</div></div>
+              <div className="rounded-xl bg-surface-subtle p-3"><div className="text-lg font-bold">{Object.keys(summary.breakdown_by_difficulty).length}</div><div className="text-[11px] text-text-muted">Levels analyzed</div></div>
             </div>
             <div className="mt-4 grid gap-2 sm:grid-cols-3">
               {["easy", "medium", "hard"].map(level => { const item = summary.breakdown_by_difficulty[level]; return <div key={level} className="flex items-center justify-between rounded-lg border border-border px-3 py-2 text-xs"><span className="capitalize text-text-secondary">{level}</span><span className="font-semibold">{item ? `${Math.round(item.accuracy * 100)}% (${item.correct}/${item.total})` : "-"}</span></div>; })}
             </div>
             <div className="mt-5 rounded-xl border border-warning-border bg-warning-subtle p-4">
               <p className="text-sm font-medium text-warning-text">{summary.suggestion.message}</p>
-              {summary.suggestion.type === "review_or_continue" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => setReviewExpanded(true)} className="rounded-lg border border-control-border bg-surface px-3 py-2 text-xs font-medium text-warning-text hover:bg-surface-hover">Ya, review dulu</button><button type="button" onClick={() => setSuggestionHidden(true)} className="rounded-lg border border-transparent px-3 py-2 text-xs font-medium text-warning-text hover:bg-surface-hover">Lanjut aja</button></div>}
-              {summary.suggestion.type === "level_up" && <button type="button" onClick={handleLevelUp} disabled={levelingUp || levelUpLimitReached} className="mt-3 rounded-lg bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary disabled:opacity-50">{levelingUp ? "Menyiapkan level..." : levelUpLimitReached ? "Limit harian tercapai" : "Coba level lebih susah"}</button>}
-              {summary.suggestion.type === "review_material" && <Link href={`/desk/${docId}/flashcards`} className="mt-3 inline-flex rounded-lg bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary">Kembali ke flashcard</Link>}
-              {summary.suggestion.type === "review_material" && <button type="button" onClick={handleStarMaterial} disabled={starSaving || starredFromResult} className="mt-3 ml-2 inline-flex rounded-lg border border-control-border bg-surface px-4 py-2 text-xs font-medium text-warning-text disabled:opacity-60">{starredFromResult ? "Materi ditandai" : starSaving ? "Menandai..." : "Tandai untuk dipelajari lagi"}</button>}
+              {summary.suggestion.type === "review_or_continue" && <div className="mt-3 flex gap-2"><button type="button" onClick={() => setReviewExpanded(true)} className="rounded-lg border border-control-border bg-surface px-3 py-2 text-xs font-medium text-warning-text hover:bg-surface-hover">Review first</button><button type="button" onClick={() => setSuggestionHidden(true)} className="rounded-lg border border-transparent px-3 py-2 text-xs font-medium text-warning-text hover:bg-surface-hover">Continue</button></div>}
+              {summary.suggestion.type === "level_up" && <button type="button" onClick={handleLevelUp} disabled={levelingUp || levelUpLimitReached} className="mt-3 rounded-lg bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary disabled:opacity-50">{levelingUp ? "Preparing level..." : levelUpLimitReached ? "Daily limit reached" : "Try a harder level"}</button>}
+              {summary.suggestion.type === "review_material" && <Link href={`/desk/${docId}/flashcards`} className="mt-3 inline-flex rounded-lg bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary">Back to flashcards</Link>}
+              {summary.suggestion.type === "review_material" && <button type="button" onClick={handleStarMaterial} disabled={starSaving || starredFromResult} className="mt-3 ml-2 inline-flex rounded-lg border border-control-border bg-surface px-4 py-2 text-xs font-medium text-warning-text disabled:opacity-60">{starredFromResult ? "Material marked" : starSaving ? "Marking..." : "Mark for review"}</button>}
               {levelUpError && <p className="mt-2 text-xs text-danger-text">{levelUpError}</p>}
             </div>
           </Card>
@@ -333,8 +333,8 @@ export default function QuizResultsPage() {
 
         {reviewExpanded && summary?.suggestion.type === "review_or_continue" && (
           <Card className="mb-6 border-warning-border">
-            <div className="flex items-center justify-between mb-4"><h2 className="text-sm font-semibold text-text">Review jawaban yang salah</h2><button type="button" onClick={() => setReviewExpanded(false)} className="text-xs text-text-muted hover:text-text">Tutup</button></div>
-            {(summary.wrong_answers ?? []).length === 0 ? <p className="text-sm text-text-muted">Belum ada detail jawaban yang tersimpan untuk attempt ini.</p> : <div className="space-y-4">{summary.wrong_answers?.map((item, index) => <div key={item.question_id} className="rounded-xl border border-border p-4"><p className="text-xs font-mono text-text-muted mb-1">SOAL {index + 1}</p><p className="text-sm font-semibold text-text">{item.question}</p><div className="mt-3 space-y-2">{item.options.map((option, optionIndex) => <div key={optionIndex} className={`rounded-lg border px-3 py-2 text-xs ${optionIndex === item.correct_index ? "border-success-border bg-success-subtle text-success-text" : optionIndex === item.selected_index ? "border-danger-border bg-danger-subtle text-danger-text" : "border-border bg-surface-subtle text-text-secondary"}`}><span className="mr-2 font-semibold">{OPTION_LABELS[optionIndex]}</span>{option}{optionIndex === item.correct_index && <span className="ml-2 text-success-text">✓ Jawaban benar</span>}{optionIndex === item.selected_index && optionIndex !== item.correct_index && <span className="ml-2 text-danger-text">✕ Pilihan kamu</span>}</div>)}</div>{item.explanation && <p className="mt-3 rounded-lg bg-accent-subtle px-3 py-2 text-xs leading-relaxed text-text"><strong>Penjelasan:</strong> {item.explanation}</p>}</div>)}</div>}
+            <div className="flex items-center justify-between mb-4"><h2 className="text-sm font-semibold text-text">Review incorrect answers</h2><button type="button" onClick={() => setReviewExpanded(false)} className="text-xs text-text-muted hover:text-text">Close</button></div>
+            {(summary.wrong_answers ?? []).length === 0 ? <p className="text-sm text-text-muted">No saved answer details are available for this attempt.</p> : <div className="space-y-4">{summary.wrong_answers?.map((item, index) => <div key={item.question_id} className="rounded-xl border border-border p-4"><p className="text-xs font-mono text-text-muted mb-1">QUESTION {index + 1}</p><p className="text-sm font-semibold text-text">{item.question}</p><div className="mt-3 space-y-2">{item.options.map((option, optionIndex) => <div key={optionIndex} className={`rounded-lg border px-3 py-2 text-xs ${optionIndex === item.correct_index ? "border-success-border bg-success-subtle text-success-text" : optionIndex === item.selected_index ? "border-danger-border bg-danger-subtle text-danger-text" : "border-border bg-surface-subtle text-text-secondary"}`}><span className="mr-2 font-semibold">{OPTION_LABELS[optionIndex]}</span>{option}{optionIndex === item.correct_index && <span className="ml-2 text-success-text">✓ Correct answer</span>}{optionIndex === item.selected_index && optionIndex !== item.correct_index && <span className="ml-2 text-danger-text">✕ Your choice</span>}</div>)}</div>{item.explanation && <p className="mt-3 rounded-lg bg-accent-subtle px-3 py-2 text-xs leading-relaxed text-text"><strong>Explanation:</strong> {item.explanation}</p>}</div>)}</div>}
           </Card>
         )}
 
@@ -345,29 +345,29 @@ export default function QuizResultsPage() {
             className="flex-1 py-3 px-4 text-sm font-medium rounded-xl bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition text-center flex items-center justify-center gap-2 shadow-xs shadow-none"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Ulangi Kuis</span>
+            <span>Retake Quiz</span>
           </Link>
           <Link
             href={`/desk/${docId}/flashcards`}
             className="flex-1 py-3 px-4 text-sm font-medium rounded-xl bg-surface border border-control-border text-text hover:bg-surface-hover transition text-center flex items-center justify-center gap-2"
           >
             <BookOpen className="w-4 h-4" />
-            <span>Pelajari Flashcard Lagi</span>
+            <span>Review Flashcards</span>
           </Link>
           <Link
             href="/desk"
             className="flex-1 py-3 px-4 text-sm font-medium rounded-xl bg-surface border border-control-border text-text hover:bg-surface-hover transition text-center flex items-center justify-center gap-2"
           >
             <Home className="w-4 h-4" />
-            <span>Upload Materi Baru</span>
+            <span>Upload New Material</span>
           </Link>
         </div>
 
         {/* Review Section */}
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-text">Pembahasan Jawaban</h2>
+          <h2 className="text-sm font-semibold text-text">Answer Review</h2>
           <span className="text-xs text-text-muted font-mono">
-            {result.total} soal
+            {result.total} questions
           </span>
         </div>
 
@@ -406,7 +406,7 @@ export default function QuizResultsPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-mono font-medium text-text-muted uppercase tracking-wider mb-1">
-                      Soal {idx + 1}
+                      Question {idx + 1}
                     </p>
                     <p className="text-sm font-semibold text-text leading-relaxed">
                       {item.question}
@@ -445,24 +445,24 @@ export default function QuizResultsPage() {
                         <span className="leading-relaxed pt-0.5">{opt}</span>
                         {isCorrectOption && (
                           <span className="ml-auto shrink-0 text-[10px] font-semibold text-success-text whitespace-nowrap">
-                            ✓ Jawaban benar
+                            ✓ Correct answer
                           </span>
                         )}
                         {isUserChoice && !item.isCorrect && (
                           <span className="ml-auto shrink-0 text-[10px] font-semibold text-danger-text whitespace-nowrap">
-                            ✗ Pilihan Anda
+                            ✗ Your choice
                           </span>
                         )}
                       </div>
                     );
                   }) : (
                     <p className="rounded-lg border border-warning-border bg-warning-subtle px-3 py-2 text-xs text-warning-text">
-                      Opsi jawaban tidak tersedia untuk riwayat quiz lama.
+                      Answer options are not available for this older quiz attempt.
                     </p>
                   )}
                   {item.options.length > 0 && item.correctIndex < 0 && !item.isCorrect && (
                     <p className="rounded-lg border border-warning-border bg-warning-subtle px-3 py-2 text-xs text-warning-text">
-                      Jawaban benar belum tersimpan pada riwayat quiz lama. Ulangi kuis untuk melihat penandanya.
+                      The correct answer was not saved for this older attempt. Retake the quiz to see it.
                     </p>
                   )}
                 </div>
@@ -474,13 +474,13 @@ export default function QuizResultsPage() {
         {/* Bottom CTA */}
         <div className="mt-10 pt-8 border-t border-border text-center">
           <p className="text-xs text-text-muted mb-3">
-            Ingin belajar materi yang berbeda?
+            Want to study something different?
           </p>
           <Link
             href="/desk"
             className="inline-flex items-center gap-1.5 text-xs font-medium text-text underline underline-offset-4 hover:text-text-secondary transition"
           >
-            Upload PDF baru <ArrowRight className="w-3 h-3" />
+            Upload a new PDF <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
       </main>

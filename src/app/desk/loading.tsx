@@ -15,7 +15,7 @@ export default function Loading() {
           </header>
 
           <div role="status" aria-busy="true" className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            <span className="sr-only">Memuat meja kerja...</span>
+            <span className="sr-only">Loading your desk...</span>
             {Array.from({ length: 6 }, (_, index) => <DeckCardSkeleton key={index} />)}
           </div>
         </div>

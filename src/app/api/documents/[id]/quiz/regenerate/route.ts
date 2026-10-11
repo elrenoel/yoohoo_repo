@@ -37,7 +37,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
         idempotencyKey: eventKey,
         variant: "different",
       });
-      return NextResponse.json({ success: true, quizSet: existingSet, remainingToday: Number(existing.remaining_quota), message: "Soal quiz yang sama sudah tersedia." }, { status: 200 });
+      return NextResponse.json({ success: true, quizSet: existingSet, remainingToday: Number(existing.remaining_quota), message: "This quiz set is already available." }, { status: 200 });
     }
     const rawText = String(doc.raw_text ?? "").trim();
     const previous = await sql`select question from public.quiz_questions where document_id=${id} order by id`;
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
       idempotencyKey: eventKey,
       variant: "different",
     });
-    return NextResponse.json({ success: true, quizSet: { id: value.id, label: value.label, questionCount: value.question_count }, remainingToday: value.remaining, message: `Soal baru berhasil dibuat (${value.label}).` }, { status: value.created ? 201 : 200 });
+    return NextResponse.json({ success: true, quizSet: { id: value.id, label: value.label, questionCount: value.question_count }, remainingToday: value.remaining, message: `A new question set was created (${value.label}).` }, { status: value.created ? 201 : 200 });
   } catch (error) {
     console.error("[quiz/regenerate]", error instanceof Error ? error.message : error);
     if (error instanceof Error && error.message.includes("DAILY_LIMIT_REACHED")) return NextResponse.json({ success: false, error: "Limit harian sudah tercapai. Coba lagi besok.", limitReached: true, remainingToday: 0, dailyLimit: DAILY_LIMIT }, { status: 429 });

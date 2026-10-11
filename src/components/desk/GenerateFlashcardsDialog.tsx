@@ -307,7 +307,7 @@ export default function GenerateFlashcardsDialog({
                       {document.ready
                         ? <span className="rounded-full bg-surface-subtle px-2.5 py-1 font-mono text-[10px] text-text-secondary">SIAP</span>
                         : <span className="rounded-full border border-border bg-surface-subtle px-2.5 py-1 font-mono text-[10px] text-text-secondary">
-                            {document.status === "failed" ? "GAGAL" : document.status === "uploaded" || document.status === "chunking" || document.status === "indexing" ? "DIPROSES" : document.status}
+                            {document.status === "failed" ? "FAILED" : document.status === "uploaded" || document.status === "chunking" || document.status === "indexing" ? "PROCESSING" : document.status}
                           </span>}
                     </label>
                   );

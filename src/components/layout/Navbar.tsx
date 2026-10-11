@@ -31,14 +31,8 @@ export default function Navbar({
   subtitle,
   bottomBar,
 }: NavbarProps) {
-  const {
-    session,
-    isSessionPending,
-    t,
-    handleLogout,
-    isLoggingOut,
-    navLinks,
-  } = useNavbar();
+  const { session, isSessionPending, t, handleLogout, isLoggingOut, navLinks } =
+    useNavbar();
   const isLoggedIn = !isSessionPending && !!session?.user;
 
   const [menuOpen, setMenuOpen] = useState(false);
@@ -163,7 +157,10 @@ export default function Navbar({
         {/* Logout */}
         <div className="border-t border-border py-1.5">
           <button
-            onClick={() => { setMenuOpen(false); handleLogout(); }}
+            onClick={() => {
+              setMenuOpen(false);
+              handleLogout();
+            }}
             disabled={isLoggingOut}
             title={t("nav.logoutTitle")}
             className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-text-secondary hover:bg-surface-hover hover:text-text transition-colors disabled:opacity-50 cursor-pointer"
@@ -191,7 +188,7 @@ export default function Navbar({
           </Link>
           <Link
             href="/register"
-            className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-control-subtle text-control-text transition shadow-2xs shadow-none"
+            className="px-3.5 py-1.5 text-xs font-medium rounded-lg bg-accent text-surface transition shadow-2xs shadow-none"
           >
             {t("nav.register")}
           </Link>
@@ -216,13 +213,18 @@ export default function Navbar({
             {title}
           </h1>
           {subtitle && (
-            <p className="text-[11px] text-chrome-muted font-mono">{subtitle}</p>
+            <p className="text-[11px] text-chrome-muted font-mono">
+              {subtitle}
+            </p>
           )}
         </div>
       )}
     </div>
   ) : (
-    <Link href={isLoggedIn ? "/desk" : "/"} className="flex items-center gap-2.5 group shrink-0">
+    <Link
+      href={isLoggedIn ? "/desk" : "/"}
+      className="flex items-center gap-2.5 group shrink-0"
+    >
       <img
         src="/logo_yoohoo.png"
         alt="Yoohoo logo"
@@ -259,7 +261,7 @@ export default function Navbar({
     <>
       <header className="bg-chrome sticky top-0 z-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 sm:h-16 flex items-center justify-between">
-            {leftSection}
+          {leftSection}
 
           {/* Default nav links (logged-in users, non-document layout) — desktop only */}
           {session?.user && !backHref && (
@@ -268,7 +270,11 @@ export default function Navbar({
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={link.isActive ? "px-3 py-1.5 text-xs font-semibold rounded-lg bg-chrome-hover text-chrome-text transition" : "px-3 py-1.5 text-xs font-medium rounded-lg text-chrome-text hover:bg-chrome-hover transition"}
+                  className={
+                    link.isActive
+                      ? "px-3 py-1.5 text-xs font-semibold rounded-lg bg-chrome-hover text-chrome-text transition"
+                      : "px-3 py-1.5 text-xs font-medium rounded-lg text-chrome-text hover:bg-chrome-hover transition"
+                  }
                 >
                   {link.label}
                 </Link>
@@ -277,7 +283,9 @@ export default function Navbar({
           )}
 
           {centerContent && (
-            <div className="hidden sm:flex items-center gap-3">{centerContent}</div>
+            <div className="hidden sm:flex items-center gap-3">
+              {centerContent}
+            </div>
           )}
 
           {/* Desktop right section */}
@@ -334,7 +342,9 @@ export default function Navbar({
             )}
 
             {/* Language toggle */}
-            <div className="px-4 py-1"><LanguageSwitcher mobile /></div>
+            <div className="px-4 py-1">
+              <LanguageSwitcher mobile />
+            </div>
 
             {/* Auth section for logged-in users */}
             {session?.user ? (
@@ -367,7 +377,10 @@ export default function Navbar({
                       {t("nav.trash")}
                     </Link>
                     <button
-                      onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        handleLogout();
+                      }}
                       disabled={isLoggingOut}
                       title={t("nav.logoutTitle")}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-chrome-text hover:bg-chrome-hover transition disabled:opacity-50 cursor-pointer text-left w-full"

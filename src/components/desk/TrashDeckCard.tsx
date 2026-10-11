@@ -61,7 +61,7 @@ export default function TrashDeckCard({ deck, onRequestRestore, onRequestPermane
               <FileText className="h-4 w-4 shrink-0 text-accent" />
               <h2 className="truncate font-serif text-lg font-semibold">{deck.title}</h2>
             </div>
-            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-text-muted">Deck dihapus dari Your Desk. Pulihkan untuk melanjutkan belajar.</p>
+            <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-text-muted">This deck was removed from Your Desk. Restore it to continue learning.</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-0.5">
@@ -114,7 +114,7 @@ export default function TrashDeckCard({ deck, onRequestRestore, onRequestPermane
 
       <div className="relative z-10 flex items-center justify-between border-t border-border px-4 py-3 font-mono text-[11px] text-text-muted">
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />{deck.materialCount} materi</span>
+          <span className="inline-flex items-center gap-1"><FileText className="h-3.5 w-3.5" />{deck.materialCount} materials</span>
           <span className="inline-flex items-center gap-1"><CalendarDays className="h-3.5 w-3.5" />{DATE_FORMATTER.format(deletedDate)}</span>
         </div>
         <span className="inline-flex items-center gap-1 text-danger-text">{purgeLabel}</span>

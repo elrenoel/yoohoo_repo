@@ -261,7 +261,57 @@
   width: calc(636 * var(--u));
 }
 
+.skeleton {
+  pointer-events: none;
+}
+
+.skeleton .face {
+  animation: flashcard-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeletonTitle,
+.skeletonTitleShort {
+  background: color-mix(
+    in srgb,
+    var(--flashcard-accent) 24%,
+    var(--flashcard-background)
+  );
+  border-radius: calc(28 * var(--u));
+  display: block;
+  height: calc(118 * var(--u));
+  left: calc(125 * var(--u));
+  position: absolute;
+  right: calc(260 * var(--u));
+  top: calc(240 * var(--u));
+  z-index: 2;
+}
+
+.skeletonTitleShort {
+  height: calc(88 * var(--u));
+  right: calc(590 * var(--u));
+  top: calc(395 * var(--u));
+}
+
+.skeletonArrow {
+  opacity: 0.45;
+}
+
+@keyframes flashcard-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.72;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .skeleton .face {
+    animation: none;
+  }
+
   .inner,
   .flipped .inner {
     transform: none;

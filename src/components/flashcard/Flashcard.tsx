@@ -47,6 +47,26 @@ export type FlashcardRelatedTerm = {
   definition?: string;
 };
 
+export function FlashcardSkeleton() {
+  return (
+    <div className={`${styles.container} ${styles.skeleton}`} aria-hidden="true">
+      <div className={styles.button}>
+        <span className={styles.inner}>
+          <span className={`${styles.face} ${styles.front}`}>
+            <FrontBlob
+              variant={1}
+              className={`${styles.frontBlob} ${styles.frontBlob1}`}
+            />
+            <span className={styles.skeletonTitle} />
+            <span className={styles.skeletonTitleShort} />
+            <FlipArrow className={`${styles.arrow} ${styles.skeletonArrow}`} />
+          </span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 type PointerOrigin = {
   x: number;
   y: number;
@@ -196,7 +216,7 @@ export function Flashcard({
       <button
         type="button"
         className={styles.button}
-        aria-label="Balik kartu"
+        aria-label="Flip card"
         aria-pressed={isFlipped}
         onClick={handleClick}
         onPointerDown={handlePointerDown}
@@ -279,7 +299,7 @@ export function Flashcard({
                   {hoveredRelatedTerm.term}
                 </span>
                 {hoveredRelatedTerm.type === "suggested"
-                  ? "Istilah ini disebut di materi dan dapat dijadikan flashcard."
+                  ? "This term appears in the material and can be turned into a flashcard."
                   : hoveredRelatedTerm.definition ||
                     "Klik untuk membuka flashcard terkait."}
               </span>

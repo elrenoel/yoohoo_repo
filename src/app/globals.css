@@ -55,6 +55,7 @@
   --color-chrome-muted: var(--chrome-muted);
   --color-chrome-hover: var(--chrome-hover);
   --color-chrome-border: var(--chrome-border);
+  --color-footer-text: var(--footer-text);
 }
 
 :root {
@@ -145,6 +146,8 @@
   --foreground: var(--text);
   --card-bg: var(--surface);
   --border-color: var(--border);
+
+  --footer-text: #131b17;
 }
 
 html,
