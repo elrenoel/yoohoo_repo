@@ -18,9 +18,16 @@ function serverFailure(stage: "quota" | "presign", error: unknown) {
     }, { status: 503 });
   }
   if (details.errorType === "CredentialsProviderError" || /credential/i.test(details.message)) {
+    const missing = [
+      !process.env.AWS_ACCESS_KEY_ID?.trim() && "AWS_ACCESS_KEY_ID",
+      !process.env.AWS_SECRET_ACCESS_KEY?.trim() && "AWS_SECRET_ACCESS_KEY",
+    ].filter(Boolean);
     return Response.json({
       code: "AWS_CREDENTIALS_UNAVAILABLE",
-      error: "The server could not authenticate with AWS.",
+      error: missing.length
+        ? `The server cannot read ${missing.join(" and ")}.`
+        : "The server could not authenticate with AWS.",
+      missing,
     }, { status: 503 });
   }
   if (/region/i.test(details.message)) {
@@ -57,6 +64,18 @@ export async function POST(request: Request) {
       return Response.json({
         code: "AWS_CONFIG_MISSING",
         error: "The AWS region or S3 bucket is not configured on the server.",
+      }, { status: 503 });
+    }
+    if (process.env.VERCEL && (!process.env.AWS_ACCESS_KEY_ID?.trim() || !process.env.AWS_SECRET_ACCESS_KEY?.trim())) {
+      const missing = [
+        !process.env.AWS_ACCESS_KEY_ID?.trim() && "AWS_ACCESS_KEY_ID",
+        !process.env.AWS_SECRET_ACCESS_KEY?.trim() && "AWS_SECRET_ACCESS_KEY",
+      ].filter(Boolean);
+      console.error("[DOCUMENT PRESIGN] AWS credentials missing in Vercel runtime", { missing });
+      return Response.json({
+        code: "AWS_CREDENTIALS_UNAVAILABLE",
+        error: `The server cannot read ${missing.join(" and ")}.`,
+        missing,
       }, { status: 503 });
     }
     const id = randomUUID();
