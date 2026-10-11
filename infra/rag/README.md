@@ -79,10 +79,12 @@ denies CloudFormation in the other enabled Regions. Active stacks:
 - `yoohoo-rag-dev`: document bucket, three Lambda functions, Step Functions,
   EventBridge failure handling, IAM roles/policy, logs and failure alarm.
 
-The deployed frontend origin is `http://localhost:3000`; `ArchiveMode` is
-`Inactive90`. Local development uses the short-lived AWS CLI profile
-`yoohoo-rag`, configured in `.env.local`. Production hosting must use workload
-identity/federation and attach the output `BackendUploadPolicyArn` to that runtime.
+The bucket accepts direct browser uploads from the exact development origin in
+`FrontendOrigin` and the exact production origin in `ProductionFrontendOrigin`
+(default: `https://yoohoo-ochre.vercel.app`). `ArchiveMode` is `Inactive90`.
+Local development uses the short-lived AWS CLI profile `yoohoo-rag`, configured
+in `.env.local`. Production hosting must use workload identity/federation and
+attach the output `BackendUploadPolicyArn` to that runtime.
 
 1. Store JSON secrets in Secrets Manager: one with `SUPABASE_DATABASE_URL`, one
    with `GEMINI_API_KEY`. Supply their names as template parameters. CloudFormation
@@ -126,7 +128,8 @@ Attach the output `BackendUploadPolicyArn` to the trusted backend's IAM role;
 set `RAG_BUCKET_NAME` to the bucket output. No user/access key is created by the
 template. For a Vercel backend, configure an appropriate AWS credential federation
 or deployment secret through the platform; browser clients receive signed URLs only.
-Only one CORS origin is configured per stack; use a dev stack for localhost.
+Both configured CORS origins can upload directly to the bucket. Keep them exact
+and omit trailing slashes; CORS does not grant S3 permissions by itself.
 
 The IAM policies use exact AWS actions and stack-specific resources. The suffix
 `/*` in S3 object ARNs and `log-stream:*` restricts access to that bucket prefix/log

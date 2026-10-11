@@ -11,7 +11,13 @@
     "FrontendOrigin": {
       "Type": "String",
       "AllowedPattern": "https?://[^/]+",
-      "Description": "Exact frontend origin; no trailing slash"
+      "Description": "Exact development frontend origin; no trailing slash"
+    },
+    "ProductionFrontendOrigin": {
+      "Type": "String",
+      "Default": "https://yoohoo-ochre.vercel.app",
+      "AllowedPattern": "https://[^/]+",
+      "Description": "Exact production frontend origin; no trailing slash"
     },
     "DatabaseSecretName": {
       "Type": "String",
@@ -89,6 +95,9 @@
               "AllowedOrigins": [
                 {
                   "Ref": "FrontendOrigin"
+                },
+                {
+                  "Ref": "ProductionFrontendOrigin"
                 }
               ],
               "AllowedHeaders": [
@@ -156,7 +165,8 @@
         "com.aws.cloudformation.Context": {
           "why": "Private immutable uploads; confirmation marker avoids DB/S3 race. No versioning per request.",
           "must": [
-            "Scope access to this stack; never grant public data access."
+            "Scope access to this stack; never grant public data access.",
+            "Keep browser upload CORS origins exact; never replace them with a wildcard."
           ]
         }
       }
