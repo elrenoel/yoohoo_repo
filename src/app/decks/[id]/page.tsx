@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -126,13 +126,15 @@ export default function DeckWorkbenchPage() {
 
   const toast = useToast();
   const queryClient = useQueryClient();
+  const generationToastIdRef = useRef<string | number | null>(null);
 
   // Job dibuat server (202); worker dijalankan via after() di route generate.
   // Di sini: toast + refresh daftar + polling status job + invalidasi badge.
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
   const handleGenerateStarted = useCallback(
     (jobId: string) => {
-      toast.loading(
+      if (generationToastIdRef.current !== null) toast.dismiss(generationToastIdRef.current);
+      generationToastIdRef.current = toast.loading(
         "Creating flashcards and a quiz... You will be notified when they are ready.",
       );
       setActiveJobId(jobId);
@@ -162,13 +164,19 @@ export default function DeckWorkbenchPage() {
             body.job.flashcardCount
               ? `Done — ${body.job.flashcardCount} flashcards and ${body.job.quizCount} questions were added.`
               : "Done — your study material was updated.",
+            generationToastIdRef.current === null ? undefined : { id: generationToastIdRef.current },
           );
+          generationToastIdRef.current = null;
           void fetchDeck()
             .then(applyDeck)
             .catch(() => undefined);
         } else if (status === "failed" || status === "canceled") {
           setActiveJobId(null);
-          toast.error(body.job.errorMessage || "Flashcard generation failed.");
+          toast.error(
+            body.job.errorMessage || "Flashcard generation failed.",
+            generationToastIdRef.current === null ? undefined : { id: generationToastIdRef.current },
+          );
+          generationToastIdRef.current = null;
         }
         void queryClient.invalidateQueries({ queryKey: ["notifications"] });
       } catch {
@@ -184,6 +192,10 @@ export default function DeckWorkbenchPage() {
       window.clearInterval(timer);
     };
   }, [activeJobId, fetchDeck, applyDeck, toast, queryClient]);
+
+  useEffect(() => () => {
+    if (generationToastIdRef.current !== null) toast.dismiss(generationToastIdRef.current);
+  }, [toast]);
 
   useEffect(() => {
     let cancelled = false;

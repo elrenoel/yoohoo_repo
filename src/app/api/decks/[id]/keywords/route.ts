@@ -1,6 +1,7 @@
 import { ragSql } from "@/lib/rag/db";
 import { RagError, UUID } from "@/lib/rag/core";
 import { documentId, ragResponseError, sessionUser } from "@/lib/rag/http";
+import type { DeckKeywordsResponse } from "@/types/deck-keywords";
 
 export const runtime = "nodejs";
 
@@ -74,9 +75,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       select id, title from public.documents
       where id = any(${idArray}::uuid[]) order by lower(title)`;
 
-    return Response.json({
+    const response: DeckKeywordsResponse = {
       documents: documents.map(doc => ({
-        id: String(doc.id),
+        documentId: String(doc.id),
         title: String(doc.title),
         keywords: keywords
           .filter(row => String(row.document_id) === String(doc.id))
@@ -95,7 +96,8 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
             };
           }),
       })),
-    }, { headers: { "Cache-Control": "no-store" } });
+    };
+    return Response.json(response, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return ragResponseError(error);
   }

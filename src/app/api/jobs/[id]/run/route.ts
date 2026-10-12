@@ -11,7 +11,7 @@ import {
   type SelectedKeyword,
   type SourceChunk,
 } from "@/lib/rag/materials";
-import { claimJob, failJob } from "@/lib/jobs";
+import { claimJob } from "@/lib/jobs";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -75,7 +75,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const sql = ragSql();
     const [jobBefore] = await sql`
-      select id, status, deck_id, kind, input from public.generation_jobs
+      select id, status, deck_id, kind, input, idempotency_key from public.generation_jobs
       where id=${rawId} and user_id=${userId}`;
     if (!jobBefore) throw new RagError("Proses generate tidak ditemukan.", 404);
     if (String(jobBefore.kind) !== "flashcard_generate") throw new RagError("Jenis proses ini tidak didukung worker ini.", 400);
@@ -84,9 +84,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const requestedGroupName = typeof jobInput.groupName === "string" ? jobInput.groupName.trim().slice(0, 60) : "";
     const skippedCount = Number(jobInput.skippedCount ?? 0) || 0;
     const failCurrent = async (message:string) => {
-      await failJob(rawId,userId,undefined,message);
-      await sql`update public.notifications set title='Flashcard group could not be created',body=${`${requestedGroupName || "New flashcard group"}: ${message}`}
-        where user_id=${userId} and dedupe_key=${`${rawId}:failed`}`;
+      await sql.begin(async tx=>{
+        await tx`update public.generation_jobs set status='failed',error_message=${message.slice(0,500)},finished_at=now(),completed_at=now() where id=${rawId} and user_id=${userId}`;
+        await tx`select private.refund_generation_quota_event(${userId},${`flashcard:${String(jobBefore.idempotency_key)}`})`;
+        await tx`update public.notifications set title='Flashcard group could not be created',body=${`${requestedGroupName || "New flashcard group"}: ${message}`}
+          where user_id=${userId} and dedupe_key=${`${rawId}:failed`}`;
+      });
     };
 
     // 1. Claim: queued -> running. 0 row = sudah diproses/diakhiri di tempat lain.
@@ -266,6 +269,10 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       await tx`update public.notifications set title='Flashcard group ready',body=${`${groupName}: ${count} cards created${skippedCount ? `; ${skippedCount} duplicates skipped` : ""}.`},link=${`/desk/${deckId}`}
         where user_id=${userId} and dedupe_key=${`${rawId}:succeeded`}`;
       return { groupId: String(group.id), groupName, flashcardCount: count, quizCount, skippedCount, quizSetId: String(quizSet.id) };
+    }).catch(async error => {
+      const message = `Penyimpanan flashcard gagal: ${error instanceof Error ? error.message : String(error)}`.slice(0, 500);
+      await failCurrent(message);
+      throw error;
     });
 
     return Response.json({ success: true, status: "succeeded", jobId: rawId, ...inserted });

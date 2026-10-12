@@ -2,6 +2,16 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertCircle, ArrowLeft, ArrowRight, CheckCheck, FileText, Loader2, Search, Sparkles, X } from "lucide-react";
+import { useToast } from "@/lib/toast";
+import {
+  deckKeywordsResponseSchema,
+  generateFlashcardsRequestSchema,
+  type DeckKeyword as KeywordEntry,
+  type DeckKeywordGroup as KeywordGroup,
+  type DeckKeywordsResponse,
+  type GenerateFlashcardsErrorCode,
+  type GenerateFlashcardsErrorResponse,
+} from "@/types/deck-keywords";
 
 const MAX_KEYWORDS = 50;
 
@@ -16,22 +26,6 @@ type DeckDocument = {
   keywordWithFlashcard: number;
 };
 
-type KeywordEntry = {
-  id: string;
-  documentId: string;
-  term: string;
-  snippet: string | null;
-  normalizedTerm: string;
-  alreadyHasFlashcard: boolean;
-  twinIds: string[];
-};
-
-type KeywordGroup = {
-  documentId: string;
-  title: string;
-  keywords: KeywordEntry[];
-};
-
 type GenerateResponse = {
   success: boolean;
   jobId: string;
@@ -40,9 +34,23 @@ type GenerateResponse = {
   error?: string;
 };
 
+const ERROR_MESSAGES: Partial<Record<GenerateFlashcardsErrorCode, string>> = {
+  INVALID_REQUEST: "Permintaan tidak valid. Periksa kembali data yang dipilih.",
+  INVALID_SELECTION: "Pilihan materi atau keyword tidak valid.",
+  DUPLICATE_REQUEST: "Permintaan ini sudah pernah dikirim.",
+  QUOTA_EXCEEDED: "Kuota generate hari ini sudah habis.",
+  DECK_NOT_FOUND: "Deck tidak ditemukan atau tidak dapat diakses.",
+  MATERIAL_NOT_FOUND: "Salah satu materi tidak ditemukan di deck ini.",
+  MATERIAL_NOT_READY: "Salah satu materi belum selesai diproses.",
+  ACTIVE_JOB_EXISTS: "Masih ada proses generate aktif untuk deck ini.",
+};
+
 async function readJson<T>(response: Response, fallback: string): Promise<T> {
   const body = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error((body as { error?: string }).error || fallback);
+  if (!response.ok) {
+    const apiError = body as Partial<GenerateFlashcardsErrorResponse>;
+    throw Object.assign(new Error(apiError.error || fallback), { code: apiError.code });
+  }
   return body as T;
 }
 
@@ -73,6 +81,7 @@ export default function GenerateFlashcardsDialog({
   onClose: () => void;
   onStarted: (jobId: string) => void;
 }) {
+  const toast = useToast();
   // IdempotencyKey dibuat SEKALI saat dialog dibuka (bukan saat klik tombol),
   // sehingga klik ganda tidak pernah membuat job kedua.
   const [idempotencyKey] = useState(() =>
@@ -134,10 +143,11 @@ export default function GenerateFlashcardsDialog({
     setError("");
     try {
       const params = new URLSearchParams({ documentIds: [...selectedDocIds].join(",") });
-      const body = await readJson<{ documents: KeywordGroup[] }>(
+      const rawBody = await readJson<DeckKeywordsResponse>(
         await fetch(`/api/decks/${deckId}/keywords?${params}`, { cache: "no-store" }),
         "Keywords could not be loaded."
       );
+      const body = deckKeywordsResponseSchema.parse(rawBody);
       const groups = mergeTwins(body.documents ?? []);
       setKeywordGroups(groups);
       // Buang keyword yang materinya tidak lagi dipilih.
@@ -208,37 +218,48 @@ export default function GenerateFlashcardsDialog({
 
   const keywordCount = selectedIds.size;
   const overLimit = keywordCount > MAX_KEYWORDS;
-  const canGenerate = keywordCount > 0 && !overLimit;
+  const selections = useMemo(() => keywordGroups.flatMap(group => {
+    const keywordIds = group.keywords.filter(keyword => selectedIds.has(keyword.id)).map(keyword => keyword.id);
+    return group.documentId && keywordIds.length ? [{ document_id: group.documentId, keyword_ids: keywordIds }] : [];
+  }), [keywordGroups, selectedIds]);
+  const selectionIsValid = selections.length > 0
+    && selections.every(selection => Boolean(selection.document_id) && selection.keyword_ids.length > 0);
+  const canGenerate = keywordCount > 0 && !overLimit && selectionIsValid;
 
   const submit = useCallback(async () => {
     if (busyRef.current || !canGenerate) return;
     busyRef.current = true;
     setSubmitting(true);
     setError("");
+    const toastId = toast.loading("Membuat flashcard...");
     try {
+      const requestBody = generateFlashcardsRequestSchema.parse({
+        groupName: groupName.trim() || undefined,
+        selections,
+        idempotencyKey,
+      });
       const body = await readJson<GenerateResponse>(
         await fetch(`/api/decks/${deckId}/flashcards/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            groupName: groupName.trim() || undefined,
-            selections: keywordGroups.flatMap(group => {
-              const keywordIds = group.keywords.filter(keyword => selectedIds.has(keyword.id)).map(keyword => keyword.id);
-              return keywordIds.length ? [{ document_id: group.documentId, keyword_ids: keywordIds }] : [];
-            }),
-            idempotencyKey,
-          }),
+          body: JSON.stringify(requestBody),
         }),
         "Could not start generation."
       );
+      toast.success("Proses pembuatan flashcard dimulai.", { id: toastId });
       onStarted(body.jobId);
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not start generation.");
+      const response = cause as Error & { code?: GenerateFlashcardsErrorCode };
+      const message = response.code && ERROR_MESSAGES[response.code]
+        ? ERROR_MESSAGES[response.code]!
+        : cause instanceof Error ? cause.message : "Flashcard tidak dapat dibuat.";
+      setError(message);
+      toast.error(message, { id: toastId });
       setSubmitting(false);
       busyRef.current = false;
     }
-  }, [canGenerate, deckId, groupName, idempotencyKey, keywordGroups, onClose, onStarted, selectedIds]);
+  }, [canGenerate, deckId, groupName, idempotencyKey, onClose, onStarted, selections, toast]);
 
   const stepIndex = step === "documents" ? 1 : step === "keywords" ? 2 : 3;
 
