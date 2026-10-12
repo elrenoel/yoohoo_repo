@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { assertTrustedOrigin } from "@/lib/auth-guard";
 import { ragSql } from "@/lib/rag/db";
 import { UUID } from "@/lib/rag/core";
 import { generateSelectedFlashcards } from "@/lib/rag/materials";
@@ -15,6 +16,7 @@ export async function POST(request: NextRequest, props: { params: Promise<{ id: 
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ success: false, error: "Silakan masuk terlebih dahulu." }, { status: 401 });
   try {
+    assertTrustedOrigin(request);
     const body = await request.json().catch(() => ({})) as { suggested_term?: unknown; source_chunk_id?: unknown };
     const term = typeof body.suggested_term === "string" ? body.suggested_term.trim() : "";
     const chunkId = typeof body.source_chunk_id === "string" ? body.source_chunk_id : "";

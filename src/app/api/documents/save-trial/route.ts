@@ -4,6 +4,7 @@ import { db, type Json } from "@/db";
 import { isQuotaError } from "@/db/helpers";
 import { handleApiError } from "@/lib/api-error";
 import { DAILY_LIMIT, getUserQuota } from "@/lib/daily-limit";
+import { assertTrustedOrigin } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -24,6 +25,7 @@ type SaveTrialBody = {
  */
 export async function POST(request: NextRequest) {
   try {
+    assertTrustedOrigin(request);
     // 1. Verifikasi sesi
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) {

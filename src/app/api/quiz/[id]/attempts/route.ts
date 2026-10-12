@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { assertTrustedOrigin, AuthGuardError } from "@/lib/auth-guard";
 import { ragSql } from "@/lib/rag/db";
 import { UUID } from "@/lib/rag/core";
 
@@ -11,6 +12,7 @@ function bad(message: string, status = 400) { return NextResponse.json({ success
 
 export async function POST(request: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    assertTrustedOrigin(request);
     const quizId = (await context.params).id;
     if (!UUID.test(quizId)) return bad("ID quiz tidak valid.");
     const session = await auth.api.getSession({ headers: request.headers });
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (new Set(parsed.map(answer => answer.questionId)).size !== parsed.length) return bad("Satu soal hanya boleh memiliki satu jawaban.");
 
     const result = await ragSql().begin(async sql => {
-      const [quiz] = await sql`select qs.id,coalesce(qs.document_id,(select min(f.source_document_id) from public.flashcards f where f.group_id=qs.group_id)) document_id,
+      const [quiz] = await sql`select qs.id,coalesce(qs.document_id,(select f.source_document_id from public.flashcards f where f.group_id=qs.group_id order by f.source_document_id limit 1)) document_id,
         coalesce(d.title,g.name) title
         from public.quiz_sets qs left join public.documents d on d.id=qs.document_id left join public.flashcard_groups g on g.id=qs.group_id
         where qs.id=${quizId} and ((d.user_id=${session.user.id} and d.deleted_at is null) or g.user_id=${session.user.id})`;
@@ -75,11 +77,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     });
     return NextResponse.json({ success: true, ...result }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthGuardError) return bad(error.code, error.status);
     const message = error instanceof Error ? error.message : String(error);
     if (message === "FORMAT_ANSWER") return bad("Format jawaban tidak valid.");
     if (message === "QUIZ_NOT_FOUND") return bad("Quiz tidak ditemukan.", 404);
     if (message === "QUESTION_NOT_FOUND") return bad("Ada soal yang bukan bagian dari quiz ini.", 400);
-    console.error("[quiz/attempts]", { errorType: error instanceof Error ? error.name : "Unknown" });
-    return bad("Jawaban quiz gagal disimpan.", 500);
+    console.error("[quiz/attempts]", {
+      errorType: error instanceof Error ? error.name : "Unknown",
+      message: error instanceof Error ? error.message : String(error),
+    });
+    const response = bad("Jawaban quiz gagal disimpan.", 500);
+    if (process.env.NODE_ENV !== "production" && response instanceof NextResponse) {
+      return NextResponse.json({ success: false, error: "Jawaban quiz gagal disimpan.", details: message }, { status: 500 });
+    }
+    return response;
   }
 }

@@ -10,15 +10,19 @@ import { ArrowRight, AlertCircle, Loader2, Info } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { useToast } from "@/lib/toast";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
   const { invalidate: invalidateSession } = useSession();
+  const toast = useToast();
   const noticeMessage = searchParams.get("message");
   const googleError = searchParams.get("google_error");
   const oauthError = searchParams.get("error");
+  const requestedNext = searchParams.get("next");
+  const nextPath = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/home";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +37,7 @@ function LoginForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/home",
+        callbackURL: nextPath,
         errorCallbackURL: "/login",
       });
     } catch (err: unknown) {
@@ -62,9 +66,9 @@ function LoginForm() {
       });
 
       if (res.error) {
-        setErrorMessage(
-          res.error.message || t("auth.emailPasswordWrong")
-        );
+        const message = res.error.status === 429 ? "Terlalu banyak percobaan login. Coba lagi dalam satu menit." : (res.error.message || t("auth.emailPasswordWrong"));
+        setErrorMessage(message);
+        if (res.error.status === 429) toast.error(message);
         setIsLoading(false);
         return;
       }
@@ -102,7 +106,7 @@ function LoginForm() {
       }
 
       invalidateSession();
-      router.push("/home");
+      router.push(nextPath);
       router.refresh();
     } catch (err: unknown) {
       setErrorMessage(

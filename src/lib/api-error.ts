@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { AuthGuardError } from "@/lib/auth-guard";
 
 /**
  * Standard API error response format sent to clients.
@@ -25,6 +26,9 @@ export function handleApiError(
   context: string,
   fallbackMessage = "Terjadi kesalahan server. Silakan coba beberapa saat lagi."
 ): NextResponse<ApiErrorResponse> {
+  if (error instanceof AuthGuardError) {
+    return NextResponse.json({ success: false, error: error.code, code: error.code }, { status: error.status });
+  }
   // Log the real error for server-side debugging
   if (error instanceof Error) {
     console.error(`[${context}] Error:`, error.message);

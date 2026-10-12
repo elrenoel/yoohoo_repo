@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { extractPdfText } from "@/lib/pdf";
 import { auth } from "@/lib/auth";
 import { handleApiError } from "@/lib/api-error";
+import { assertTrustedOrigin } from "@/lib/auth-guard";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -27,6 +28,7 @@ function isValidPdfHeader(buffer: ArrayBuffer): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    assertTrustedOrigin(request);
     // 1. Verifikasi Sesi Pengguna
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session || !session.user) {

@@ -1,9 +1,11 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { LoaderCircle, X } from "lucide-react";
 import { useToast } from "@/lib/toast";
 import { useOptimisticIntentMutation } from "@/hooks/use-optimistic-intent-mutation";
+import { useSession } from "@/lib/session-provider";
 type Person = {
   userId: string;
   username: string;
@@ -29,6 +31,9 @@ export default function FollowControls({
     [list, setList] = useState<"followers" | "following" | null>(null),
     [people, setPeople] = useState<Person[]>([]),
     [listLoading, setListLoading] = useState(false);
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
   const follow = useOptimisticIntentMutation({
     entityKey: `follow:user:${targetUserId}`,
     initialState: { active: initialFollowing, count: initialFollowers },
@@ -55,6 +60,10 @@ export default function FollowControls({
     onError: () => toast.error("Something went wrong. Try again."),
   });
   function toggle() {
+    if (!session?.user) {
+      toast.info("Log in to continue.", { action: { label: "Log in", onClick: () => router.push(`/login?next=${encodeURIComponent(pathname)}`) } });
+      return;
+    }
     if (!isOwner) follow.setDesiredState(!follow.active);
   }
   function openList(next: "followers" | "following") {

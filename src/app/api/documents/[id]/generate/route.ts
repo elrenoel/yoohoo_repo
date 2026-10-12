@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { assertTrustedOrigin } from "@/lib/auth-guard";
 import { DAILY_LIMIT } from "@/lib/daily-limit";
 import { UUID } from "@/lib/rag/core";
 import { ragSql } from "@/lib/rag/db";
@@ -30,6 +31,7 @@ function errorResponse(error: unknown) {
 
 export async function POST(request: NextRequest, context: Context) {
   try {
+    assertTrustedOrigin(request);
     const { id } = await context.params;
     if (!UUID.test(id)) return NextResponse.json({ success: false, error: "ID dokumen tidak valid." }, { status: 400 });
     const session = await auth.api.getSession({ headers: request.headers });

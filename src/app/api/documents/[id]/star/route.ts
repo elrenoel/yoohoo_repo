@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { assertTrustedOrigin } from "@/lib/auth-guard";
 import { db } from "@/db";
 import { handleApiError } from "@/lib/api-error";
 
@@ -7,6 +8,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function PATCH(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    assertTrustedOrigin(request);
     const { id } = await props.params;
     if (!UUID.test(id)) return NextResponse.json({ success: false, error: "ID dokumen tidak valid." }, { status: 400 });
     const session = await auth.api.getSession({ headers: request.headers });

@@ -27,6 +27,7 @@
     "api:test": "tsx scripts/test-suite.ts",
     "test": "tsx scripts/test-suite.ts",
     "test:optimistic": "tsx --test src/hooks/use-optimistic-intent-mutation.test.ts src/lib/interaction-notifications.test.ts",
+    "test:auth-gate": "tsx --test src/lib/auth-gate.test.ts",
     "seed:generate": "tsx scripts/seed-generate.ts",
     "seed:run": "tsx scripts/seed-run.ts",
     "seed:reset": "tsx scripts/seed-reset.ts"

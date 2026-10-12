@@ -2,9 +2,57 @@ import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 import { APIError } from "better-auth";
 import { createAuthMiddleware, getOAuthState } from "better-auth/api";
+import { captcha, emailOTP, haveIBeenPwned } from "better-auth/plugins";
+
+// Fase 5 CSP reminder: allow https://challenges.cloudflare.com in script-src
+// and frame-src so the Turnstile widget can load and render.
 
 const authDatabaseUrl = process.env.SUPABASE_DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
 const authPool = new Pool({ connectionString: authDatabaseUrl, ssl: { rejectUnauthorized: false }, max: 5 });
+if (process.env.NODE_ENV === "production" && !process.env.TURNSTILE_SECRET_KEY) {
+  throw new Error("TURNSTILE_SECRET_KEY is required in production");
+}
+if (process.env.NODE_ENV === "production" && !process.env.RESEND_API_KEY) {
+  throw new Error("RESEND_API_KEY is required in production for email verification");
+}
+
+async function sendVerificationEmail({ user, url }: { user: { email: string; name: string }; url: string }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    if (process.env.NODE_ENV !== "production") console.warn("Email verification URL (development only):", url);
+    return;
+  }
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.EMAIL_FROM || "Yoohoo <onboarding@resend.dev>",
+      to: [user.email],
+      subject: "Verify your Yoohoo email",
+      text: `Hi ${user.name},\n\nVerify your email by opening this link:\n${url}\n\nThis link expires in 60 minutes.`,
+    }),
+  });
+  if (!response.ok) throw new Error("Unable to send verification email");
+}
+
+async function sendVerificationOTP({ email, otp, type }: { email: string; otp: string; type: "sign-in" | "email-verification" | "forget-password" | "change-email" }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    if (process.env.NODE_ENV !== "production") console.warn("OTP generated for development:", { email, type });
+    return;
+  }
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.EMAIL_FROM || "Yoohoo <onboarding@resend.dev>",
+      to: [email],
+      subject: type === "sign-in" ? "Your Yoohoo login code" : "Your Yoohoo verification code",
+      text: `Your Yoohoo verification code is ${otp}. It expires in 10 minutes.`,
+    }),
+  });
+  if (!response.ok) throw new Error("Unable to send OTP email");
+}
 
 /**
  * Payload carried inside the OAuth callback error when the login page's
@@ -50,7 +98,8 @@ function decodeNotRegisteredPayload(error: string): { email: string; name: strin
  * displayed in the register form on the client.
  */
 export const PASSWORD_RULES = {
-  minLength: 8,
+  minLength: 10,
+  maxLength: 128,
   hasLetter: /[a-zA-Z]/,
   hasNumber: /[0-9]/,
 } as const;
@@ -77,10 +126,20 @@ export const auth = betterAuth({
   verification: {
     fields: { expiresAt: "expires_at", createdAt: "created_at", updatedAt: "updated_at" },
   },
+  emailVerification: {
+    requireEmailVerification: true,
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: false,
+    expiresIn: 60 * 60,
+    sendVerificationEmail,
+  },
   emailAndPassword: {
     enabled: true,
+    requireEmailVerification: true,
     // Enforce minimum length at the Better Auth level (server-side).
     minPasswordLength: PASSWORD_RULES.minLength,
+    maxPasswordLength: PASSWORD_RULES.maxLength,
     password: {
       /**
        * Wrap the default hash function to add extra complexity checks
@@ -106,6 +165,53 @@ export const auth = betterAuth({
       },
     },
   },
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    window: 60,
+    max: 5,
+    modelName: "rate_limit",
+    fields: { lastRequest: "last_request" },
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 60, max: 5 },
+      "/forget-password": { window: 60, max: 5 },
+      "/request-password-reset": { window: 60, max: 5 },
+      "/reset-password/*": { window: 60, max: 5 },
+      "/send-verification-email": { window: 60, max: 5 },
+    },
+  },
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
+      ipv6Subnet: 64,
+    },
+  },
+  plugins: [
+    emailOTP({
+      sendVerificationOTP,
+      otpLength: 6,
+      expiresIn: 600,
+      allowedAttempts: 5,
+      sendVerificationOnSignUp: true,
+      overrideDefaultEmailVerification: true,
+      storeOTP: "hashed",
+      rateLimit: { window: 60, max: 1 },
+    }),
+    haveIBeenPwned({
+      customPasswordCompromisedMessage: "Kata sandi ini pernah bocor. Gunakan kata sandi lain.",
+    }),
+    ...(process.env.TURNSTILE_SECRET_KEY
+      ? [
+        captcha({
+          provider: "cloudflare-turnstile",
+          secretKey: process.env.TURNSTILE_SECRET_KEY || "",
+          endpoints: ["/sign-up/email", "/forget-password", "/send-verification-email"],
+          allowedHostnames: ["yoohoo.my.id", "www.yoohoo.my.id", "localhost"],
+        }),
+      ]
+      : []),
+  ],
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || "",

@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { Bookmark, Flag, Heart, MessageCircle, Repeat2 } from "lucide-react";
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOptimisticIntentMutation, type OptimisticIntentResponse } from "@/hooks/use-optimistic-intent-mutation";
 import { updateSocialCaches, type SocialAction, type SocialTargetType } from "@/lib/social-cache";
 import { queryKeys } from "@/lib/query-keys";
 import { useToast } from "@/lib/toast";
 import { trackFeedEvent } from "@/lib/feed-events-client";
+import { useSession } from "@/lib/session-provider";
 
 type Props = {
   targetType: SocialTargetType;
@@ -36,6 +38,9 @@ async function requestSocialIntent(endpoint: Endpoint, desiredState: boolean, ta
 
 export default function SocialActions({ targetType, targetId, slug, compact = false, commentCount = 0, initialLikeCount, initialLiked, initialBookmarked, initialRepostCount = 0, initialReposted = false }: Props) {
   const toast = useToast();
+  const { data: session } = useSession();
+  const pathname = usePathname();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [pulse, setPulse] = useState<SocialAction | null>(null);
   const failed = () => toast.error("Something went wrong. Try again.");
@@ -51,6 +56,10 @@ export default function SocialActions({ targetType, targetId, slug, compact = fa
   const repost = useOptimisticIntentMutation({ entityKey: `repost:${targetType}:${targetId}`, initialState: { active: initialReposted, count: initialRepostCount }, request: async desired => {const result=await requestSocialIntent("reposts", desired, targetType, targetId);if(desired)trackFeedEvent({itemType,itemId:targetId,eventType:"share"});return result}, updateCache: cacheUpdater("repost"), onError: failed });
 
   function activate(action: SocialAction, next: boolean, mutate: (desired: boolean) => void) {
+    if (!session?.user) {
+      toast.info("Log in to continue.", { action: { label: "Log in", onClick: () => router.push(`/login?next=${encodeURIComponent(pathname)}`) } });
+      return;
+    }
     setPulse(action);
     window.setTimeout(() => setPulse(current => current === action ? null : current), 150);
     mutate(next);
@@ -59,6 +68,10 @@ export default function SocialActions({ targetType, targetId, slug, compact = fa
   }
 
   async function report() {
+    if (!session?.user) {
+      toast.info("Log in to continue.", { action: { label: "Log in", onClick: () => router.push(`/login?next=${encodeURIComponent(pathname)}`) } });
+      return;
+    }
     const reason = window.prompt("Why are you reporting this? (3–500 characters)");
     if (!reason) return;
     const response = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetType, targetId, reason }) });

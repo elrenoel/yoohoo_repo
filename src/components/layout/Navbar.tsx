@@ -222,7 +222,7 @@ export default function Navbar({
     </div>
   ) : (
     <Link
-      href={isLoggedIn ? "/desk" : "/"}
+      href={isLoggedIn ? "/home" : "/"}
       className="flex items-center gap-2.5 group shrink-0"
     >
       <img

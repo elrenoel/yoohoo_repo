@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, Suspense, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signUp, signIn } from "@/lib/auth-client";
+import { signUp, signIn, emailOtp } from "@/lib/auth-client";
 import { useSession } from "@/lib/session-provider";
 import { useI18n, type TranslationKey } from "@/lib/i18n";
 import {
@@ -16,6 +16,7 @@ import {
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
+import { useToast } from "@/lib/toast";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PASSWORD_RULES = {
@@ -52,11 +53,58 @@ function PasswordRule({ met, label }: { met: boolean; label: string }) {
   );
 }
 
+declare global {
+  interface Window {
+    turnstile?: {
+      render: (element: HTMLElement, options: { sitekey: string; callback: (token: string) => void; "expired-callback": () => void; "error-callback": () => void; theme?: "dark" | "light" | "auto" }) => string;
+      reset: (widgetId?: string) => void;
+    };
+  }
+}
+
+function TurnstileChallenge({ onToken }: { onToken: (token: string) => void }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const widgetIdRef = useRef<string | undefined>(undefined);
+  const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+
+  useEffect(() => {
+    if (!siteKey || !containerRef.current) return;
+    const render = () => {
+      if (!window.turnstile || !containerRef.current || widgetIdRef.current) return;
+      widgetIdRef.current = window.turnstile.render(containerRef.current, {
+        sitekey: siteKey,
+        theme: "dark",
+        callback: onToken,
+        "expired-callback": () => onToken(""),
+        "error-callback": () => onToken(""),
+      });
+    };
+    const existing = document.querySelector('script[src="https://challenges.cloudflare.com/turnstile/v0/api.js"]');
+    if (existing) render();
+    else {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      script.async = true;
+      script.defer = true;
+      script.onload = render;
+      document.head.appendChild(script);
+    }
+    return () => {
+      widgetIdRef.current = undefined;
+      onToken("");
+    };
+  }, [onToken, siteKey]);
+
+  if (!siteKey) return null;
+  return <div ref={containerRef} className="min-h-[65px]" aria-label="Security verification" />;
+}
+
 function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { t } = useI18n();
   const { invalidate: invalidateSession } = useSession();
+  const toast = useToast();
 
   const googleNotice = searchParams.get("google_error");
   const googleEmail = searchParams.get("email") ?? "";
@@ -72,6 +120,11 @@ function RegisterForm() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [trialLimitNotice, setTrialLimitNotice] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [awaitingOtp, setAwaitingOtp] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   const passwordChecks = useMemo(
     () => ({
@@ -87,6 +140,48 @@ function RegisterForm() {
   const showPasswordHints = passwordTouched && password.length > 0;
 
   const emailError = emailTouched ? validateEmail(email, t) : null;
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setInterval(() => setResendCooldown((value) => Math.max(0, value - 1)), 1000);
+    return () => window.clearInterval(timer);
+  }, [resendCooldown]);
+
+  const sendOtp = async () => {
+    if (!email.trim() || resendCooldown > 0) return;
+    setOtpLoading(true);
+    setErrorMessage(null);
+    const result = await emailOtp.sendVerificationOtp({
+      email: email.trim(),
+      type: "email-verification",
+      fetchOptions: captchaToken ? { headers: { "x-captcha-response": captchaToken } } : undefined,
+    });
+    setOtpLoading(false);
+    if (result.error) {
+      setErrorMessage("Gagal mengirim kode. Coba lagi sebentar.");
+      return;
+    }
+    setResendCooldown(60);
+  };
+
+  const verifyOtp = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (otp.length !== 6) {
+      setErrorMessage("Masukkan kode verifikasi 6 digit.");
+      return;
+    }
+    setOtpLoading(true);
+    setErrorMessage(null);
+    const result = await emailOtp.verifyEmail({ email: email.trim(), otp });
+    setOtpLoading(false);
+    if (result.error) {
+      setErrorMessage("Kode salah atau sudah kedaluwarsa.");
+      return;
+    }
+    invalidateSession();
+    router.push("/home");
+    router.refresh();
+  };
 
   const handleGoogleSignUp = async () => {
     setIsGoogleLoading(true);
@@ -135,6 +230,11 @@ function RegisterForm() {
       return;
     }
 
+    if (process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && !captchaToken) {
+      setErrorMessage("Selesaikan verifikasi keamanan terlebih dahulu.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -142,21 +242,29 @@ function RegisterForm() {
         name: name.trim(),
         email: email.trim(),
         password,
+        fetchOptions: captchaToken
+          ? { headers: { "x-captcha-response": captchaToken } }
+          : undefined,
       });
 
       if (res.error) {
-        setErrorMessage(
-          res.error.message || t("auth.registerError")
-        );
+        const message = res.error.status === 429 ? "Terlalu banyak percobaan pendaftaran. Coba lagi dalam satu menit." : (res.error.message || t("auth.registerError"));
+        setErrorMessage(message);
+        if (res.error.status === 429) toast.error(message);
         setIsLoading(false);
         return;
       }
+
+      setAwaitingOtp(true);
+      setIsLoading(false);
+      setResendCooldown(60);
+      return;
 
       if (typeof window !== "undefined") {
         const rawTrial = localStorage.getItem("yoohoo_trial_data");
         if (rawTrial) {
           try {
-            const trialPayload = JSON.parse(rawTrial);
+            const trialPayload = JSON.parse(rawTrial ?? "");
             const saveRes = await fetch("/api/documents/save-trial", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
@@ -194,6 +302,28 @@ function RegisterForm() {
       setIsLoading(false);
     }
   };
+
+  if (awaitingOtp) {
+    return (
+      <Card>
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold tracking-tight text-text mb-1.5">Cek email kamu</h1>
+          <p className="text-xs text-text-muted">Kode verifikasi 6 digit sudah dikirim ke <strong>{email}</strong>.</p>
+        </div>
+        {errorMessage && <div className="mb-4 text-xs text-danger-text">{errorMessage}</div>}
+        <form onSubmit={verifyOtp} className="space-y-4">
+          <TurnstileChallenge onToken={setCaptchaToken} />
+          <input autoFocus inputMode="numeric" maxLength={6} value={otp} onChange={(event) => setOtp(event.target.value.replace(/\D/g, ""))} placeholder="000000" className="w-full rounded-xl border border-control-border bg-surface-subtle px-3.5 py-3 text-center text-xl tracking-[0.4em] text-text" />
+          <Button type="submit" variant="primary" size="lg" disabled={otpLoading || otp.length !== 6} className="w-full">
+            {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Verifikasi email"}
+          </Button>
+        </form>
+        <button type="button" onClick={() => void sendOtp()} disabled={otpLoading || resendCooldown > 0} className="mt-4 w-full text-xs text-text-secondary disabled:opacity-50">
+          {resendCooldown > 0 ? `Kirim ulang dalam ${resendCooldown} detik` : "Kirim ulang kode"}
+        </button>
+      </Card>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bg flex flex-col justify-between text-text">
@@ -397,6 +527,8 @@ function RegisterForm() {
                 </p>
               )}
             </div>
+
+            <TurnstileChallenge onToken={setCaptchaToken} />
 
             <div className="pt-2">
               <Button

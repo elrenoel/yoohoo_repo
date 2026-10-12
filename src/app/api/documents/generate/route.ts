@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { assertTrustedOrigin } from "@/lib/auth-guard";
 import { db, type Json } from "@/db";
 import { isQuotaError } from "@/db/helpers";
 import { handleApiError } from "@/lib/api-error";
@@ -31,6 +32,7 @@ function isValidPdfHeader(buffer: ArrayBuffer): boolean {
  */
 export async function POST(request: NextRequest) {
   try {
+    assertTrustedOrigin(request);
     // 1. Verifikasi sesi
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) {

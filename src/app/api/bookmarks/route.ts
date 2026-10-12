@@ -1,5 +1,6 @@
 import{ZodError}from"zod";import{ragSql}from"@/lib/rag/db";import{jsonBody,ragResponseError,sessionUser}from"@/lib/rag/http";import{targetSchema}from"@/lib/social";import{withApiTiming}from"@/lib/api-timing";
 import{interactionNotificationCopy,interactionNotificationKey,shouldCreateInteractionNotification}from"@/lib/interaction-notifications";
+import{checkUserRateLimit,rateLimitResponse}from"@/lib/user-rate-limit";
 export async function GET(request:Request){return withApiTiming(request,"GET /api/bookmarks",async time=>{try{const userId=await time("auth",()=>sessionUser(request)),u=new URL(request.url),input=targetSchema.parse({targetType:u.searchParams.get("targetType"),targetId:u.searchParams.get("targetId")}),rows=await time("db.bookmarks",()=>ragSql()`select exists(select 1 from public.bookmarks where user_id=${userId} and target_type=${input.targetType} and target_id=${input.targetId}) bookmarked`);return Response.json({bookmarked:rows[0].bookmarked})}catch(e){if(e instanceof ZodError)return Response.json({error:"Target tidak valid."},{status:400});return ragResponseError(e)}})}
 async function mutate(request:Request,remove:boolean){
  try{
@@ -29,4 +30,5 @@ async function mutate(request:Request,remove:boolean){
   return result?Response.json(result):Response.json({error:"Konten tidak ditemukan."},{status:404});
  }catch(e){if(e instanceof ZodError)return Response.json({error:"Target tidak valid."},{status:400});return ragResponseError(e)}
 }
-export function PUT(r:Request){return mutate(r,false)}export function POST(r:Request){return mutate(r,false)}export function DELETE(r:Request){return mutate(r,true)}
+async function limited(r:Request,remove:boolean){const userId=await sessionUser(r),rate=await checkUserRateLimit(userId,"save",60);return rate.allowed?mutate(r,remove):rateLimitResponse(rate)}
+export function PUT(r:Request){return limited(r,false)}export function POST(r:Request){return limited(r,false)}export function DELETE(r:Request){return limited(r,true)}

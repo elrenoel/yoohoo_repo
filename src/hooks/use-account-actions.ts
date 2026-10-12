@@ -16,12 +16,20 @@ export function useAccountActions() {
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
     try {
-      await signOut();
+      const result = await signOut();
+      if (result?.error) {
+        throw new Error(result.error.message || "Sign out failed");
+      }
+      queryClient.clear();
+      invalidate();
+      // A hard navigation guarantees the Better Auth cookie and server layout
+      // are re-read instead of leaving stale session UI mounted.
+      window.location.replace("/login");
+    } catch (error) {
+      console.error("Sign out failed", error);
       queryClient.setQueryData(["better-auth-session"], null);
       invalidate();
-      router.push("/");
-    } catch {
-      // Sign-out is best effort; the session query will be refreshed on navigation.
+      router.replace("/login");
     } finally {
       setIsLoggingOut(false);
     }

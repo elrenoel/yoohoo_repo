@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { assertTrustedOrigin } from "@/lib/auth-guard";
 import { markNotificationRead, markAllNotificationsRead } from "@/lib/jobs";
 import { handleApiError } from "@/lib/api-error";
 import { ragSql } from "@/lib/rag/db";
@@ -74,6 +75,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    assertTrustedOrigin(request);
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) {
       return NextResponse.json(

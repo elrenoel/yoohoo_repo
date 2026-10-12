@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { assertTrustedOrigin } from "@/lib/auth-guard";
 import { ragSql } from "@/lib/rag/db";
 import { UUID } from "@/lib/rag/core";
 import { generateQuizQuestions } from "@/lib/ai";
@@ -12,6 +13,7 @@ export const maxDuration = 60;
 
 export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
   try {
+    assertTrustedOrigin(request);
     const { id } = await props.params;
     if (!UUID.test(id)) return NextResponse.json({ success: false, error: "ID dokumen tidak valid." }, { status: 400 });
     const session = await auth.api.getSession({ headers: request.headers });

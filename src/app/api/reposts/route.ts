@@ -3,10 +3,13 @@ import { ragSql } from "@/lib/rag/db";
 import { jsonBody, ragResponseError, sessionUser } from "@/lib/rag/http";
 import { targetSchema, targetTable } from "@/lib/social";
 import { interactionNotificationCopy, interactionNotificationKey, shouldCreateInteractionNotification } from "@/lib/interaction-notifications";
+import { checkUserRateLimit, rateLimitResponse } from "@/lib/user-rate-limit";
 
 export async function POST(request: Request) {
   try {
     const userId = await sessionUser(request);
+    const rate = await checkUserRateLimit(userId, "repost", 60);
+    if (!rate.allowed) return rateLimitResponse(rate);
     const input = targetSchema.parse(await jsonBody(request));
     const sql = ragSql();
     const result = await sql.begin(async tx => {
@@ -46,6 +49,8 @@ export function PUT(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const userId = await sessionUser(request);
+    const rate = await checkUserRateLimit(userId, "repost", 60);
+    if (!rate.allowed) return rateLimitResponse(rate);
     const input = targetSchema.parse(await jsonBody(request));
     const sql = ragSql();
     const count = await sql.begin(async tx => {
