@@ -78,7 +78,7 @@ export default function ConfirmDialog({
             disabled={loading}
             className="py-2.5 px-5 rounded-xl bg-surface border border-control-border text-xs sm:text-sm font-medium text-text-secondary hover:bg-surface-hover transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Batal
+            Cancel
           </button>
           <button
             onClick={onConfirm}

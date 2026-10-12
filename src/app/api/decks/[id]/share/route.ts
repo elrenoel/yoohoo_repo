@@ -42,17 +42,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         await replaceSnapshot(tx, snapshotId, id);
       }
       const message = visibility === "private"
-        ? `Deck “${deck.title}” kembali private.`
-        : visibility === "public" ? `Deck “${deck.title}” sekarang publik.` : `Deck “${deck.title}” sekarang bisa diakses lewat link.`;
-      await notify(tx,userId,"deck_visibility_changed",visibility === "private" ? "Deck kembali private" : "Deck dibagikan",message,visibility === "private" ? "/desk" : `/desk/${id}?share=1`);
+        ? `Deck “${deck.title}” is private again.`
+        : visibility === "public" ? `Deck “${deck.title}” is now public.` : `Deck “${deck.title}” is now accessible by link.`;
+      await notify(tx,userId,"deck_visibility_changed",visibility === "private" ? "Deck is private" : "Deck shared",message,visibility === "private" ? "/desk" : `/desk/${id}?share=1`);
       return { status: 200 as const, deck: { id, visibility, slug, sharedAt: visibility === "private" ? null : new Date().toISOString(), publicDeckId: snapshotId } };
     });
-    if (result.status === 404) return Response.json({error:"Deck tidak ditemukan."},{status:404});
-    if (result.status === 428) return Response.json({error:"Buat username publik terlebih dahulu.",onboarding:"/onboarding/username"},{status:428});
-    if (result.status === 422) return Response.json({error:`Deck membutuhkan minimal ${MIN_PUBLIC_CARDS} flashcard untuk dibagikan.`},{status:422});
+    if (result.status === 404) return Response.json({error:"Deck not found."},{status:404});
+    if (result.status === 428) return Response.json({error:"Create a public username first.",onboarding:"/onboarding/username"},{status:428});
+    if (result.status === 422) return Response.json({error:`A deck needs at least ${MIN_PUBLIC_CARDS} flashcards before it can be shared.`},{status:422});
     return Response.json(result);
   } catch (error) {
-    if (error instanceof ZodError) return Response.json({error:"Visibilitas tidak valid."},{status:400});
+    if (error instanceof ZodError) return Response.json({error:"Invalid visibility."},{status:400});
     return ragResponseError(error);
   }
 }

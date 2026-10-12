@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
 import { handleApiError } from "@/lib/api-error";
+import { ragSql } from "@/lib/rag/db";
 
 export const dynamic = "force-dynamic";
 
@@ -14,11 +15,19 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
     const doc = await db.from("documents").select("id,title").eq("id", id).eq("user_id", session.user.id).is("deleted_at", null).maybeSingle();
     if (doc.error) throw doc.error;
     if (!doc.data) return NextResponse.json({ success: false, error: `Dokumen dengan ID "${id}" tidak ditemukan.` }, { status: 404 });
+    const requested = new URL(request.url).searchParams.get("setId");
     const sets = await db.from("quiz_sets").select("id,label,created_at").eq("document_id", id).order("created_at");
     if (sets.error) throw sets.error;
-    if (!sets.data.length) return NextResponse.json({ success: true, documentId: id, documentTitle: doc.data.title, sets: [], quizSetId: null, quizSetLabel: null, total: 0, quiz: [] });
-    const requested = new URL(request.url).searchParams.get("setId");
-    const selected = requested ? sets.data.find(x => x.id === requested) : sets.data.at(-1);
+    let availableSets = sets.data;
+    if (requested && !availableSets.some(set => set.id === requested)) {
+      const [groupSet] = await ragSql()`select qs.id,qs.label,qs.created_at from public.quiz_sets qs
+        join public.flashcard_groups g on g.id=qs.group_id
+        join public.flashcards f on f.group_id=g.id and f.source_document_id=${id}
+        where qs.id=${requested} and g.user_id=${session.user.id} limit 1`;
+      if (groupSet) availableSets = [...availableSets, groupSet as typeof availableSets[number]];
+    }
+    if (!availableSets.length) return NextResponse.json({ success: true, documentId: id, documentTitle: doc.data.title, sets: [], quizSetId: null, quizSetLabel: null, total: 0, quiz: [] });
+    const selected = requested ? availableSets.find(x => x.id === requested) : availableSets.at(-1);
     if (!selected) return NextResponse.json({ success: false, error: "Set kuis tidak ditemukan." }, { status: 400 });
     const all = await db.from("quiz_questions").select("id,quiz_set_id,question,options,difficulty").eq("document_id", id);
     if (all.error) throw all.error;
@@ -36,7 +45,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
       success: true,
       documentId: id,
       documentTitle: doc.data.title,
-      sets: sets.data.map((set, index) => {
+      sets: availableSets.map((set, index) => {
         const normalizedLabel = set.label.toLocaleLowerCase();
         const variant = normalizedLabel.includes("level up") || normalizedLabel.includes("lebih sulit")
           ? "harder"

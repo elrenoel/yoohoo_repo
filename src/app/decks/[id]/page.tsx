@@ -9,12 +9,12 @@ import {
   BookOpen,
   Check,
   FileText,
-  Layers3,
   Loader2,
   Pencil,
   Plus,
   Sparkles,
   Tag,
+  Trash2,
   X,
 } from "lucide-react";
 import UploadMaterialDialog from "@/components/desk/UploadMaterialDialog";
@@ -44,7 +44,9 @@ type Keyword = {
 type DeckResponse = {
   deck: { id: string; title: string; updatedAt: string };
   documents: DeckDocument[];
+  flashcardGroups: FlashcardGroup[];
 };
+type FlashcardGroup = { id:string; name:string; createdAt:string; cardCount:number; materials:{id:string;title:string}[]; preview:FlashcardPreview[]; mastery:number; quizSetId:string|null };
 type JobStatusResponse = {
   job: {
     id: string;
@@ -86,6 +88,10 @@ export default function DeckWorkbenchPage() {
   const { id } = useParams<{ id: string }>();
   const [deck, setDeck] = useState<DeckResponse["deck"] | null>(null);
   const [documents, setDocuments] = useState<DeckDocument[]>([]);
+  const [flashcardGroups, setFlashcardGroups] = useState<FlashcardGroup[]>([]);
+  const [editingGroupId,setEditingGroupId]=useState<string|null>(null);
+  const [groupNameDraft,setGroupNameDraft]=useState("");
+  const [groupBusyId,setGroupBusyId]=useState<string|null>(null);
   const [loadedDeckFor, setLoadedDeckFor] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
@@ -115,6 +121,7 @@ export default function DeckWorkbenchPage() {
     setError("");
     setDeck(deckBody.deck);
     setDocuments(deckBody.documents ?? []);
+    setFlashcardGroups(deckBody.flashcardGroups ?? []);
   }, []);
 
   const toast = useToast();
@@ -292,13 +299,10 @@ export default function DeckWorkbenchPage() {
     };
   }, [openMaterialId, pickerOpen, closeMaterial]);
 
-  const totalFlashcards = documents.reduce(
-    (total, document) => total + document.flashcardCount,
-    0,
-  );
-  const materialsWithFlashcards = documents.filter(
-    (document) => document.flashcardCount > 0,
-  );
+  const totalFlashcards = flashcardGroups.reduce((total, group) => total + group.cardCount, 0);
+
+  async function renameGroup(group:FlashcardGroup){const name=groupNameDraft.trim();if(!name||name.length>60)return;setGroupBusyId(group.id);try{const response=await fetch(`/api/flashcard-groups/${group.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({name})});const body=await responseJson<{group:{name:string}}>(response,"Could not rename the group.");setFlashcardGroups(current=>current.map(item=>item.id===group.id?{...item,name:body.group.name}:item));setEditingGroupId(null);toast.success("Group renamed.")}catch(cause){toast.error(cause instanceof Error?cause.message:"Could not rename the group.")}finally{setGroupBusyId(null)}}
+  async function deleteGroup(group:FlashcardGroup){if(!window.confirm(`Delete “${group.name}” and all of its cards?`))return;setGroupBusyId(group.id);try{const response=await fetch(`/api/flashcard-groups/${group.id}`,{method:"DELETE"});await responseJson(response,"Could not delete the group.");setFlashcardGroups(current=>current.filter(item=>item.id!==group.id));toast.success("Flashcard group deleted.")}catch(cause){toast.error(cause instanceof Error?cause.message:"Could not delete the group.")}finally{setGroupBusyId(null)}}
   const openDocument = openMaterialId
     ? (documents.find((document) => document.id === openMaterialId) ?? null)
     : null;
@@ -509,7 +513,7 @@ export default function DeckWorkbenchPage() {
                   Generated flashcards
                 </h2>
                 <p className="mt-2 text-sm text-warning-text">
-                  Each collection stays connected to its source material.
+                  Flexible collections assembled from one or more materials.
                 </p>
               </div>
               <span className="w-fit rounded-full bg-surface/65 px-3 py-1.5 font-mono text-[10px] text-warning-text">
@@ -517,32 +521,28 @@ export default function DeckWorkbenchPage() {
               </span>
             </div>
 
-            {materialsWithFlashcards.length ? (
+            {flashcardGroups.length ? (
               <div className="mt-5 grid flex-1 content-start gap-3 md:grid-cols-2">
-                {materialsWithFlashcards.map((document) => (
+                {flashcardGroups.map((group) => (
                   <article
-                    key={document.id}
+                    key={group.id}
                     className="rounded-2xl border border-warning-border bg-surface-raised p-4"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <h3 className="truncate text-sm font-semibold">
-                          {document.title}
-                        </h3>
+                        {editingGroupId===group.id?<div className="flex gap-2"><input autoFocus maxLength={60} value={groupNameDraft} onChange={event=>setGroupNameDraft(event.target.value)} onKeyDown={event=>{if(event.key==="Enter")void renameGroup(group);if(event.key==="Escape")setEditingGroupId(null)}} className="min-w-0 rounded-lg border border-border bg-surface px-2 py-1 text-sm font-semibold focus:border-accent focus:outline-none"/><button disabled={groupBusyId===group.id||!groupNameDraft.trim()} onClick={()=>void renameGroup(group)} className="rounded-lg bg-action-primary px-2 text-on-action-primary"><Check className="h-3.5 w-3.5"/></button></div>:<button onClick={()=>{setEditingGroupId(group.id);setGroupNameDraft(group.name)}} className="truncate text-left text-sm font-semibold hover:text-accent">{group.name}</button>}
                         <p className="mt-1 text-[11px] text-text-secondary">
-                          {document.flashcardCount} saved flashcards
+                          {group.cardCount} cards · {group.mastery}% mastery
                         </p>
                       </div>
-                      <Link
-                        href={`/desk/${document.id}/flashcards`}
-                        aria-label={`Open flashcards for ${document.title}`}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-action-primary text-on-action-primary transition hover:bg-action-primary-hover"
-                      >
-                        <ArrowUpRight className="h-4 w-4" />
-                      </Link>
+                      <div className="flex gap-1.5">
+                        {group.materials[0]&&<Link href={`/desk/${group.materials[0].id}/flashcards?groupId=${group.id}${group.quizSetId?`&quizSetId=${group.quizSetId}`:""}`} aria-label={`Open ${group.name}`} className="flex h-8 w-8 items-center justify-center rounded-xl bg-action-primary text-on-action-primary"><ArrowUpRight className="h-4 w-4"/></Link>}
+                        <button disabled={groupBusyId===group.id} onClick={()=>void deleteGroup(group)} aria-label={`Delete ${group.name}`} className="flex h-8 w-8 items-center justify-center rounded-xl border border-border text-text-secondary hover:text-danger-text disabled:opacity-50">{groupBusyId===group.id?<Loader2 className="h-4 w-4 animate-spin"/>:<Trash2 className="h-4 w-4"/>}</button>
+                      </div>
                     </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">{group.materials.map(material=><span key={material.id} className="rounded-full bg-warning-subtle px-2 py-1 text-[10px] text-warning-text">{material.title}</span>)}</div>
                     <div className="mt-3 flex flex-wrap gap-1.5">
-                      {document.flashcardPreview.map((card) => (
+                      {group.preview.map((card) => (
                         <span
                           key={card.id}
                           title={card.definition}
@@ -552,6 +552,7 @@ export default function DeckWorkbenchPage() {
                         </span>
                       ))}
                     </div>
+                    {group.materials[0]&&group.quizSetId&&<Link href={`/desk/${group.materials[0].id}/quiz?setId=${group.quizSetId}`} className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-accent hover:underline"><Sparkles className="h-3.5 w-3.5"/>Create a quiz from this group</Link>}
                   </article>
                 ))}
               </div>

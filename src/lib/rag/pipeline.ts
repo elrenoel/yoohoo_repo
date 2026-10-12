@@ -18,7 +18,7 @@ export async function failDocument(job: Job, message: string) {
     if (!doc) return;
     const [relation] = await sql`select deck_id from public.deck_documents where document_id=${job.documentId} order by added_at desc limit 1`;
     await sql`insert into public.notifications (user_id,type,severity,title,body,link,dedupe_key)
-      values (${job.userId},'upload_failed','error','Upload materi gagal',${`${String(doc.title)}: ${message}`},${relation ? `/desk/${relation.deck_id}` : '/desk'},${`document:${job.documentId}:upload_failed`})
+      values (${job.userId},'upload_failed','error','Material upload failed',${`${String(doc.title)}: ${message}`},${relation ? `/desk/${relation.deck_id}` : '/desk'},${`document:${job.documentId}:upload_failed`})
       on conflict (dedupe_key) do nothing`;
   });
 }
@@ -88,8 +88,8 @@ export async function finalizeDocument(job: Job) {
     const [relation] = await sql`select deck_id from public.deck_documents where document_id=${job.documentId} order by added_at desc limit 1`;
     await sql`insert into public.notifications (user_id,type,severity,title,body,link,dedupe_key)
       values (${job.userId},${seen.size ? 'upload_succeeded' : 'upload_failed'},${seen.size ? 'success' : 'error'},
-        ${seen.size ? 'Materi selesai diproses' : 'Upload materi gagal'},
-        ${seen.size ? `${String(doc.title)} siap dipelajari dengan ${seen.size} keyword.` : `${String(doc.title)}: ${message}`},
+        ${seen.size ? 'Material processing complete' : 'Material upload failed'},
+        ${seen.size ? `${String(doc.title)} is ready to study with ${seen.size} keywords.` : `${String(doc.title)}: ${message}`},
         ${relation ? `/desk/${relation.deck_id}` : '/desk'},${`document:${job.documentId}:${seen.size ? 'upload_succeeded' : 'upload_failed'}`})
       on conflict (dedupe_key) do nothing`;
     return { keywordCount: seen.size, skipped: progress.skipped };

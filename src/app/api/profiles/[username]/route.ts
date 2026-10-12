@@ -18,6 +18,7 @@ export async function GET(_request: Request, context: { params: Promise<{ userna
     counts: profile.counts,
     publicDecks: profile.publicDecks,
     posts: profile.posts,
+    activity: profile.activity,
   };
   return Response.json({ profile: publicProfile }, { headers: { "Cache-Control": "public, max-age=30, stale-while-revalidate=120" } });
 }

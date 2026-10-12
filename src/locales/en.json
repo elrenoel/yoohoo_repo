@@ -428,7 +428,7 @@
   "profile.photo": "Profile photo",
   "profile.choosePhoto": "Choose photo",
   "profile.resetPhoto": "Reset photo",
-  "profile.photoHelp": "JPG, PNG, WebP, or GIF. Maximum 4 MB. Google accounts use their Google photo by default.",
+  "profile.photoHelp": "JPG, PNG, WebP, or GIF. Maximum 4 MB. You can adjust position and zoom after choosing a photo.",
   "profile.photoTooLarge": "Profile photo must be 4 MB or smaller.",
   "profile.photoTypeInvalid": "Choose a valid image file.",
   "profile.photoUploadFailed": "Could not upload the profile photo.",

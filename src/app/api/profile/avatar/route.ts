@@ -2,12 +2,18 @@ import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { db } from "@/db";
 import { sessionUser, ragResponseError } from "@/lib/rag/http";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 
 const AVATAR_BUCKET = "profile-avatars";
-const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
-const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const MAX_UPLOAD_BYTES = 1024 * 1024;
+
+function detectedType(buffer: Buffer) {
+  if (buffer.length >= 12 && buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
+  return null;
+}
 
 async function ensureAvatarBucket() {
   const { data } = await db.storage.getBucket(AVATAR_BUCKET);
@@ -24,8 +30,11 @@ async function ensureAvatarBucket() {
 export async function POST(request: Request) {
   try {
     const userId = await sessionUser(request);
+    if (!checkRateLimit(`profile-avatar:${userId}`, 10, 10 * 60_000).allowed) {
+      return Response.json({ error: "Terlalu banyak upload foto. Coba lagi sebentar." }, { status: 429 });
+    }
     if (Number(request.headers.get("content-length")) > MAX_UPLOAD_BYTES + 256 * 1024) {
-      return Response.json({ error: "Ukuran foto maksimal 4 MB." }, { status: 413 });
+      return Response.json({ error: "Hasil foto maksimal 1 MB." }, { status: 413 });
     }
     const form = await request.formData();
     const file = form.get("avatar");
@@ -33,21 +42,24 @@ export async function POST(request: Request) {
     if (!(file instanceof File)) {
       return Response.json({ error: "Pilih foto profil terlebih dahulu." }, { status: 400 });
     }
-    if (!ACCEPTED_TYPES.has(file.type)) {
-      return Response.json({ error: "Gunakan foto JPG, PNG, WebP, atau GIF." }, { status: 400 });
-    }
     if (file.size > MAX_UPLOAD_BYTES) {
-      return Response.json({ error: "Ukuran foto maksimal 4 MB." }, { status: 413 });
+      return Response.json({ error: "Hasil foto maksimal 1 MB." }, { status: 413 });
     }
 
-    const avatar = await sharp(Buffer.from(await file.arrayBuffer()), {
+    const input = Buffer.from(await file.arrayBuffer());
+    const contentType = detectedType(input);
+    if (!contentType || contentType !== file.type) {
+      return Response.json({ error: "Hasil foto harus berupa WebP atau JPEG yang valid." }, { status: 400 });
+    }
+    const image = sharp(input, {
       animated: false,
       limitInputPixels: 40_000_000,
-    })
-      .rotate()
-      .resize(512, 512, { fit: "cover", position: "attention", withoutEnlargement: true })
-      .webp({ quality: 84 })
-      .toBuffer();
+    });
+    const metadata = await image.metadata();
+    if (metadata.width !== 512 || metadata.height !== 512) {
+      return Response.json({ error: "Ukuran hasil crop harus 512×512 piksel." }, { status: 400 });
+    }
+    const avatar = contentType === "image/webp" ? await image.toBuffer() : await image.webp({ quality: 85 }).toBuffer();
 
     await ensureAvatarBucket();
     const path = `${userId}/${randomUUID()}.webp`;

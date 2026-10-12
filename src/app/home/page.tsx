@@ -1,8 +1,8 @@
 import HomeFeed from "@/components/feed/HomeFeed";
-import { getSocialViewer } from "@/lib/social-guard";
+import { getServerSession } from "@/lib/server-session";
 import { redirect } from "next/navigation";
 export default async function HomePage() {
-  const {session}=await getSocialViewer();
+  const session=await getServerSession();
   if(!session)redirect("/login");
   return <HomeFeed />;
 }

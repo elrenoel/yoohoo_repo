@@ -15,7 +15,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
         returning id,title`;
       if (!deleted) return [];
       await sql`insert into public.notifications (user_id,type,severity,title,body,link,dedupe_key)
-        values (${userId},'deck_deleted_permanently','info','Deck dihapus permanen',${`Deck "${String(deleted.title)}" telah dihapus permanen.`},'/trash',${`deck:${id}:deleted_permanently`})
+        values (${userId},'deck_deleted_permanently','info','Deck permanently deleted',${`Deck "${String(deleted.title)}" was permanently deleted.`},'/trash',${`deck:${id}:deleted_permanently`})
         on conflict (dedupe_key) do nothing`;
       return [deleted];
     });

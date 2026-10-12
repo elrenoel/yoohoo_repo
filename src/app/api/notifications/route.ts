@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getNotifications, markNotificationRead, markAllNotificationsRead, getUnreadCount } from "@/lib/jobs";
+import { markNotificationRead, markAllNotificationsRead } from "@/lib/jobs";
 import { handleApiError } from "@/lib/api-error";
 import { ragSql } from "@/lib/rag/db";
 import { withApiTiming } from "@/lib/api-timing";
@@ -28,9 +28,7 @@ export async function GET(request: NextRequest) {
 
     const searchParams = request.nextUrl.searchParams;
     const parsedLimit = Number.parseInt(searchParams.get("limit") || "20", 10);
-    const parsedOffset = Number.parseInt(searchParams.get("offset") || "0", 10);
-    const limit = Number.isFinite(parsedLimit) ? Math.min(100, Math.max(1, parsedLimit)) : 20;
-    const offset = Number.isFinite(parsedOffset) ? Math.max(0, parsedOffset) : 0;
+    const limit = Number.isFinite(parsedLimit) ? Math.min(20, Math.max(1, parsedLimit)) : 20;
     const unreadOnly = searchParams.get("unread") === "true";
     const cursorParam = searchParams.get("cursor");
     if (cursorParam) {
@@ -39,24 +37,28 @@ export async function GET(request: NextRequest) {
       catch { return NextResponse.json({ error: "Cursor tidak valid." }, { status: 400 }); }
       if (!cursor.createdAt || !cursor.id) return NextResponse.json({ error: "Cursor tidak valid." }, { status: 400 });
       const sql = ragSql();
-      const rows = await time("db.notifications", () => sql`select * from public.notifications where user_id=${session.user.id}
+      const rows = await time("db.notifications", () => sql`select id,type,severity,title,body,link,read_at,created_at,actor_id,target_type,target_id
+        from public.notifications where user_id=${session.user.id}
         and (created_at,id)<(${cursor.createdAt},${cursor.id}) order by created_at desc,id desc limit 21`);
       const page = rows.slice(0,20), last = rows.length>20?page.at(-1):null;
       return NextResponse.json({ notifications: page, nextCursor: last ? Buffer.from(JSON.stringify({createdAt:new Date(last.created_at).toISOString(),id:String(last.id)})).toString("base64url") : null });
     }
 
-    const [notifications, totalResult] = await time("db.notifications", () => Promise.all([
-      getNotifications(session.user.id, { limit, offset, unreadOnly }),
-      getUnreadCount(session.user.id),
-    ]));
+    const sql = ragSql();
+    const notifications = await time("db.notifications", () => sql`
+      select id,type,severity,title,body,link,read_at,created_at,actor_id,target_type,target_id,
+        count(*) filter (where read_at is null) over ()::int as unread_count
+      from public.notifications
+      where user_id=${session.user.id}
+        ${unreadOnly ? sql`and read_at is null` : sql``}
+      order by created_at desc,id desc limit ${limit}`);
 
     return NextResponse.json({
       success: true,
-      notifications: notifications.notifications,
-      total: notifications.total,
-      unreadCount: totalResult,
+      notifications,
+      total: notifications.length,
+      unreadCount: Number(notifications[0]?.unread_count ?? 0),
       limit,
-      offset,
     });
   } catch (error) {
     return handleApiError(error, "GET /api/notifications");

@@ -26,17 +26,18 @@ import { useAccountActions } from "@/hooks/use-account-actions";
 import { useLanguage } from "@/hooks/use-language";
 import LanguageSwitcher from "@/components/layout/LanguageSwitcher";
 import { useOwnProfile } from "@/hooks/use-own-profile";
+import { isSidebarItemActive, type SidebarItemId } from "@/lib/sidebar-routes";
 
-type NavigationItem = { href: string; label: string; icon: LucideIcon };
+type NavigationItem = { id: SidebarItemId; href: string; label: string; icon: LucideIcon };
 
 const discovery: NavigationItem[] = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/explore", label: "Explore", icon: Compass },
+  { id: "home", href: "/home", label: "Home", icon: Home },
+  { id: "explore", href: "/explore", label: "Explore", icon: Compass },
 ];
 
 const workspace: NavigationItem[] = [
-  { href: "/desk", label: "Your Desk", icon: FilePlus2 },
-  { href: "/saved", label: "Saved", icon: BookMarked },
+  { id: "desk", href: "/desk", label: "Your Desk", icon: FilePlus2 },
+  { id: "saved", href: "/saved", label: "Saved", icon: BookMarked },
 ];
 
 function NavItem({
@@ -49,9 +50,7 @@ function NavItem({
   compact?: boolean;
 }) {
   const pathname = usePathname();
-  const active =
-    pathname === item.href ||
-    (item.href !== "/home" && pathname.startsWith(`${item.href}/`));
+  const active = isSidebarItemActive(item.id, pathname);
   const Icon = item.icon;
 
   return (
@@ -59,7 +58,7 @@ function NavItem({
       href={item.href}
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className={`flex transition ${compact ? "flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px]" : "items-center gap-4 px-3 py-3 text-[15px]"} ${active ? "font-bold text-accent" : "font-medium text-text-secondary hover:text-text"}`}
+      className={`nav-focus flex transition ${compact ? "flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px]" : "items-center gap-4 px-3 py-3 text-[15px]"} ${active ? "font-bold text-accent" : "font-medium text-text-secondary hover:text-text"}`}
     >
       <Icon className={compact ? "h-4 w-4 shrink-0" : "h-5 w-5 shrink-0"} aria-hidden="true" />
       <span>{item.label}</span>
@@ -68,9 +67,9 @@ function NavItem({
 }
 
 const moreItems: NavigationItem[] = [
-  { href: "/notifications", label: "Notifications", icon: Bell },
-  { href: "/settings", label: "Settings", icon: Settings },
-  { href: "/trash", label: "Trash", icon: Trash2 },
+  { id: "notifications", href: "/notifications", label: "Notifications", icon: Bell },
+  { id: "settings", href: "/settings", label: "Settings", icon: Settings },
+  { id: "trash", href: "/trash", label: "Trash", icon: Trash2 },
 ];
 
 export default function SidebarNav() {
@@ -109,7 +108,7 @@ export default function SidebarNav() {
     ? `/profile/${profileData.profile.username}`
     : "/onboarding/username";
   const identity: NavigationItem[] = [
-    { href: profileHref, label: "Profile", icon: User },
+    { id: "profile", href: profileHref, label: "Profile", icon: User },
   ];
 
   return (
@@ -176,7 +175,7 @@ export default function SidebarNav() {
             onClick={() => setMoreOpen((value) => !value)}
             aria-expanded={moreOpen}
             aria-haspopup="menu"
-            className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px] transition ${moreOpen ? "bg-accent-subtle text-accent" : "text-text-muted hover:bg-surface-hover"}`}
+            className={`nav-focus flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 text-[10px] transition ${moreOpen ? "bg-surface-hover text-text" : "text-text-muted hover:bg-surface-hover"}`}
           >
             {moreOpen ? (
               <X className="h-4 w-4" />

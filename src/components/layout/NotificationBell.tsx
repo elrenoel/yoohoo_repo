@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { AlertTriangle, Bell, Bookmark, Check, Info, Repeat2 } from "lucide-react";
-import { useNotifications } from "@/hooks/use-notifications";
+import { useNotifications, useUnreadCount } from "@/hooks/use-notifications";
+import { isSidebarItemActive } from "@/lib/sidebar-routes";
 
 type NotificationRow = {
   id: string;
@@ -56,13 +57,15 @@ function timeAgo(value: string) {
 
 export default function NotificationBell() {
   const pathname = usePathname();
-  const { notifications, unreadCount, isLoading, markRead } = useNotifications({
-    limit: 50,
-  });
   const [open, setOpen] = useState(false);
+  const { notifications, isLoading, markRead } = useNotifications({
+    limit: 20,
+    enabled: open,
+  });
+  const { unreadCount } = useUnreadCount();
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const list = notifications as NotificationRow[];
-  const active = pathname.startsWith("/notifications");
+  const active = isSidebarItemActive("notifications", pathname);
 
   const show = useCallback(() => {
     if (closeTimer.current) clearTimeout(closeTimer.current);
@@ -83,7 +86,7 @@ export default function NotificationBell() {
       <Link
         href="/notifications"
         aria-current={active ? "page" : undefined}
-        className={`relative flex items-center gap-4 px-3 py-3 text-[15px] transition ${active ? "font-bold text-text" : "font-medium text-text-muted hover:text-text"}`}
+        className={`nav-focus relative flex items-center gap-4 px-3 py-3 text-[15px] transition ${active ? "font-bold text-accent" : "font-medium text-text-secondary hover:text-text"}`}
       >
         <Bell className="h-5 w-5 shrink-0" />
         <span>Notifications</span>

@@ -201,9 +201,13 @@ select:-webkit-autofill {
 }
 
 :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.nav-focus:focus-visible {
+  outline: 1px solid var(--focus-ring) !important;
   outline-offset: 2px;
-  box-shadow: 0 0 0 2px var(--focus-contrast);
 }
 
 * {

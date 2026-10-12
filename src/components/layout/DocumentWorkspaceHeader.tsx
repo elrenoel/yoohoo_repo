@@ -23,7 +23,7 @@ function getBackHref(pathname: string, documentId: string) {
 }
 
 function getSectionLabel(pathname: string) {
-  if (pathname.endsWith("/keywords")) return "Pilih keyword";
+  if (pathname.endsWith("/keywords")) return "Choose keywords";
   if (pathname.endsWith("/generate-flashcards")) return "Creating materials";
   if (pathname.endsWith("/flashcards")) return "Flashcards";
   if (pathname.endsWith("/quiz/results")) return "Quiz results";

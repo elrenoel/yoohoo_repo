@@ -39,9 +39,9 @@ export default function DeckTrashPage() {
     if (sessionPending || !session?.user) return;
     let cancelled = false;
     fetch("/api/decks/trash", { cache: "no-store" })
-      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "Trash tidak dapat dimuat."); return body.decks as TrashDeckSummary[]; })
+      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "Trash could not be loaded."); return body.decks as TrashDeckSummary[]; })
       .then(list => { if (!cancelled) { setDecks(list); setError(""); } })
-      .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Trash tidak dapat dimuat."); })
+      .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Trash could not be loaded."); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [session, sessionPending, reloadKey]);
@@ -183,9 +183,9 @@ export default function DeckTrashPage() {
       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-surface-subtle">
         <Trash2 className="h-6 w-6 text-text-muted" />
       </div>
-      <p className="font-serif text-xl font-semibold">Trash kosong</p>
+      <p className="font-serif text-xl font-semibold">Trash is empty</p>
       <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-text-muted">{t("trash.emptyDesc")}</p>
-      <Link href="/desk" className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover">Kembali ke Your Desk</Link>
+      <Link href="/desk" className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover">Back to Your Desk</Link>
     </Card>
   );
 
@@ -213,7 +213,7 @@ export default function DeckTrashPage() {
           </header>
 
           {!sessionPending && !session?.user
-            ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-text-secondary" /><h2 className="font-semibold">Masuk untuk melihat trash</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2 text-sm font-medium text-on-action-primary">Masuk sekarang</Link></Card>
+            ? <Card variant="centered"><UserIcon className="mx-auto mb-3 h-6 w-6 text-text-secondary" /><h2 className="font-semibold">Log in to view Trash</h2><Link href="/login" className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2 text-sm font-medium text-on-action-primary">Log in now</Link></Card>
             : loading ? skeletonGrid
             : error ? <Card variant="centered"><p className="text-sm text-danger-text">{error}</p><button type="button" onClick={retryLoad} className="mt-5 inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover"><RefreshCw className="h-4 w-4" />{t("toast.retry")}</button></Card>
             : decks.length === 0 ? emptyState

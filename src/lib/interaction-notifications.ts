@@ -7,8 +7,8 @@ export function interactionNotificationKey(actorId: string, type: InteractionNot
 
 export function interactionNotificationCopy(actorName: string, type: InteractionNotificationType, targetType: InteractionTargetType) {
   const targetLabel = targetType === "post" ? "post" : "deck";
-  const action = type === "repost" ? "me-repost" : "menyimpan";
-  return `${actorName} ${action} ${targetLabel} kamu`;
+  const action = type === "repost" ? "reposted" : "saved";
+  return `${actorName} ${action} your ${targetLabel}`;
 }
 
 export function shouldCreateInteractionNotification(ownerId: string, actorId: string) {

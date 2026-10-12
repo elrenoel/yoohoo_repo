@@ -94,8 +94,8 @@ function RegisterForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/desk",
-        newUserCallbackURL: "/desk",
+        callbackURL: "/home",
+        newUserCallbackURL: "/home",
         requestSignUp: true,
         errorCallbackURL: "/login",
       });
@@ -185,7 +185,7 @@ function RegisterForm() {
       }
 
       invalidateSession();
-      router.push("/desk");
+      router.push("/home");
       router.refresh();
     } catch (err: unknown) {
       setErrorMessage(

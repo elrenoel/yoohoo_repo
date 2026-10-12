@@ -47,11 +47,6 @@ interface Batch {
   sourceChunks: SourceChunk[];
 }
 
-interface DocumentQuiz {
-  documentId: string;
-  questions: GeneratedQuizQuestion[];
-}
-
 /** Jalankan worker per batch dengan batas paralel; hasil tetap berurutan. */
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
@@ -80,11 +75,19 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
 
     const sql = ragSql();
     const [jobBefore] = await sql`
-      select id, status, deck_id, kind from public.generation_jobs
+      select id, status, deck_id, kind, input from public.generation_jobs
       where id=${rawId} and user_id=${userId}`;
     if (!jobBefore) throw new RagError("Proses generate tidak ditemukan.", 404);
     if (String(jobBefore.kind) !== "flashcard_generate") throw new RagError("Jenis proses ini tidak didukung worker ini.", 400);
     if (!jobBefore.deck_id) throw new RagError("Job tidak memiliki meja kerja tujuan.", 400);
+    const jobInput = jobBefore.input && typeof jobBefore.input === "object" ? jobBefore.input as { groupName?: unknown; skippedCount?: unknown } : {};
+    const requestedGroupName = typeof jobInput.groupName === "string" ? jobInput.groupName.trim().slice(0, 60) : "";
+    const skippedCount = Number(jobInput.skippedCount ?? 0) || 0;
+    const failCurrent = async (message:string) => {
+      await failJob(rawId,userId,undefined,message);
+      await sql`update public.notifications set title='Flashcard group could not be created',body=${`${requestedGroupName || "New flashcard group"}: ${message}`}
+        where user_id=${userId} and dedupe_key=${`${rawId}:failed`}`;
+    };
 
     // 1. Claim: queued -> running. 0 row = sudah diproses/diakhiri di tempat lain.
     const job = await claimJob(rawId, userId);
@@ -105,7 +108,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       order by i.document_id, i.batch_index, i.keyword_id`;
 
     if (!rows.length) {
-      await failJob(rawId, userId, undefined, "Tidak ada keyword untuk diproses.");
+      await failCurrent("Tidak ada keyword untuk diproses.");
       return Response.json({ success: false, status: "failed", error: "Tidak ada keyword untuk diproses." }, { status: 409 });
     }
 
@@ -133,7 +136,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         const sourceChunks: SourceChunk[] = [...chunkByKeyword.entries()].map(([chunk_id, content]) => ({ chunk_id, content }));
         if (!sourceChunks.length) {
           const message = `Materi "${documentTitle}" tidak memiliki konteks sumber (chunk RAG) untuk batch ini.`;
-          await failJob(rawId, userId, undefined, message);
+          await failCurrent(message);
           return Response.json({ success: false, status: "failed", error: message }, { status: 409 });
         }
         batches.push({
@@ -160,7 +163,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      await failJob(rawId, userId, undefined, `Gagal memanggil AI: ${message}`.slice(0, 500));
+      await failCurrent(`Gagal memanggil AI: ${message}`.slice(0, 500));
       return Response.json({ success: false, status: "failed", error: "Gagal memanggil AI." }, { status: 500 });
     }
 
@@ -168,80 +171,52 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (failed.length) {
       const detail = failed.slice(0, 3).map(f => `Materi "${f.batch.documentTitle}": ${f.error.message}`).join(" | ");
       const message = `Gagal membuat flashcard — ${failed.length} batch bermasalah. ${detail}`.slice(0, 500);
-      await failJob(rawId, userId, undefined, message);
+      await failCurrent(message);
       return Response.json({ success: false, status: "failed", error: message }, { status: 500 });
     }
 
     // 4. SATU transaksi: insert semua flashcard + tandai job succeeded.
     const deckId = String(job.deck_id);
+    const generated = new Map((outcomes as { batch: Batch; result: GeneratedFlashcardMaterials }[])
+      .flatMap(outcome=>outcome.result.flashcards).map(card=>[card.keyword_id,card]));
     let previousBlobVariant: number | undefined;
-    const cards = (outcomes as { batch: Batch; result: GeneratedFlashcardMaterials }[])
-      .flatMap(({ batch, result }) =>
-        result.flashcards.map(card => {
-          const blobVariant = nextBlobVariant(previousBlobVariant);
-          previousBlobVariant = blobVariant;
-          return {
-            document_id: batch.documentId,
-            deck_id: deckId,
-            keyword_id: card.keyword_id,
-            job_id: rawId,
-            term: card.term.slice(0, 250),
-            definition: card.definition.slice(0, 4000),
-            blob_variant: blobVariant,
-          };
-        })
-      );
-    // Keyword di luar job ini (AI tidak boleh mengeluarkannya, tapi disaring lagi).
-    const allowedKeywordIds = new Set(rows.map(r => String(r.keyword_id)));
-    const validCards = cards.filter(card => allowedKeywordIds.has(card.keyword_id));
-    if (!validCards.length) {
-      const message = "AI tidak menghasilkan flashcard yang valid untuk keyword terpilih.";
-      await failJob(rawId, userId, undefined, message);
+    const validCards = rows.flatMap(row=>{
+      const card=generated.get(String(row.keyword_id));
+      if(!card)return[];
+      const blobVariant=nextBlobVariant(previousBlobVariant);previousBlobVariant=blobVariant;
+      return[{document_id:String(row.document_id),source_document_id:String(row.document_id),deck_id:deckId,keyword_id:String(row.keyword_id),job_id:rawId,term:String(row.term).trim().slice(0,250),definition:card.definition.slice(0,4000),blob_variant:blobVariant}];
+    });
+    if (validCards.length !== rows.length) {
+      const message = `AI hanya menghasilkan ${validCards.length} dari ${rows.length} kartu. Tidak ada data yang disimpan.`;
+      await failCurrent(message);
       return Response.json({ success: false, status: "failed", error: message }, { status: 500 });
     }
 
-    // Buat satu set quiz representatif per materi. Sertakan flashcard lama dari
-    // deck yang sama agar set terbaru mencakup seluruh konsep materi, bukan
-    // hanya keyword pada batch terakhir.
-    const generatedByDocument = new Map<string, typeof validCards>();
-    for (const card of validCards) {
-      generatedByDocument.set(card.document_id, [
-        ...(generatedByDocument.get(card.document_id) ?? []),
-        card,
-      ]);
-    }
-
-    let documentQuizzes: DocumentQuiz[];
+    let groupQuiz: GeneratedQuizQuestion[];
     try {
-      documentQuizzes = await mapLimit(
-        [...generatedByDocument.entries()],
-        PARALLEL_BATCHES,
-        async ([documentId, generatedCards]) => {
-          const existingCards = await sql`
-            select term, definition from public.flashcards
-            where deck_id=${deckId} and document_id=${documentId}
-            order by id`;
-          const cards = [
-            ...existingCards.map(card => ({ term: String(card.term), definition: String(card.definition) })),
-            ...generatedCards.map(card => ({ term: card.term, definition: card.definition })),
-          ];
-          const contentLanguage = batches.find(batch => batch.documentId === documentId)?.contentLanguage ?? "auto";
-          const questions = await generateRepresentativeQuiz(
-            cards,
-            representativeQuizCount(cards.length),
-            contentLanguage,
-          );
-          return { documentId, questions };
-        },
+      groupQuiz = await generateRepresentativeQuiz(
+        validCards.map(card => ({ term: card.term, definition: card.definition })),
+        representativeQuizCount(validCards.length),
+        batches[0]?.contentLanguage ?? "auto",
       );
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
-      const message = `Flashcard berhasil dibuat oleh AI, tetapi quiz gagal dibuat: ${detail}`.slice(0, 500);
-      await failJob(rawId, userId, undefined, message);
+      const message = `Quiz untuk grup gagal dibuat: ${detail}. Tidak ada data yang disimpan.`.slice(0, 500);
+      await failCurrent(message);
       return Response.json({ success: false, status: "failed", error: message }, { status: 500 });
     }
 
     const inserted = await sql.begin(async tx => {
+      await tx`select pg_advisory_xact_lock(hashtextextended(${deckId}, 0))`;
+      let groupName = requestedGroupName;
+      if (!groupName) {
+        const names = await tx`select name from public.flashcard_groups where deck_id=${deckId}`;
+        const used = new Set(names.map(row => String(row.name).trim().toLowerCase()));
+        let number = names.length + 1;
+        while (used.has(`kartu ${number}`)) number += 1;
+        groupName = `Cards ${number}`;
+      }
+      const [group] = await tx`insert into public.flashcard_groups(deck_id,user_id,name) values(${deckId},${userId},${groupName}) returning id,name`;
       let count = 0;
       const [schema] = await tx<{ hasBlobVariant: boolean }[]>`
         select exists (
@@ -250,46 +225,33 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
             and column_name='blob_variant'
         ) as "hasBlobVariant"`;
       for (let offset = 0; offset < validCards.length; offset += 100) {
-        const chunk = validCards.slice(offset, offset + 100);
+        const chunk = validCards.slice(offset, offset + 100).map(card => ({ ...card, group_id: group.id }));
         const rowsInserted = schema?.hasBlobVariant
           ? await tx`
               insert into public.flashcards ${tx(
-                chunk, "document_id", "deck_id", "keyword_id", "job_id",
+                chunk, "document_id", "source_document_id", "deck_id", "group_id", "keyword_id", "job_id",
                 "term", "definition", "blob_variant"
               )}
-              on conflict (deck_id, keyword_id) do nothing
+              on conflict (group_id, normalized_keyword) do nothing
               returning id`
           : await tx`
               insert into public.flashcards ${tx(
-                chunk, "document_id", "deck_id", "keyword_id", "job_id",
+                chunk, "document_id", "source_document_id", "deck_id", "group_id", "keyword_id", "job_id",
                 "term", "definition"
               )}
-              on conflict (deck_id, keyword_id) do nothing
+              on conflict (group_id, normalized_keyword) do nothing
               returning id`;
         count += rowsInserted.length;
       }
 
-      let quizCount = 0;
-      const quizSets: { id: string; documentId: string }[] = [];
-      for (const quiz of documentQuizzes) {
-        // Serialisasi penomoran set untuk satu dokumen bila dua job selesai bersamaan.
-        await tx`select pg_advisory_xact_lock(hashtextextended(${quiz.documentId}, 0))`;
-        const [setCount] = await tx`
-          select count(*)::int as count from public.quiz_sets
-          where document_id=${quiz.documentId}`;
-        const [quizSet] = await tx`
-          insert into public.quiz_sets (document_id, label, job_id)
-          values (${quiz.documentId}, ${`Set ${Number(setCount.count) + 1}`}, ${rawId})
-          returning id`;
-        for (const question of quiz.questions) {
-          await tx`insert into public.quiz_questions
-            (document_id, quiz_set_id, question, options, correct_index, explanation, difficulty)
-            values (${quiz.documentId},${quizSet.id},${question.question},${tx.json(question.options)},
-              ${question.correct_index},${question.explanation},${question.difficulty})`;
-        }
-        quizCount += quiz.questions.length;
-        quizSets.push({ id: String(quizSet.id), documentId: quiz.documentId });
+      const sourceDocumentId = validCards[0].source_document_id;
+      const [quizSet] = await tx`insert into public.quiz_sets(document_id,group_id,label,job_id)
+        values(null,${group.id},${groupName},${rawId}) returning id`;
+      for (const question of groupQuiz) {
+        await tx`insert into public.quiz_questions(document_id,quiz_set_id,question,options,correct_index,explanation,difficulty)
+          values(${sourceDocumentId},${quizSet.id},${question.question},${tx.json(question.options)},${question.correct_index},${question.explanation},${question.difficulty})`;
       }
+      const quizCount = groupQuiz.length;
       await tx`update public.generation_job_items set status='completed', updated_at=now()
         where job_id=${rawId} and status <> 'completed'`;
       const [updated] = await tx`
@@ -297,11 +259,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         set status='succeeded', finished_at=now(), completed_at=now(),
             flashcard_count=flashcard_count + ${count},
             quiz_count=quiz_count + ${quizCount},
-            result=${tx.json({ flashcardCount: count, quizCount, quizSets })}
+            result=${tx.json({ groupId: String(group.id), groupName, flashcardCount: count, quizCount, skippedCount, quizSetId: String(quizSet.id) })}
         where id=${rawId} and user_id=${userId} and status='running'
         returning id`;
       if (!updated) throw new Error("Job tidak lagi berstatus running.");
-      return { flashcardCount: count, quizCount, quizSets };
+      await tx`update public.notifications set title='Flashcard group ready',body=${`${groupName}: ${count} cards created${skippedCount ? `; ${skippedCount} duplicates skipped` : ""}.`},link=${`/desk/${deckId}`}
+        where user_id=${userId} and dedupe_key=${`${rawId}:succeeded`}`;
+      return { groupId: String(group.id), groupName, flashcardCount: count, quizCount, skippedCount, quizSetId: String(quizSet.id) };
     });
 
     return Response.json({ success: true, status: "succeeded", jobId: rawId, ...inserted });

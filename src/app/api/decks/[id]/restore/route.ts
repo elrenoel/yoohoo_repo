@@ -13,7 +13,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         returning id,title`;
       if (!restored) return [];
       await sql`insert into public.notifications (user_id,type,severity,title,body,link,dedupe_key)
-        values (${userId},'deck_restored','success','Deck berhasil dipulihkan',${`Deck "${String(restored.title)}" kembali ke Your Desk.`},${`/desk/${id}`},${`deck:${id}:restored`})
+        values (${userId},'deck_restored','success','Deck restored',${`Deck "${String(restored.title)}" is back in Your Desk.`},${`/desk/${id}`},${`deck:${id}:restored`})
         on conflict (dedupe_key) do update set read_at=null,created_at=now(),body=excluded.body`;
       return [restored];
     });

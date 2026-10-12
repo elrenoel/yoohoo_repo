@@ -10,6 +10,7 @@ export async function POST(request: Request) {
     if (typeof body.filename !== "string" || !body.filename.toLowerCase().endsWith(".pdf") || body.filename.length > 255) throw new RagError("Nama PDF tidak valid.");
     const title = typeof body.title === "string" && body.title.trim() ? body.title.trim() : body.filename;
     if (title.length > 200) throw new RagError("Judul maksimal 200 karakter.");
+    const deckTitle = typeof body.deckTitle === "string" ? body.deckTitle.trim() : "";
     const contentLanguage = typeof body.contentLanguage === "string" && ["auto", "id", "en"].includes(body.contentLanguage)
       ? body.contentLanguage
       : "en";
@@ -19,6 +20,8 @@ export async function POST(request: Request) {
       if (!UUID.test(body.deckId)) throw new RagError("Deck tidak valid.");
       deckId = body.deckId;
     }
+    if (!deckId && !deckTitle) throw new RagError("Nama deck wajib diisi.");
+    if (deckTitle.length > 200) throw new RagError("Nama deck maksimal 200 karakter.");
     const key = pdfKey(userId, id), size = await verifyPdf(key), sql = ragSql();
     let doc: { id: string; status: string } | undefined;
     try {
@@ -39,14 +42,14 @@ export async function POST(request: Request) {
         if (deckId) {
           await tx`insert into public.deck_documents (deck_id,document_id) values (${deckId},${id}) on conflict do nothing`;
         } else {
-          await tx`insert into public.decks (id,user_id,title) values (${id},${userId},${title}) on conflict (id) do update set title=excluded.title,updated_at=now()`;
+          await tx`insert into public.decks (id,user_id,title) values (${id},${userId},${deckTitle}) on conflict (id) do update set title=excluded.title,updated_at=now()`;
           await tx`insert into public.deck_documents (deck_id,document_id) values (${id},${id}) on conflict do nothing`;
           await tx`insert into public.notifications (user_id,type,severity,title,body,link,dedupe_key)
-            values (${userId},'deck_created','success','Deck berhasil dibuat',${`Deck "${title}" siap digunakan.`},${`/desk/${id}`},${`deck:${id}:created`})
+            values (${userId},'deck_created','success','Deck created',${`Deck "${deckTitle}" is ready to use.`},${`/desk/${id}`},${`deck:${id}:created`})
             on conflict (dedupe_key) do nothing`;
         }
         await tx`insert into public.notifications (user_id,type,severity,title,body,link,dedupe_key)
-          values (${userId},'upload_started','info','Upload materi diterima',${`Materi "${title}" sedang diproses untuk mengekstrak keyword.`},${`/desk/${deckId ?? id}`},${`document:${id}:upload_started`})
+          values (${userId},'upload_started','info','Material upload received',${`Material "${title}" is being processed to extract keywords.`},${`/desk/${deckId ?? id}`},${`document:${id}:upload_started`})
           on conflict (dedupe_key) do nothing`;
         await tx`update public.generation_quota_events set document_id=${id} where user_id=${userId} and event_key=${`document:${id}`} and document_id is null`;
         const [row] = await tx`select id,status from public.documents where id=${id} and user_id=${userId} and storage_path=${key} and deleted_at is null`;

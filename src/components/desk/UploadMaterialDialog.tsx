@@ -83,6 +83,7 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
   const [drag, setDrag] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [name, setName] = useState("");
+  const [deckName, setDeckName] = useState("");
   const [lang, setLang] = useState("en");
   const [phase, setPhase] = useState<UploadPhase>("form");
   const [progress, setProgress] = useState(0);
@@ -141,7 +142,7 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
 
   async function submit() {
     // Double-submit guard that also covers the window before React re-renders.
-    if (!file || busyRef.current || phase === "uploading" || phase === "processing") return;
+    if (!file || (!attaching && !deckName.trim()) || busyRef.current || phase === "uploading" || phase === "processing") return;
     busyRef.current = true;
     setError("");
     setProgress(0);
@@ -174,6 +175,7 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
       const payload: Record<string, unknown> = { documentId: signed.documentId, filename: file.name,
         title: name.trim() || file.name.replace(/\.pdf$/i, "").slice(0, 200), contentLanguage: lang };
       if (deckId) payload.deckId = deckId;
+      else payload.deckTitle = deckName.trim();
       const confirmResponse = await fetch("/api/documents/confirm", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       const confirmBody = await confirmResponse.json().catch(() => ({}));
       if (!confirmResponse.ok) throw new Error((confirmBody as { error?: string }).error || "Confirmation was rejected.");
@@ -239,6 +241,12 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
               </div>
             </div>
 
+            {!attaching && <label className="grid gap-1.5">
+              <span className="text-xs font-medium text-text-secondary">Deck name</span>
+              <input value={deckName} onChange={event => setDeckName(event.target.value)} placeholder="e.g. Biology Semester 1" maxLength={200} required disabled={phase === "uploading"}
+                className="w-full rounded-xl border border-border bg-surface-raised px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none disabled:opacity-50" />
+            </label>}
+
             <input value={name} onChange={event => setName(event.target.value)} placeholder="Material name (optional)" maxLength={200} disabled={phase === "uploading"}
               className="w-full rounded-xl border border-border bg-surface-raised px-3.5 py-2.5 text-sm focus:border-accent focus:outline-none disabled:opacity-50" />
 
@@ -256,7 +264,7 @@ export default function UploadMaterialDialog({ deckId = null, deckTitle, title, 
 
             {phase === "form" && error && <p className="text-xs text-danger-text" role="alert">{error}</p>}
 
-            <button type="button" onClick={() => void submit()} disabled={!file || phase === "uploading"} aria-busy={phase === "uploading"}
+            <button type="button" onClick={() => void submit()} disabled={!file || (!attaching && !deckName.trim()) || phase === "uploading"} aria-busy={phase === "uploading"}
               className="inline-flex items-center justify-center gap-2 rounded-2xl bg-action-primary px-5 py-3 text-sm font-semibold text-on-action-primary transition hover:bg-action-primary-hover disabled:cursor-not-allowed disabled:opacity-50">
               {phase === "uploading" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               {phase === "uploading" ? "Uploading..." : attaching ? "Upload & process material" : "Upload & create desk"}

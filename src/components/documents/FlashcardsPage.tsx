@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   ArrowRight,
   RotateCw,
@@ -47,8 +47,8 @@ interface FlashcardsApiResponse {
   documentTitle: string;
 }
 
-async function fetchFlashcards(docId: string): Promise<FlashcardsApiResponse> {
-  const res = await fetch(`/api/documents/${docId}/flashcards`);
+async function fetchFlashcards(docId: string, groupId?: string): Promise<FlashcardsApiResponse> {
+  const res = await fetch(`/api/documents/${docId}/flashcards${groupId ? `?groupId=${encodeURIComponent(groupId)}` : ""}`);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error || `Server error ${res.status}`);
@@ -63,9 +63,13 @@ async function fetchFlashcards(docId: string): Promise<FlashcardsApiResponse> {
 // â”€â”€â”€ Main Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export default function FlashcardsPage() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
   const { t } = useI18n();
   const docId = (params?.id as string) || "";
+  const groupId = searchParams.get("groupId") ?? "";
+  const quizSetId = searchParams.get("quizSetId") ?? "";
+  const quizHref = `/desk/${docId}/quiz${quizSetId ? `?setId=${encodeURIComponent(quizSetId)}` : ""}`;
 
   const isDemo = docId === "demo-os-memory";
 
@@ -76,8 +80,8 @@ export default function FlashcardsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.flashcards(docId),
-    queryFn: () => fetchFlashcards(docId),
+    queryKey: [...queryKeys.flashcards(docId), groupId],
+    queryFn: () => fetchFlashcards(docId, groupId || undefined),
     enabled: !!docId && !isDemo,
   });
 
@@ -179,7 +183,7 @@ export default function FlashcardsPage() {
         <div className="mx-auto w-full max-w-3xl px-4 pt-5 sm:px-6">
           <div className="h-1 w-full overflow-hidden rounded-full bg-surface-subtle"><div className="h-full bg-action-primary transition-all" style={{ width: `${progressPercent}%` }} /></div>
           <div className="mb-4 mt-3 flex w-full justify-end">
-            <Link href={`/desk/${docId}/quiz`} className="inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary hover:bg-action-primary-hover"><span>{t("flashcards.startQuiz")}</span><ArrowRight className="h-3.5 w-3.5" /></Link>
+            <Link href={quizHref} className="inline-flex items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2 text-xs font-medium text-on-action-primary hover:bg-action-primary-hover"><span>{t("flashcards.startQuiz")}</span><ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
         </div>
       </>
@@ -193,7 +197,7 @@ export default function FlashcardsPage() {
         }
         rightContent={
           <Link
-            href={`/desk/${docId}/quiz`}
+            href={quizHref}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition active:scale-[0.98] shadow-xs"
           >
             <span>{t("flashcards.startQuiz")}</span>
@@ -246,7 +250,7 @@ export default function FlashcardsPage() {
                   {t("flashcards.kartu")} {currentIndex + 1} {t("flashcards.of")} {cards.length}
                 </span>
                 <Link
-                  href={`/desk/${docId}/quiz`}
+                  href={quizHref}
                   className="inline-flex sm:hidden items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-xl bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition active:scale-[0.98] shadow-xs"
                 >
                   <span>{t("flashcards.startQuiz")}</span>
@@ -337,7 +341,7 @@ export default function FlashcardsPage() {
                   ðŸŽ‰ {t("flashcards.endMessage")}
                 </p>
                 <Link
-                  href={`/desk/${docId}/quiz`}
+                  href={quizHref}
                   className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-action-primary text-on-action-primary hover:bg-action-primary-hover transition"
                 >
                   <span>{t("flashcards.startQuizButton")}</span>

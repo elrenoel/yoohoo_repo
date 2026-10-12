@@ -8,6 +8,7 @@
 export const queryKeys = {
   feedRoot: ["feed"] as const,
   feed: ["feed", "following"] as const,
+  feedForYou: ["feed", "for-you"] as const,
   feedSuggestions: ["feed", "suggestions"] as const,
   explore: (filters: { q: string; tab: string; tag: string; sort: string }) =>
     ["explore", filters] as const,

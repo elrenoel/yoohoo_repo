@@ -21,7 +21,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ att
           coalesce(aa.status,'skipped') as status, aa.time_taken_ms
         from public.quiz_questions q
         left join public.quiz_attempt_answers aa on aa.question_id=q.id and aa.attempt_id=${attemptId}
-        where q.quiz_set_id=${attempt.quiz_set_id} and q.document_id=${attempt.document_id}
+        where q.quiz_set_id=${attempt.quiz_set_id}
       ), by_difficulty as (
         select difficulty, count(*)::int as total, count(*) filter (where is_correct)::int as correct
         from question_stats group by difficulty

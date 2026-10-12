@@ -428,7 +428,7 @@
   "profile.photo": "Foto profil",
   "profile.choosePhoto": "Pilih foto",
   "profile.resetPhoto": "Reset foto",
-  "profile.photoHelp": "JPG, PNG, WebP, atau GIF. Maksimal 4 MB. Akun Google otomatis memakai foto Google.",
+  "profile.photoHelp": "JPG, PNG, WebP, atau GIF. Maksimal 4 MB. Kamu dapat mengatur posisi dan zoom setelah memilih foto.",
   "profile.photoTooLarge": "Ukuran foto profil maksimal 4 MB.",
   "profile.photoTypeInvalid": "Pilih file gambar yang valid.",
   "profile.photoUploadFailed": "Foto profil gagal diunggah.",

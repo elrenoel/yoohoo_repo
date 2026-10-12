@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   useInfiniteQuery,
   useQuery,
@@ -14,6 +14,7 @@ import PostCard, { type SocialPostItem } from "@/components/posts/PostCard";
 import { queryKeys } from "@/lib/query-keys";
 import { useToast } from "@/lib/toast";
 import UserAvatar from "@/components/profile/UserAvatar";
+import FeedItemTracker from "@/components/feed/FeedItemTracker";
 
 type FeedPage = {
   items: SocialPostItem[];
@@ -35,10 +36,18 @@ async function fetchFeed(
   return data;
 }
 
+async function fetchForYou(cursor:string|null,signal:AbortSignal):Promise<Omit<FeedPage,"hasFollowing">>{
+  const response=await fetch(`/api/feed/for-you${cursor?`?cursor=${encodeURIComponent(cursor)}`:""}`,{signal});
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||"Recommendations could not be loaded.");
+  return data;
+}
+
 export default function HomeFeed() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const sentinel = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useState<"following" | "for-you">("following");
   const feed = useInfiniteQuery({
     queryKey: queryKeys.feed,
     queryFn: ({ pageParam, signal }) => fetchFeed(pageParam, signal),
@@ -48,6 +57,15 @@ export default function HomeFeed() {
     gcTime: 30 * 60_000,
   });
   const hasFollowing = feed.data?.pages[0]?.hasFollowing ?? true;
+  const forYou=useInfiniteQuery({
+    queryKey:queryKeys.feedForYou,
+    queryFn:({pageParam,signal})=>fetchForYou(pageParam,signal),
+    enabled:activeTab==="for-you",
+    initialPageParam:null as string|null,
+    getNextPageParam:last=>last.nextCursor??undefined,
+    staleTime:60_000,
+    gcTime:30*60_000,
+  });
   const suggestions = useQuery<{ items: SocialPostItem[] }>({
     queryKey: queryKeys.feedSuggestions,
     queryFn: async ({ signal }) => {
@@ -64,8 +82,12 @@ export default function HomeFeed() {
       ...new Map(all.map((item) => [`${item.type}:${item.id}`, item])).values(),
     ];
   }, [feed.data]);
-  const shown = hasFollowing ? items : (suggestions.data?.items ?? []);
-  const loading = feed.isPending || (!hasFollowing && suggestions.isPending);
+  const forYouItems=useMemo(()=>{
+    const all=forYou.data?.pages.flatMap(page=>page.items)??[];
+    return [...new Map(all.map(item=>[`${item.type}:${item.id}`,item])).values()];
+  },[forYou.data]);
+  const shown = activeTab === "following" ? items : forYouItems;
+  const loading = activeTab === "following" ? feed.isPending : forYou.isPending;
   const people = useMemo(() => {
     const source = [...items, ...(suggestions.data?.items ?? [])];
     return [
@@ -77,25 +99,28 @@ export default function HomeFeed() {
   const recommendedDecks = (suggestions.data?.items ?? [])
     .filter((item) => item.type === "deck")
     .slice(0, 3);
-  const { fetchNextPage, hasNextPage, isFetchingNextPage } = feed;
+  const activeHasNextPage=activeTab==="following"?feed.hasNextPage:forYou.hasNextPage;
+  const activeIsFetchingNextPage=activeTab==="following"?feed.isFetchingNextPage:forYou.isFetchingNextPage;
+  const fetchActiveNextPage=activeTab==="following"?feed.fetchNextPage:forYou.fetchNextPage;
 
   useEffect(() => {
     const node = sentinel.current;
-    if (!node || !hasNextPage) return;
+    if (!node || !activeHasNextPage) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0]?.isIntersecting && !isFetchingNextPage)
-          void fetchNextPage();
+        if (entries[0]?.isIntersecting && !activeIsFetchingNextPage)
+          void fetchActiveNextPage();
       },
       { rootMargin: "240px" },
     );
     observer.observe(node);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+  }, [activeHasNextPage,activeIsFetchingNextPage,fetchActiveNextPage]);
 
   async function refresh() {
     try {
-      await feed.refetch();
+      if (activeTab === "following") await feed.refetch();
+      else await forYou.refetch();
       toast.success("Feed refreshed.");
     } catch (error) {
       toast.error(
@@ -121,24 +146,26 @@ export default function HomeFeed() {
               </div>
               <div className="mt-5 flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-5 text-sm">
-                  <button className="border-b-2 border-accent pb-3 font-semibold">
+                  <button type="button" onClick={() => setActiveTab("for-you")} aria-pressed={activeTab === "for-you"} className={`border-b-2 pb-3 font-semibold ${activeTab === "for-you" ? "border-accent text-text" : "border-transparent text-text-muted"}`}>
                     For you
                   </button>
-                  <span className="pb-3 text-text-muted">Following</span>
+                  <button type="button" onClick={() => setActiveTab("following")} aria-pressed={activeTab === "following"} className={`border-b-2 pb-3 font-semibold ${activeTab === "following" ? "border-accent text-text" : "border-transparent text-text-muted"}`}>
+                    Following
+                  </button>
                 </div>
                 <button
                   type="button"
                   onClick={() => void refresh()}
-                  disabled={feed.isFetching}
+                  disabled={activeTab === "following" ? feed.isFetching : forYou.isFetching}
                   aria-label="Refresh feed"
                   className="rounded-full p-2 text-text-secondary transition hover:bg-surface-hover hover:text-accent disabled:opacity-50"
                 >
                   <RefreshCw
-                    className={`h-4 w-4 ${feed.isFetching ? "animate-spin" : ""}`}
+                    className={`h-4 w-4 ${(activeTab === "following" ? feed.isFetching : forYou.isFetching) ? "animate-spin" : ""}`}
                   />
                 </button>
               </div>
-              {!hasFollowing && !loading && (
+              {activeTab === "following" && !hasFollowing && !loading && (
                 <section className="mt-5 border-l-2 border-danger bg-surface p-5">
                   <h2 className="text-lg font-semibold">
                     Your feed is just getting started
@@ -158,13 +185,16 @@ export default function HomeFeed() {
                 {loading && !shown.length
                   ? [1, 2, 3].map((item) => <Skeleton key={item} />)
                   : shown.map((item) => (
-                      <PostCard key={`${item.type}:${item.id}`} item={item} />
+                      <FeedItemTracker key={`${item.type}:${item.id}`} itemType={item.type === "deck" ? "deck" : "post"} itemId={item.id}><PostCard item={item} /></FeedItemTracker>
                     ))}
               </div>
-              {hasFollowing && (
+              {(activeTab === "for-you" || hasFollowing) && (
                 <div ref={sentinel} className="py-8 text-center">
-                  {isFetchingNextPage && (
+                  {activeIsFetchingNextPage && (
                     <LoaderCircle className="mx-auto animate-spin" />
+                  )}
+                  {activeTab === "for-you" && !forYou.isPending && !forYou.hasNextPage && forYouItems.length > 0 && (
+                    <p className="text-sm text-text-muted">You&apos;ve reached the end.</p>
                   )}
                 </div>
               )}

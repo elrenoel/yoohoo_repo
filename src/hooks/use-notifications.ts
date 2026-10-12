@@ -17,6 +17,7 @@ export function useNotifications(options?: {
   limit?: number;
   offset?: number;
   unreadOnly?: boolean;
+  enabled?: boolean;
 }) {
   const { data: session } = useSession();
 
@@ -25,7 +26,7 @@ export function useNotifications(options?: {
   const markAllPromise = useRef<Promise<boolean> | null>(null);
 
   const query = useQuery({
-    queryKey: queryKeys.notifications(session?.user?.id, options?.unreadOnly ? "unread" : "all", options?.limit ?? 50, options?.offset),
+    queryKey: queryKeys.notifications(session?.user?.id, options?.unreadOnly ? "unread" : "all", options?.limit ?? 20, options?.offset),
     queryFn: async () => {
       if (!session?.user) return { notifications: [], total: 0, unreadCount: 0 };
 
@@ -35,7 +36,7 @@ export function useNotifications(options?: {
       if (options?.unreadOnly) params.set("unread", "true");
 
       const response = await fetch(`/api/notifications?${params}`);
-      if (!response.ok) throw new Error("Gagal memuat notifikasi");
+      if (!response.ok) throw new Error("Could not load notifications.");
 
       const raw = (await response.json()) as {
         notifications?: unknown;
@@ -49,18 +50,18 @@ export function useNotifications(options?: {
 
       return {
         notifications: raw.notifications,
-        total: Number(raw.total) || 0,
+        total: Number(raw.total) || raw.notifications.length,
         unreadCount: Number(raw.unreadCount) || 0,
       };
     },
-    enabled: !!session?.user,
-    refetchInterval: 60_000,
+    enabled: !!session?.user && (options?.enabled ?? true),
+    staleTime: 30_000,
     refetchIntervalInBackground: false,
   });
 
   const markReadMutation = useMutation<unknown, Error, string, ItemRollback>({
     mutationFn: async (notificationId: string) => {
-      if (!session?.user) throw new Error("Anda harus login terlebih dahulu");
+      if (!session?.user) throw new Error("You must be logged in.");
       
       const response = await fetch("/api/notifications/read", {
         method: "POST",
@@ -68,7 +69,7 @@ export function useNotifications(options?: {
         body: JSON.stringify({ notificationId }),
       });
       
-      if (!response.ok) throw new Error("Gagal menandai notifikasi sebagai sudah dibaca");
+      if (!response.ok) throw new Error("Could not mark the notification as read.");
       return response.json();
     },
     onMutate: (notificationId) => {
@@ -101,13 +102,13 @@ export function useNotifications(options?: {
         });
       }
       if (restoredUnread) queryClient.setQueriesData<number>({ queryKey: ["unread-count", session?.user?.id ?? "guest"] }, current => (current ?? 0) + 1);
-      toast.error("Gagal, coba lagi");
+      toast.error("Something went wrong. Try again.");
     },
   });
 
   const markAllReadMutation = useMutation<unknown, Error, void, AllRollback>({
     mutationFn: async () => {
-      if (!session?.user) throw new Error("Anda harus login terlebih dahulu");
+      if (!session?.user) throw new Error("You must be logged in.");
       
       const response = await fetch("/api/notifications/read", {
         method: "POST",
@@ -115,7 +116,7 @@ export function useNotifications(options?: {
         body: JSON.stringify({}),
       });
       
-      if (!response.ok) throw new Error("Gagal menandai semua notifikasi sebagai sudah dibaca");
+      if (!response.ok) throw new Error("Could not mark all notifications as read.");
       return response.json();
     },
     onMutate: () => {
@@ -145,7 +146,7 @@ export function useNotifications(options?: {
         });
       }
       if (restoredIds.size) queryClient.setQueriesData<number>({ queryKey: ["unread-count", session?.user?.id ?? "guest"] }, current => (current ?? 0) + restoredIds.size);
-      toast.error("Gagal, coba lagi");
+      toast.error("Something went wrong. Try again.");
     },
   });
 
@@ -179,11 +180,12 @@ export function useUnreadCount() {
       if (!session?.user) return 0;
       
       const response = await fetch(`/api/notifications/unread-count`);
-      if (!response.ok) throw new Error("Gagal menghitung notifikasi belum dibaca");
+      if (!response.ok) throw new Error("Could not load the unread notification count.");
       const data = await response.json();
       return data.unreadCount ?? 0;
     },
     enabled: !!session?.user,
+    staleTime: 30_000,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
   });

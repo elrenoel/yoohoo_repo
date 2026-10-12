@@ -1,9 +1,7 @@
 import { Suspense } from "react";
 import ExploreBrowser from "@/components/explore/ExploreBrowser";
 import AppShell from "@/components/layout/AppShell";
-import { getSocialViewer } from "@/lib/social-guard";
-export default async function ExplorePage() {
-  await getSocialViewer();
+export default function ExplorePage() {
   return <AppShell><Suspense fallback={<ExplorePageSkeleton />}><ExploreBrowser /></Suspense></AppShell>;
 }
 function ExplorePageSkeleton() {

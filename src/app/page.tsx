@@ -40,7 +40,7 @@ export default function LandingPage() {
   }, []);
 
   useEffect(() => {
-    if (!isPending && session?.user) router.replace("/desk");
+    if (!isPending && session?.user) router.replace("/home");
   }, [session, isPending, router]);
 
   const reveal = mounted

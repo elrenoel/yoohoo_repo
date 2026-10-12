@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { useSession } from "@/lib/session-provider";
 import { useToast } from "@/lib/toast";
+import { trackFeedEvent } from "@/lib/feed-events-client";
 
 type Comment = { id: string; parent_id: string | null; body: string | null; deleted_at: string | null; created_at: string; author_id: string; username: string; display_name: string; avatar_url?: string | null };
 
@@ -18,7 +19,7 @@ export default function CommentsSection({ targetType, targetId }: { targetType: 
   const [reply, setReply] = useState<Comment | null>(null);
   const key = queryKeys.comments(targetType, targetId);
   const query = useQuery<{ comments: Comment[] }>({ queryKey: key, queryFn: async ({ signal }) => { const response = await fetch(`/api/comments?targetType=${targetType}&targetId=${targetId}`, { signal }); const data = await response.json(); if (!response.ok) throw new Error(data.error); return data; } });
-  const send = useMutation({ mutationFn: async () => { const response = await fetch("/api/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetType, targetId, body, parentId: reply?.id }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); return data; }, onSuccess: async () => { setBody(""); setReply(null); await queryClient.invalidateQueries({ queryKey: key }); await queryClient.invalidateQueries({ queryKey: queryKeys.feedRoot }); }, onError: error => toast.error(error instanceof Error ? error.message : "Reply could not be sent.") });
+  const send = useMutation({ mutationFn: async () => { const response = await fetch("/api/comments", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ targetType, targetId, body, parentId: reply?.id }) }); const data = await response.json(); if (!response.ok) throw new Error(data.error); return data; }, onSuccess: async () => { trackFeedEvent({itemType:targetType==="public_deck"?"deck":"post",itemId:targetId,eventType:"comment"});setBody(""); setReply(null); await queryClient.invalidateQueries({ queryKey: key }); await queryClient.invalidateQueries({ queryKey: queryKeys.feedRoot }); }, onError: error => toast.error(error instanceof Error ? error.message : "Reply could not be sent.") });
   const remove = useMutation({ mutationFn: async (id: string) => { const response = await fetch(`/api/comments/${id}`, { method: "DELETE" }); if (!response.ok) throw new Error("Comment could not be deleted."); }, onSuccess: () => queryClient.invalidateQueries({ queryKey: key }), onError: error => toast.error(error instanceof Error ? error.message : "Comment could not be deleted.") });
   const comments = query.data?.comments ?? [];
   const roots = comments.filter(comment => !comment.parent_id);

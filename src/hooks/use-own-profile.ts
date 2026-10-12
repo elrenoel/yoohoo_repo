@@ -11,7 +11,7 @@ export function useOwnProfile() {
     queryKey: queryKeys.profile(session?.user.id),
     queryFn: async () => {
       const response = await fetch("/api/profile", { cache: "no-store" });
-      if (!response.ok) throw new Error("Gagal memuat profil.");
+      if (!response.ok) throw new Error("Could not load your profile.");
       return response.json() as Promise<{ profile: OwnProfile | null }>;
     },
     enabled: Boolean(session?.user),

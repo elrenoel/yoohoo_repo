@@ -28,3 +28,23 @@ export async function GET(request: Request) {
     });
   } catch (error) { return ragResponseError(error); }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const userId = await sessionUser(request);
+    const rows = await ragSql().begin(async sql => {
+      const deleted = await sql<{ id: string; title: string }[]>`delete from public.decks
+        where user_id=${userId} and deleted_at is not null
+        returning id,title`;
+      if (deleted.length) {
+        await sql`insert into public.notifications
+          (user_id,type,severity,title,body,link,dedupe_key)
+          values (${userId},'trash_emptied','info','Trash emptied',
+            ${`${deleted.length} ${deleted.length === 1 ? "deck was" : "decks were"} permanently deleted.`},
+            '/trash',${`trash:${userId}:emptied:${Date.now()}`})`;
+      }
+      return deleted;
+    });
+    return Response.json({ success: true, deletedCount: rows.length });
+  } catch (error) { return ragResponseError(error); }
+}

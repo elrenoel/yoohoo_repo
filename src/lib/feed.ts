@@ -7,3 +7,8 @@ export function decodeCursor(value:string|null):FeedCursor|null{if(!value)return
 const userCursorSchema=z.object({publishedAt:z.iso.datetime(),id:z.string().min(1).max(255)});
 export function encodeUserCursor(value:z.infer<typeof userCursorSchema>){return Buffer.from(JSON.stringify(value)).toString("base64url")}
 export function decodeUserCursor(value:string|null){if(!value)return null;try{return userCursorSchema.parse(JSON.parse(Buffer.from(value,"base64url").toString("utf8")))}catch{return null}}
+
+const forYouCursorSchema=z.object({score:z.number(),publishedAt:z.iso.datetime(),itemType:z.enum(["post","deck"]),itemId:z.uuid()});
+export type ForYouCursor=z.infer<typeof forYouCursorSchema>;
+export function encodeForYouCursor(value:ForYouCursor){return Buffer.from(JSON.stringify(value)).toString("base64url")}
+export function decodeForYouCursor(value:string|null):ForYouCursor|null{if(!value)return null;try{return forYouCursorSchema.parse(JSON.parse(Buffer.from(value,"base64url").toString("utf8")))}catch{return null}}

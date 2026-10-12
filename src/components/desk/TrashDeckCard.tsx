@@ -25,7 +25,7 @@ type TrashDeckCardProps = {
 };
 
 // Same pinned formatter as DeckCard so dates never drift with the viewer's timezone.
-const DATE_FORMATTER = new Intl.DateTimeFormat("id-ID", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
+const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", { day: "numeric", month: "short", timeZone: "Asia/Jakarta" });
 
 export default function TrashDeckCard({ deck, onRequestRestore, onRequestPermanentDelete, busy = false, removing = false }: TrashDeckCardProps) {
   const { t } = useI18n();

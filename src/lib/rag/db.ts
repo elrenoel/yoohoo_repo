@@ -9,7 +9,7 @@ export function ragSql() {
   const ca = process.env.SUPABASE_DATABASE_CA?.replace(/\\n/g, "\n");
   // Match the existing Better Auth pool's encrypted connection during transition.
   // Supplying the project's CA enables certificate + hostname verification.
-  return connection ??= postgres(url, { prepare: false, max: 2, idle_timeout: 20,
+  return connection ??= postgres(url, { prepare: false, max: 5, idle_timeout: 20,
     connect_timeout: 30, ssl: ca ? { ca, rejectUnauthorized: true } : "require" });
 }
 export async function closeRagSql() { await connection?.end({ timeout: 5 }); connection = undefined; }

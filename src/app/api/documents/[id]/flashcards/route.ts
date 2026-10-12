@@ -10,17 +10,21 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) return NextResponse.json({ success: false, error: "Silakan masuk terlebih dahulu.", requireAuth: true }, { status: 401 });
     const sql = ragSql();
+    const groupId = request.nextUrl.searchParams.get("groupId");
+    if (groupId && !UUID.test(groupId)) return NextResponse.json({ success: false, error: "ID grup tidak valid." }, { status: 400 });
     const [doc] = await sql`select id,title from public.documents where id=${id} and user_id=${session.user.id} and deleted_at is null`;
     if (!doc) return NextResponse.json({ success: false, error: "Dokumen tidak ditemukan." }, { status: 404 });
+    const [group] = groupId ? await sql`select id,name from public.flashcard_groups where id=${groupId} and user_id=${session.user.id}` : [null];
+    if (groupId && !group) return NextResponse.json({ success: false, error: "Grup flashcard tidak ditemukan." }, { status: 404 });
     const cards = await sql`select f.id,f.term,f.definition,
       (to_jsonb(f)->>'blob_variant')::smallint as blob_variant
-      from public.flashcards f where f.document_id=${id} order by f.id`;
+      from public.flashcards f where ${groupId ? sql`f.group_id=${groupId}` : sql`f.document_id=${id}`} order by f.id`;
     for (const card of cards) await sql`select private.refresh_flashcard_relations(${session.user.id},${card.id})`;
     const relations = await sql`select r.from_flashcard_id,r.to_flashcard_id,r.relation_type,r.suggested_term,r.source_chunk_id,
       target.term as target_term,target.definition as target_definition
       from public.flashcard_relations r left join public.flashcards target on target.id=r.to_flashcard_id
       join public.flashcards source on source.id=r.from_flashcard_id
-      where source.document_id=${id} and r.from_flashcard_id is not null`;
+      where ${groupId ? sql`source.group_id=${groupId}` : sql`source.document_id=${id}`} and r.from_flashcard_id is not null`;
     const bySource = new Map<string, unknown[]>();
     for (const relation of relations) {
       const list = bySource.get(String(relation.from_flashcard_id)) ?? [];
@@ -29,7 +33,7 @@ export async function GET(request: NextRequest, props: { params: Promise<{ id: s
         : { term: String(relation.target_term), flashcard_id: String(relation.to_flashcard_id), type: "linked", definition: relation.target_definition });
       bySource.set(String(relation.from_flashcard_id), list);
     }
-    return NextResponse.json({ success: true, documentId: id, documentTitle: doc.title, total: cards.length,
+    return NextResponse.json({ success: true, documentId: id, documentTitle: group ? group.name : doc.title, total: cards.length,
       flashcards: cards.map(card => ({ id: String(card.id), term: String(card.term), definition: String(card.definition), blobVariant: card.blob_variant == null ? null : Number(card.blob_variant), related_terms: bySource.get(String(card.id)) ?? [] })) });
   } catch (error) {
     console.error("[flashcards]", error instanceof Error ? error.message : error);

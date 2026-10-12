@@ -5,8 +5,22 @@ import { createProfileSchema, updateProfileSchema } from "@/lib/profile-validati
 import { getOwnProfile } from "@/lib/profile-server";
 import { ZodError } from "zod";
 import { withApiTiming } from "@/lib/api-timing";
+import { revalidateTag } from "next/cache";
+import { db } from "@/db";
 
 export const runtime = "nodejs";
+
+const AVATAR_MARKER = "/storage/v1/object/public/profile-avatars/";
+function ownedAvatarPath(value: unknown, userId: string) {
+  if (typeof value !== "string") return null;
+  try {
+    const pathname = new URL(value).pathname;
+    const index = pathname.indexOf(AVATAR_MARKER);
+    if (index < 0) return null;
+    const path = decodeURIComponent(pathname.slice(index + AVATAR_MARKER.length));
+    return path.startsWith(`${userId}/`) ? path : null;
+  } catch { return null; }
+}
 
 function friendlyError(error: unknown) {
   if (error instanceof ZodError) return Response.json({ error: error.issues[0]?.message ?? "Data profil tidak valid." }, { status: 400 });
@@ -38,8 +52,8 @@ export async function POST(request: Request) {
       `;
       await tx`
         insert into public.notifications (user_id, type, severity, title, body, link, dedupe_key)
-        values (${userId}, 'profile_created', 'success', 'Profil berhasil dibuat',
-          ${`Profil @${input.username} siap digunakan.`}, ${`/u/${input.username}`}, ${`profile:created:${randomUUID()}`})
+        values (${userId}, 'profile_created', 'success', 'Profile created',
+          ${`Your @${input.username} profile is ready.`}, ${`/u/${input.username}`}, ${`profile:created:${randomUUID()}`})
       `;
       return rows[0];
     });
@@ -54,7 +68,7 @@ export async function PATCH(request: Request) {
     const requestedUserId = input.userId ?? input.user_id;
     if (requestedUserId && requestedUserId !== userId) return Response.json({ error: "Kamu tidak boleh mengubah profil orang lain." }, { status: 403 });
     const sql = ragSql();
-    const profile = await sql.begin(async (tx) => {
+    const result = await sql.begin(async (tx) => {
       const current = await tx`select * from public.profiles where user_id = ${userId} for update`;
       if (!current[0]) return null;
       const username = input.username ?? current[0].username;
@@ -71,12 +85,23 @@ export async function PATCH(request: Request) {
       `;
       await tx`
         insert into public.notifications (user_id, type, severity, title, body, link, dedupe_key)
-        values (${userId}, 'profile_updated', 'success', 'Profil berhasil diperbarui',
-          ${`Perubahan profil @${username} telah disimpan.`}, ${`/u/${username}`}, ${`profile:updated:${randomUUID()}`})
+        values (${userId}, 'profile_updated', 'success', 'Profile updated',
+          ${`Changes to @${username} have been saved.`}, ${`/u/${username}`}, ${`profile:updated:${randomUUID()}`})
       `;
-      return rows[0];
+      return { profile: rows[0], previousAvatarUrl: current[0].avatar_url };
     });
-    if (!profile) return Response.json({ error: "Profil belum dibuat." }, { status: 404 });
-    return Response.json({ profile });
+    if (!result) return Response.json({ error: "Profil belum dibuat." }, { status: 404 });
+    const oldPath = result.previousAvatarUrl !== result.profile.avatarUrl ? ownedAvatarPath(result.previousAvatarUrl, userId) : null;
+    if (oldPath) {
+      try {
+        const { error } = await db.storage.from("profile-avatars").remove([oldPath]);
+        if (error) console.warn("[profile avatar cleanup]", error.message);
+      } catch (error) {
+        console.warn("[profile avatar cleanup]", error instanceof Error ? error.message : "unknown error");
+      }
+    }
+    revalidateTag("explore-featured", { expire: 0 });
+    revalidateTag("explore-learners", { expire: 0 });
+    return Response.json({ profile: result.profile });
   } catch (error) { return friendlyError(error); }
 }

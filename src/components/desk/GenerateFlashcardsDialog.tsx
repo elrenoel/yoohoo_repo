@@ -85,6 +85,8 @@ export default function GenerateFlashcardsDialog({
   const [keywordGroups, setKeywordGroups] = useState<KeywordGroup[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
+  const [groupName, setGroupName] = useState("");
+  const [suggestedGroupName, setSuggestedGroupName] = useState("Cards 1");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -97,10 +99,11 @@ export default function GenerateFlashcardsDialog({
   useEffect(() => {
     let cancelled = false;
     fetch(`/api/decks/${deckId}/documents`, { cache: "no-store" })
-      .then(response => readJson<{ documents: DeckDocument[] }>(response, "Materials could not be loaded."))
+      .then(response => readJson<{ documents: DeckDocument[]; suggestedGroupName?: string }>(response, "Materials could not be loaded."))
       .then(body => {
         if (cancelled) return;
         setDocuments(body.documents ?? []);
+        setSuggestedGroupName(body.suggestedGroupName || "Cards 1");
         setError("");
       })
       .catch(cause => { if (!cancelled) setError(cause instanceof Error ? cause.message : "Materials could not be loaded."); })
@@ -160,11 +163,10 @@ export default function GenerateFlashcardsDialog({
     const entries = [keyword, ...keyword.twinIds
       .map(id => keywordById.get(id))
       .filter((entry): entry is KeywordEntry => Boolean(entry))];
-    return [...new Set(entries.filter(entry => !entry.alreadyHasFlashcard).map(entry => entry.id))];
+    return [...new Set(entries.map(entry => entry.id))];
   }, [keywordById]);
 
   const toggleKeyword = useCallback((keyword: KeywordEntry) => {
-    if (keyword.alreadyHasFlashcard) return;
     const ids = eligibleIds(keyword);
     if (!ids.length) return;
     setSelectedIds(previous => {
@@ -219,8 +221,11 @@ export default function GenerateFlashcardsDialog({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            documentIds: [...selectedDocIds],
-            keywordIds: [...selectedIds],
+            groupName: groupName.trim() || undefined,
+            selections: keywordGroups.flatMap(group => {
+              const keywordIds = group.keywords.filter(keyword => selectedIds.has(keyword.id)).map(keyword => keyword.id);
+              return keywordIds.length ? [{ document_id: group.documentId, keyword_ids: keywordIds }] : [];
+            }),
             idempotencyKey,
           }),
         }),
@@ -233,7 +238,7 @@ export default function GenerateFlashcardsDialog({
       setSubmitting(false);
       busyRef.current = false;
     }
-  }, [canGenerate, deckId, idempotencyKey, onClose, onStarted, selectedDocIds, selectedIds]);
+  }, [canGenerate, deckId, groupName, idempotencyKey, keywordGroups, onClose, onStarted, selectedIds]);
 
   const stepIndex = step === "documents" ? 1 : step === "keywords" ? 2 : 3;
 
@@ -354,20 +359,20 @@ export default function GenerateFlashcardsDialog({
                   </div>
                   <div className="mt-3 flex flex-col gap-1.5">
                     {group.keywords.map(keyword => {
-                      const disabled = keyword.alreadyHasFlashcard;
+                      const disabled = false;
                       const ids = eligibleIds(keyword);
                       const checked = ids.length > 0 && ids.every(id => selectedIds.has(id));
                       const twinLabel = keyword.twinIds.length > 0 ? `duplicate in ${keyword.twinIds.length + 1} materials` : null;
                       return (
                         <label key={keyword.id}
                           className={`flex items-start gap-3 rounded-xl border p-3 transition ${disabled ? "cursor-not-allowed border-border bg-surface-subtle/60 opacity-75" : checked ? "border-accent bg-surface" : "border-transparent bg-surface-raised hover:border-border"}`}>
-                          <input type="checkbox" checked={checked} disabled={disabled || !ids.length}
+                          <input type="checkbox" checked={checked} disabled={!ids.length}
                             onChange={() => toggleKeyword(keyword)}
                             className="mt-0.5 h-4 w-4 rounded border-border accent-accent" />
                           <span className="min-w-0 flex-1">
                             <span className="flex flex-wrap items-center gap-2">
                               <span className="text-sm font-semibold text-text">{keyword.term}</span>
-                              {disabled && <span className="rounded-full border border-border bg-surface-subtle px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-text-secondary">already exists</span>}
+                              {keyword.alreadyHasFlashcard && <span className="rounded-full border border-border bg-surface-subtle px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-text-secondary">used in another group</span>}
                               {!disabled && twinLabel && <span className="rounded-full bg-surface-subtle px-2 py-0.5 font-mono text-[9px] uppercase tracking-wide text-text-secondary">{twinLabel}</span>}
                             </span>
                             {keyword.snippet && <span className="mt-0.5 line-clamp-2 block text-xs leading-relaxed text-text-secondary">{keyword.snippet}</span>}
@@ -411,6 +416,19 @@ export default function GenerateFlashcardsDialog({
                     );
                   })}
                 </ul>
+              </div>
+              <label className="grid gap-1.5">
+                <span className="text-xs font-medium text-text-secondary">Group name</span>
+                <input value={groupName} onChange={event => setGroupName(event.target.value)} maxLength={60}
+                  placeholder={suggestedGroupName} disabled={submitting}
+                  className="w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-text placeholder:text-text-muted focus:border-accent focus:outline-none disabled:opacity-60" />
+                <span className="text-[11px] text-text-muted">Kosongkan untuk memakai {suggestedGroupName}.</span>
+              </label>
+              <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-text-secondary">
+                {keywordGroups.flatMap(group => {
+                  const count = group.keywords.filter(keyword => selectedIds.has(keyword.id)).length;
+                  return count ? [`${group.title}: ${count}`] : [];
+                }).join(" · ")} · Total {keywordCount}
               </div>
               {overLimit && (
                 <div className="flex items-start gap-3 rounded-2xl border border-danger-border bg-danger-subtle p-4">

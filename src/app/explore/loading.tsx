@@ -1,0 +1,3 @@
+export default function ExploreLoading() {
+  return <main className="min-h-screen bg-bg"><div className="h-16 border-b border-border bg-skeleton"/><div className="flex gap-8 px-8 py-5"><div className="mx-auto w-full max-w-[720px] animate-pulse"><div className="h-80 rounded-2xl bg-skeleton"/>{[1,2,3].map(item=><div key={item} className="mt-5 h-24 border-b border-border bg-skeleton"/>)}</div><aside className="hidden w-[330px] space-y-4 xl:block"><div className="h-12 rounded-xl bg-skeleton"/><div className="h-44 rounded-xl bg-skeleton"/><div className="h-72 rounded-xl bg-skeleton"/></aside></div></main>;
+}

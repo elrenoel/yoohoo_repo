@@ -34,12 +34,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ id
     if (new Set(parsed.map(answer => answer.questionId)).size !== parsed.length) return bad("Satu soal hanya boleh memiliki satu jawaban.");
 
     const result = await ragSql().begin(async sql => {
-      const [quiz] = await sql`select qs.id,qs.document_id,d.title
-        from public.quiz_sets qs join public.documents d on d.id=qs.document_id
-        where qs.id=${quizId} and d.user_id=${session.user.id} and d.deleted_at is null`;
+      const [quiz] = await sql`select qs.id,coalesce(qs.document_id,(select min(f.source_document_id) from public.flashcards f where f.group_id=qs.group_id)) document_id,
+        coalesce(d.title,g.name) title
+        from public.quiz_sets qs left join public.documents d on d.id=qs.document_id left join public.flashcard_groups g on g.id=qs.group_id
+        where qs.id=${quizId} and ((d.user_id=${session.user.id} and d.deleted_at is null) or g.user_id=${session.user.id})`;
       if (!quiz) throw new Error("QUIZ_NOT_FOUND");
-      const questions = await sql`select id,question,options,correct_index from public.quiz_questions
-        where quiz_set_id=${quizId} and document_id=${quiz.document_id}`;
+      const questions = await sql`select id,question,options,correct_index from public.quiz_questions where quiz_set_id=${quizId}`;
       const byId = new Map(questions.map(question => [String(question.id), Number(question.correct_index)]));
       const questionById = new Map(questions.map(question => [String(question.id), question]));
       if (parsed.some(answer => !byId.has(answer.questionId))) throw new Error("QUESTION_NOT_FOUND");

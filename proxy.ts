@@ -4,6 +4,11 @@ import { getSessionCookie } from "better-auth/cookies";
 export function proxy(request: NextRequest) {
   const sessionCookie = getSessionCookie(request);
 
+  // Early gate: authenticated visitors should enter the app through Home.
+  if (request.nextUrl.pathname === "/" && sessionCookie) {
+    return NextResponse.redirect(new URL("/home", request.url));
+  }
+
   // Protect /app routes — redirect to login if no session
   if (request.nextUrl.pathname.startsWith("/app") && !sessionCookie) {
     return NextResponse.redirect(new URL("/login", request.url));
@@ -13,5 +18,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/app/:path*"],
+  matcher: ["/", "/app/:path*"],
 };

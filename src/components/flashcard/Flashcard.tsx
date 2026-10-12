@@ -301,7 +301,7 @@ export function Flashcard({
                 {hoveredRelatedTerm.type === "suggested"
                   ? "This term appears in the material and can be turned into a flashcard."
                   : hoveredRelatedTerm.definition ||
-                    "Klik untuk membuka flashcard terkait."}
+                    "Open the related flashcard."}
               </span>
             )}
           </span>

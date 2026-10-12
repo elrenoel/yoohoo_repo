@@ -6,7 +6,9 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useOptimisticIntentMutation, type OptimisticIntentResponse } from "@/hooks/use-optimistic-intent-mutation";
 import { updateSocialCaches, type SocialAction, type SocialTargetType } from "@/lib/social-cache";
+import { queryKeys } from "@/lib/query-keys";
 import { useToast } from "@/lib/toast";
+import { trackFeedEvent } from "@/lib/feed-events-client";
 
 type Props = {
   targetType: SocialTargetType;
@@ -36,11 +38,17 @@ export default function SocialActions({ targetType, targetId, slug, compact = fa
   const toast = useToast();
   const queryClient = useQueryClient();
   const [pulse, setPulse] = useState<SocialAction | null>(null);
-  const failed = () => toast.error("Gagal, coba lagi");
+  const failed = () => toast.error("Something went wrong. Try again.");
   const cacheUpdater = (action: SocialAction) => (state: OptimisticIntentResponse) => updateSocialCaches(queryClient, targetType, targetId, action, state);
-  const like = useOptimisticIntentMutation({ entityKey: `like:${targetType}:${targetId}`, initialState: { active: initialLiked, count: initialLikeCount }, request: desired => requestSocialIntent("likes", desired, targetType, targetId), updateCache: cacheUpdater("like"), onError: failed });
-  const bookmark = useOptimisticIntentMutation({ entityKey: `bookmark:${targetType}:${targetId}`, initialState: { active: initialBookmarked }, request: desired => requestSocialIntent("bookmarks", desired, targetType, targetId), updateCache: cacheUpdater("bookmark"), onError: failed });
-  const repost = useOptimisticIntentMutation({ entityKey: `repost:${targetType}:${targetId}`, initialState: { active: initialReposted, count: initialRepostCount }, request: desired => requestSocialIntent("reposts", desired, targetType, targetId), updateCache: cacheUpdater("repost"), onError: failed });
+  const itemType=targetType==="public_deck"?"deck":"post";
+  const like = useOptimisticIntentMutation({ entityKey: `like:${targetType}:${targetId}`, initialState: { active: initialLiked, count: initialLikeCount }, request: async desired => {const result=await requestSocialIntent("likes", desired, targetType, targetId);if(desired)trackFeedEvent({itemType,itemId:targetId,eventType:"like"});return result}, updateCache: cacheUpdater("like"), onError: failed });
+  const bookmark = useOptimisticIntentMutation({ entityKey: `bookmark:${targetType}:${targetId}`, initialState: { active: initialBookmarked }, request: async desired => {
+    const result = await requestSocialIntent("bookmarks", desired, targetType, targetId);
+    if(desired)trackFeedEvent({itemType,itemId:targetId,eventType:"save"});
+    await queryClient.invalidateQueries({ queryKey: queryKeys.saved(targetType) });
+    return result;
+  }, updateCache: cacheUpdater("bookmark"), onError: failed });
+  const repost = useOptimisticIntentMutation({ entityKey: `repost:${targetType}:${targetId}`, initialState: { active: initialReposted, count: initialRepostCount }, request: async desired => {const result=await requestSocialIntent("reposts", desired, targetType, targetId);if(desired)trackFeedEvent({itemType,itemId:targetId,eventType:"share"});return result}, updateCache: cacheUpdater("repost"), onError: failed });
 
   function activate(action: SocialAction, next: boolean, mutate: (desired: boolean) => void) {
     setPulse(action);

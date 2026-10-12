@@ -1,0 +1,3 @@
+export default function HomeLoading() {
+  return <main className="min-h-screen bg-bg px-8 py-6"><div className="mx-auto w-full max-w-[720px] animate-pulse"><div className="h-28 rounded-xl border border-border bg-skeleton"/><div className="mt-5 h-12 border-b border-border"/>{[1,2,3].map(item=><div key={item} className="flex gap-3 border-b border-border py-6"><div className="h-10 w-10 rounded-full bg-skeleton"/><div className="flex-1"><div className="h-4 w-48 rounded bg-skeleton"/><div className="mt-4 h-4 w-full rounded bg-skeleton"/><div className="mt-2 h-4 w-4/5 rounded bg-skeleton"/><div className="mt-5 h-48 rounded-xl bg-skeleton"/></div></div>)}</div></main>;
+}

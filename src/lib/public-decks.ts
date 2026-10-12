@@ -50,12 +50,16 @@ export async function replaceSnapshot(tx: postgres.TransactionSql, publicDeckId:
       q.question, q.options, q.correct_index, q.explanation, q.difficulty
     from public.quiz_questions q
     join public.quiz_sets qs on qs.id=q.quiz_set_id
-    where q.document_id in (select document_id from public.deck_documents where deck_id=${sourceDeckId})
-      and qs.id in (
+    where (q.document_id in (select document_id from public.deck_documents where deck_id=${sourceDeckId}) or qs.group_id in (select id from public.flashcard_groups where deck_id=${sourceDeckId}))
+      and (qs.id in (
         select distinct on (document_id) id from public.quiz_sets
         where document_id in (select document_id from public.deck_documents where deck_id=${sourceDeckId})
         order by document_id, created_at desc
-      )
+      ) or qs.id in (
+        select distinct on (group_id) id from public.quiz_sets
+        where group_id in (select id from public.flashcard_groups where deck_id=${sourceDeckId})
+        order by group_id,created_at desc
+      ))
     order by qs.created_at, q.id
   `;
 }

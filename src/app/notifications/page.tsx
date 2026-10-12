@@ -50,14 +50,14 @@ function timeAgo(dateString: string): string {
   const date = new Date(dateString);
   const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
-  if (seconds < 60) return "baru saja";
+  if (seconds < 60) return "just now";
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes} menit yang lalu`;
+  if (minutes < 60) return `${minutes} ${minutes === 1 ? "minute" : "minutes"} ago`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} jam yang lalu`;
+  if (hours < 24) return `${hours} ${hours === 1 ? "hour" : "hours"} ago`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days} hari yang lalu`;
-  return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+  if (days < 7) return `${days} ${days === 1 ? "day" : "days"} ago`;
+  return date.toLocaleDateString("en-US", { day: "2-digit", month: "short" });
 }
 
 function NotificationItem({
@@ -96,7 +96,7 @@ function NotificationItem({
           <h4
             className={`text-sm font-semibold ${isRead ? "text-text-secondary" : "text-text"}`}
           >
-            {notification.title || "Notifikasi"}
+            {notification.title || "Notification"}
           </h4>
           {!isRead && <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-danger" />}
         </div>
@@ -124,7 +124,7 @@ export default function NotificationsPage() {
   const [visibleCount, setVisibleCount] = useState(10);
 
   const { notifications, unreadCount, isLoading, markRead, markAllRead } =
-    useNotifications({ limit: 50 });
+    useNotifications({ limit: 20 });
 
   function handleNotificationClick(notification: NotificationRow) {
     if (!notification.read_at) {
@@ -133,7 +133,7 @@ export default function NotificationsPage() {
   }
 
   function handleMarkAllRead() {
-    void markAllRead().then(success => { if (success) toast.success(t("toast.dismiss") + " Notifikasi"); });
+    void markAllRead().then(success => { if (success) toast.success("All notifications marked as read."); });
   }
 
   if (!session?.user) {
@@ -141,15 +141,15 @@ export default function NotificationsPage() {
       <main className="flex min-h-screen items-center justify-center bg-bg px-5">
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
           <Bell className="mx-auto h-10 w-10 text-text-muted" />
-          <h2 className="mt-4 font-semibold">Notifikasi</h2>
+          <h2 className="mt-4 font-semibold">Notifications</h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Silakan masuk untuk melihat notifikasi Anda.
+            Log in to view your notifications.
           </p>
           <Link
             href="/login"
             className="mt-5 inline-flex rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary"
           >
-            Masuk sekarang
+            Log in now
           </Link>
         </div>
       </main>
@@ -162,15 +162,15 @@ export default function NotificationsPage() {
         <header className="mb-8 flex items-start justify-between gap-4">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-text-secondary">
-              NOTIFIKASI
+              NOTIFICATIONS
             </p>
             <h1 className="mt-1 font-serif text-4xl font-semibold tracking-tight">
-              Notifikasi
+              Notifications
             </h1>
             <p className="mt-1 text-sm text-text-secondary">
               {unreadCount === 0
-                ? "Semua notifikasi sudah kamu baca."
-                : `${unreadCount} notifikasi belum dibaca.`}
+                ? "You're all caught up."
+                : `${unreadCount} unread ${unreadCount === 1 ? "notification" : "notifications"}.`}
             </p>
           </div>
           {unreadCount > 0 && (
@@ -180,7 +180,7 @@ export default function NotificationsPage() {
               className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-action-primary px-4 py-2.5 text-sm font-medium text-on-action-primary transition hover:bg-action-primary-hover"
             >
               <CheckCheck className="h-4 w-4" />
-              Tandai semua dibaca
+              Mark all as read
             </button>
           )}
         </header>
@@ -204,9 +204,9 @@ export default function NotificationsPage() {
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border-strong bg-surface/40 px-6 py-12 text-center">
             <Bell className="h-10 w-10 text-text-muted" />
-            <h2 className="mt-4 font-semibold">Tidak ada notifikasi</h2>
+            <h2 className="mt-4 font-semibold">No notifications yet</h2>
             <p className="mt-1 text-sm text-text-secondary">
-              Aktivitas belajar dan interaksi sosial akan muncul di sini.
+              Study activity and social interactions will appear here.
             </p>
           </div>
         ) : (
@@ -225,13 +225,13 @@ export default function NotificationsPage() {
                   onClick={() => setVisibleCount((count) => count + 10)}
                   className="rounded-xl border border-border bg-surface px-5 py-2.5 text-sm font-semibold text-accent transition hover:bg-surface-hover"
                 >
-                  Lihat lebih banyak
+                  Show more
                 </button>
               </div>
             )}
             {notifications.length === 0 && unreadCount === 0 && (
               <div className="text-center py-8 text-sm text-text-secondary">
-                Belum ada notifikasi untuk ditampilkan.
+                There are no notifications to display yet.
               </div>
             )}
           </div>

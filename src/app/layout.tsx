@@ -7,10 +7,10 @@ import { SessionProvider } from "@/lib/session-provider";
 import { AppToaster } from "@/lib/toast";
 import "katex/dist/katex.min.css";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
 import type { SessionData } from "@/lib/session-provider";
+import { getServerSession } from "@/lib/server-session";
 import { DARK_THEME } from "@/lib/theme-tokens";
+import AppShell from "@/components/layout/AppShell";
 
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ["latin"], display: "swap", variable: "--font-plus-jakarta-sans" });
 
@@ -44,7 +44,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const initialSession = await auth.api.getSession({ headers: await headers() });
+  const initialSession = await getServerSession();
 
   return (
     <html lang="en" className={`${plusJakartaSans.variable} h-full bg-bg antialiased`}>
@@ -53,7 +53,7 @@ export default async function RootLayout({
           <QueryProvider>
             <SessionProvider initialSession={initialSession as SessionData | null}>
               <LanguageProvider>
-                {children}
+                <AppShell root>{children}</AppShell>
                 <AppToaster />
               </LanguageProvider>
             </SessionProvider>

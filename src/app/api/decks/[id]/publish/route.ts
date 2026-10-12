@@ -28,15 +28,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const postPath=postSlug(input.caption);
         const posts=await tx`insert into public.posts(author_id,slug,title,excerpt,body,body_md,tags,embedded_public_deck_id,status,published_at)
           values(${userId},${postPath},${input.caption.slice(0,80)},${input.caption.slice(0,300)},${input.caption},${input.caption},${input.tags.slice(0,3)},${rows[0].id},'published',now()) returning id`;
-        await notify(tx,userId,"post_published","Post dipublikasikan","Caption deck kamu sudah tampil di feed.",`/p/${postPath}`,userId,"post",String(posts[0].id));
+        await notify(tx,userId,"post_published","Post published","Your deck caption is now visible in the feed.",`/p/${postPath}`,userId,"post",String(posts[0].id));
       }
-      await notify(tx,userId,"deck_published","Deck dipublikasikan",`Deck “${input.title}” sekarang dapat dilihat publik.`,`/desk/${deckId}?share=1`);
+      await notify(tx,userId,"deck_published","Deck published",`Deck “${input.title}” is now publicly visible.`,`/desk/${deckId}?share=1`);
       return { status: 201 as const, deck: rows[0] };
     });
-    if (result.status === 404) return Response.json({error:"Deck tidak ditemukan."},{status:404});
-    if (result.status === 422) return Response.json({error:`Deck membutuhkan minimal ${MIN_PUBLIC_CARDS} flashcard untuk dipublikasikan.`},{status:422});
-    if (result.status === 428) return Response.json({error:"Buat username publik terlebih dahulu sebelum mempublikasikan deck.",onboarding:"/onboarding/username"},{status:428});
-    if (result.status === 409) return Response.json({error:"Deck ini sudah memiliki snapshot publik.",publicDeck:result.deck},{status:409});
+    if (result.status === 404) return Response.json({error:"Deck not found."},{status:404});
+    if (result.status === 422) return Response.json({error:`A deck needs at least ${MIN_PUBLIC_CARDS} flashcards before it can be published.`},{status:422});
+    if (result.status === 428) return Response.json({error:"Create a public username before publishing a deck.",onboarding:"/onboarding/username"},{status:428});
+    if (result.status === 409) return Response.json({error:"This deck already has a public snapshot.",publicDeck:result.deck},{status:409});
     return Response.json({publicDeck:result.deck},{status:201});
   } catch(error) { if(error instanceof ZodError) return Response.json({error:error.issues[0]?.message},{status:400}); return ragResponseError(error); }
 }

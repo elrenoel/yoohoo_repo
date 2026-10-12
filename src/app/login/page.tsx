@@ -33,7 +33,7 @@ function LoginForm() {
     try {
       await signIn.social({
         provider: "google",
-        callbackURL: "/desk",
+        callbackURL: "/home",
         errorCallbackURL: "/login",
       });
     } catch (err: unknown) {
@@ -102,7 +102,7 @@ function LoginForm() {
       }
 
       invalidateSession();
-      router.push("/desk");
+      router.push("/home");
       router.refresh();
     } catch (err: unknown) {
       setErrorMessage(
