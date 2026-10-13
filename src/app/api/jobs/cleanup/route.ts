@@ -12,7 +12,7 @@ export async function POST(request:NextRequest){
   const cleaned=await sql.begin(async tx=>{
    const stale=await tx`select id,user_id,idempotency_key,kind from public.generation_jobs where status in ('queued','running') and created_at<now()-interval '5 minutes' order by created_at limit 100 for update skip locked`;
    for(const job of stale){
-    await tx`update public.generation_jobs set status='failed',error_message='Generation timed out after 5 minutes.',finished_at=now(),completed_at=now() where id=${job.id} and status in ('queued','running')`;
+    await tx`update public.generation_jobs set status='failed',error_message='This took longer than expected and was stopped. Please try again.',finished_at=now(),completed_at=now() where id=${job.id} and status in ('queued','running')`;
     if(String(job.kind)==="flashcard_generate")await tx`select private.refund_generation_quota_event(${String(job.user_id)},${`flashcard:${String(job.idempotency_key)}`})`;
    }
    return stale.length;

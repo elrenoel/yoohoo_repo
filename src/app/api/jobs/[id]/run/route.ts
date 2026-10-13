@@ -16,8 +16,12 @@ import { claimJob } from "@/lib/jobs";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 6;
 const PARALLEL_BATCHES = 3;
+// Anggaran waktu di dalam maxDuration (300 dtk): flashcard dulu, sisanya quiz + simpan.
+const FLASHCARD_BUDGET_MS = 200_000;
+const QUIZ_BUDGET_MS = 275_000;
+const FLASHCARD_ATTEMPT_TIMEOUT_MS = 90_000;
 
 function nextBlobVariant(previous?: number) {
   let variant = randomInt(1, 6);
@@ -47,6 +51,29 @@ interface Batch {
   sourceChunks: SourceChunk[];
 }
 
+const QUOTA_NOTE = "Your daily quota wasn't used.";
+
+/**
+ * Pesan gagal untuk user (notifikasi + toast). Detail teknis (kode HTTP, JSON
+ * error Gemini) hanya ke log server, tidak pernah ke UI.
+ */
+function friendlyAiFailure(errors: unknown[]) {
+  const text = errors.map(error => error instanceof Error ? error.message : String(error)).join(" ");
+  if (/429|RESOURCE_EXHAUSTED|rate.?limit|quota/i.test(text)) {
+    return `The AI is getting too many requests right now. Please wait a minute and try again. ${QUOTA_NOTE}`;
+  }
+  if (/503|UNAVAILABLE|high demand|overloaded/i.test(text)) {
+    return `The AI service is very busy right now. Please try again in a few minutes. ${QUOTA_NOTE}`;
+  }
+  if (/504|502|500|DEADLINE|timed? ?out|timeout|abort|time budget/i.test(text)) {
+    return `The AI took too long to respond. Please try again in a few minutes, or pick fewer keywords. ${QUOTA_NOTE}`;
+  }
+  if (/skipped|usable flashcards/i.test(text)) {
+    return `The AI couldn't find enough information in your material for these keywords. Try choosing different keywords. ${QUOTA_NOTE}`;
+  }
+  return `Something went wrong while creating your flashcards. Please try again. ${QUOTA_NOTE}`;
+}
+
 /** Jalankan worker per batch dengan batas paralel; hasil tetap berurutan. */
 async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
   const results: R[] = [];
@@ -55,6 +82,56 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
     results.push(...await Promise.all(wave.map(fn)));
   }
   return results;
+}
+
+type Flashcard = GeneratedFlashcardMaterials["flashcards"][number];
+type BatchResult = { flashcards: Flashcard[]; errors: Error[] };
+
+function subBatch(batch: Batch, keywords: SelectedKeyword[]): Batch {
+  const chunkIds = new Set(keywords.map(keyword => keyword.chunk_id));
+  const sourceChunks = batch.sourceChunks.filter(chunk => chunkIds.has(chunk.chunk_id));
+  return { ...batch, keywords, sourceChunks: sourceChunks.length ? sourceChunks : batch.sourceChunks };
+}
+
+/**
+ * Generate satu batch tanpa pernah melempar error:
+ *  - gagal total (mis. 504 karena output terlalu besar) -> belah dua dan coba
+ *    tiap paruh paralel, alih-alih mengulang payload besar yang sama;
+ *  - AI melewati sebagian keyword -> coba ulang khusus keyword yang terlewat.
+ * Keyword yang tetap gagal dicatat di `errors` dan dilewati oleh pemanggil.
+ */
+async function generateBatch(batch: Batch, deadlineAt: number): Promise<BatchResult> {
+  const canRetry = () => batch.keywords.length > 1 && deadlineAt - Date.now() >= 20_000;
+  let flashcards: Flashcard[];
+  try {
+    flashcards = (await generateSelectedFlashcards(batch.sourceChunks, batch.keywords, batch.contentLanguage, {
+      deadlineAt,
+      timeoutMs: FLASHCARD_ATTEMPT_TIMEOUT_MS,
+      maxAttempts: batch.keywords.length > 1 ? 1 : 2,
+    })).flashcards;
+  } catch (cause) {
+    const error = cause instanceof Error ? cause : new Error(String(cause));
+    if (!canRetry()) return { flashcards: [], errors: [error] };
+    console.warn("[jobs/run] batch failed; splitting", {
+      documentId: batch.documentId,
+      keywords: batch.keywords.length,
+      error: error.message.slice(0, 200),
+    });
+    const middle = Math.ceil(batch.keywords.length / 2);
+    const results = await Promise.all([batch.keywords.slice(0, middle), batch.keywords.slice(middle)]
+      .map(keywords => generateBatch(subBatch(batch, keywords), deadlineAt)));
+    return { flashcards: results.flatMap(result => result.flashcards), errors: results.flatMap(result => result.errors) };
+  }
+
+  const done = new Set(flashcards.map(card => card.keyword_id));
+  const missing = batch.keywords.filter(keyword => !done.has(keyword.id));
+  if (!missing.length || !canRetry()) {
+    return { flashcards, errors: missing.length ? [new Error(`AI skipped ${missing.length} keyword(s)`)] : [] };
+  }
+  console.warn("[jobs/run] AI skipped keywords; retrying them", { documentId: batch.documentId, missing: missing.length });
+  // `missing` selalu lebih kecil dari batch (hasil kosong sudah dilempar), jadi rekursi berhenti.
+  const retry = await generateBatch(subBatch(batch, missing), deadlineAt);
+  return { flashcards: [...flashcards, ...retry.flashcards], errors: retry.errors };
 }
 
 /**
@@ -68,6 +145,7 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promis
  *     pesan batch bermasalah. Notifikasi datang dari trigger yang sudah ada.
  */
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const startedAt = Date.now();
   try {
     const userId = await sessionUser(request);
     const rawId = (await context.params).id;
@@ -83,11 +161,13 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const jobInput = jobBefore.input && typeof jobBefore.input === "object" ? jobBefore.input as { groupName?: unknown; skippedCount?: unknown } : {};
     const requestedGroupName = typeof jobInput.groupName === "string" ? jobInput.groupName.trim().slice(0, 60) : "";
     const skippedCount = Number(jobInput.skippedCount ?? 0) || 0;
-    const failCurrent = async (message:string) => {
+    // message = teks ramah untuk user; detail = info teknis, hanya ke log.
+    const failCurrent = async (message:string, detail?:string) => {
+      if (detail) console.error("[jobs/run] generation failed", { jobId: rawId, detail: detail.slice(0, 2000) });
       await sql.begin(async tx=>{
         await tx`update public.generation_jobs set status='failed',error_message=${message.slice(0,500)},finished_at=now(),completed_at=now() where id=${rawId} and user_id=${userId}`;
         await tx`select private.refund_generation_quota_event(${userId},${`flashcard:${String(jobBefore.idempotency_key)}`})`;
-        await tx`update public.notifications set title='Flashcard group could not be created',body=${`${requestedGroupName || "New flashcard group"}: ${message}`}
+        await tx`update public.notifications set title='Flashcard group could not be created',body=${requestedGroupName ? `"${requestedGroupName}": ${message}` : message}
           where user_id=${userId} and dedupe_key=${`${rawId}:failed`}`;
       });
     };
@@ -111,8 +191,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       order by i.document_id, i.batch_index, i.keyword_id`;
 
     if (!rows.length) {
-      await failCurrent("Tidak ada keyword untuk diproses.");
-      return Response.json({ success: false, status: "failed", error: "Tidak ada keyword untuk diproses." }, { status: 409 });
+      const message = `The selected keywords are no longer available. Please choose them again. ${QUOTA_NOTE}`;
+      await failCurrent(message, "no job items");
+      return Response.json({ success: false, status: "failed", error: message }, { status: 409 });
     }
 
     // Kelompokkan per materi lalu potong per ~10 keyword.
@@ -138,8 +219,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         }
         const sourceChunks: SourceChunk[] = [...chunkByKeyword.entries()].map(([chunk_id, content]) => ({ chunk_id, content }));
         if (!sourceChunks.length) {
-          const message = `Materi "${documentTitle}" tidak memiliki konteks sumber (chunk RAG) untuk batch ini.`;
-          await failCurrent(message);
+          const message = `"${documentTitle}" doesn't have enough readable content for some of these keywords. Try other keywords or upload the material again. ${QUOTA_NOTE}`;
+          await failCurrent(message, `no source chunks for document ${String(slice[0].document_id)}`);
           return Response.json({ success: false, status: "failed", error: message }, { status: 409 });
         }
         batches.push({
@@ -153,35 +234,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     }
 
     // 3. Panggil Gemini per batch, paralel maks 3, DI LUAR transaksi.
-    type BatchOutcome = { batch: Batch; result: GeneratedFlashcardMaterials } | { batch: Batch; error: Error };
-    let outcomes: BatchOutcome[];
-    try {
-      outcomes = await mapLimit(batches, PARALLEL_BATCHES, async batch => {
-        try {
-          const result = await generateSelectedFlashcards(batch.sourceChunks, batch.keywords, batch.contentLanguage);
-          return { batch, result } as BatchOutcome;
-        } catch (error) {
-          return { batch, error: error instanceof Error ? error : new Error(String(error)) } as BatchOutcome;
-        }
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      await failCurrent(`Gagal memanggil AI: ${message}`.slice(0, 500));
-      return Response.json({ success: false, status: "failed", error: "Gagal memanggil AI." }, { status: 500 });
-    }
-
-    const failed = outcomes.filter((o): o is { batch: Batch; error: Error } => "error" in o);
-    if (failed.length) {
-      const detail = failed.slice(0, 3).map(f => `Materi "${f.batch.documentTitle}": ${f.error.message}`).join(" | ");
-      const message = `Gagal membuat flashcard — ${failed.length} batch bermasalah. ${detail}`.slice(0, 500);
-      await failCurrent(message);
-      return Response.json({ success: false, status: "failed", error: message }, { status: 500 });
-    }
+    const outcomes = await mapLimit(batches, PARALLEL_BATCHES, batch => generateBatch(batch, startedAt + FLASHCARD_BUDGET_MS));
+    const batchErrors = outcomes.flatMap(outcome => outcome.errors);
 
     // 4. SATU transaksi: insert semua flashcard + tandai job succeeded.
     const deckId = String(job.deck_id);
-    const generated = new Map((outcomes as { batch: Batch; result: GeneratedFlashcardMaterials }[])
-      .flatMap(outcome=>outcome.result.flashcards).map(card=>[card.keyword_id,card]));
+    const generated = new Map(outcomes.flatMap(outcome=>outcome.flashcards).map(card=>[card.keyword_id,card]));
     let previousBlobVariant: number | undefined;
     const validCards = rows.flatMap(row=>{
       const card=generated.get(String(row.keyword_id));
@@ -189,10 +247,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       const blobVariant=nextBlobVariant(previousBlobVariant);previousBlobVariant=blobVariant;
       return[{document_id:String(row.document_id),source_document_id:String(row.document_id),deck_id:deckId,keyword_id:String(row.keyword_id),job_id:rawId,term:String(row.term).trim().slice(0,250),definition:card.definition.slice(0,4000),blob_variant:blobVariant}];
     });
-    if (validCards.length !== rows.length) {
-      const message = `AI hanya menghasilkan ${validCards.length} dari ${rows.length} kartu. Tidak ada data yang disimpan.`;
-      await failCurrent(message);
+    // Sebagian keyword boleh terlewat (materi tidak membahasnya); gagal hanya bila tidak ada kartu sama sekali.
+    const uncoveredCount = rows.length - validCards.length;
+    if (!validCards.length) {
+      const message = friendlyAiFailure(batchErrors);
+      await failCurrent(message, `AI produced 0 of ${rows.length} cards: ${batchErrors.map(error => error.message).join(" | ")}`);
       return Response.json({ success: false, status: "failed", error: message }, { status: 500 });
+    }
+    if (uncoveredCount) {
+      console.warn("[jobs/run] saving partial group", { jobId: rawId, created: validCards.length, uncoveredCount,
+        errors: batchErrors.map(error => error.message.slice(0, 200)) });
     }
 
     let groupQuiz: GeneratedQuizQuestion[];
@@ -201,11 +265,12 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         validCards.map(card => ({ term: card.term, definition: card.definition })),
         representativeQuizCount(validCards.length),
         batches[0]?.contentLanguage ?? "auto",
+        [],
+        { deadlineAt: startedAt + QUIZ_BUDGET_MS, timeoutMs: FLASHCARD_ATTEMPT_TIMEOUT_MS },
       );
     } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      const message = `Quiz untuk grup gagal dibuat: ${detail}. Tidak ada data yang disimpan.`.slice(0, 500);
-      await failCurrent(message);
+      const message = friendlyAiFailure([error]);
+      await failCurrent(message, `quiz: ${error instanceof Error ? error.message : String(error)}`);
       return Response.json({ success: false, status: "failed", error: message }, { status: 500 });
     }
 
@@ -262,16 +327,16 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         set status='succeeded', finished_at=now(), completed_at=now(),
             flashcard_count=flashcard_count + ${count},
             quiz_count=quiz_count + ${quizCount},
-            result=${tx.json({ groupId: String(group.id), groupName, flashcardCount: count, quizCount, skippedCount, quizSetId: String(quizSet.id) })}
+            result=${tx.json({ groupId: String(group.id), groupName, flashcardCount: count, quizCount, skippedCount, uncoveredCount, quizSetId: String(quizSet.id) })}
         where id=${rawId} and user_id=${userId} and status='running'
         returning id`;
       if (!updated) throw new Error("Job tidak lagi berstatus running.");
-      await tx`update public.notifications set title='Flashcard group ready',body=${`${groupName}: ${count} cards created${skippedCount ? `; ${skippedCount} duplicates skipped` : ""}.`},link=${`/desk/${deckId}`}
+      await tx`update public.notifications set title='Flashcard group ready',body=${`${groupName}: ${count} cards created${skippedCount ? `; ${skippedCount} duplicates skipped` : ""}${uncoveredCount ? `; ${uncoveredCount} keyword${uncoveredCount === 1 ? " was" : "s were"} skipped because the material didn't cover ${uncoveredCount === 1 ? "it" : "them"}` : ""}.`},link=${`/desk/${deckId}`}
         where user_id=${userId} and dedupe_key=${`${rawId}:succeeded`}`;
-      return { groupId: String(group.id), groupName, flashcardCount: count, quizCount, skippedCount, quizSetId: String(quizSet.id) };
+      return { groupId: String(group.id), groupName, flashcardCount: count, quizCount, skippedCount, uncoveredCount, quizSetId: String(quizSet.id) };
     }).catch(async error => {
-      const message = `Penyimpanan flashcard gagal: ${error instanceof Error ? error.message : String(error)}`.slice(0, 500);
-      await failCurrent(message);
+      const message = `Your flashcards were created but couldn't be saved. Please try again. ${QUOTA_NOTE}`;
+      await failCurrent(message, `save: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     });
 

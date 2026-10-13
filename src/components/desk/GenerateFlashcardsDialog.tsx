@@ -79,7 +79,8 @@ export default function GenerateFlashcardsDialog({
 }: {
   deckId: string;
   onClose: () => void;
-  onStarted: (jobId: string) => void;
+  /** toastId: toast loading yang sama diteruskan agar status tetap satu toast. */
+  onStarted: (jobId: string, toastId: string | number) => void;
 }) {
   const toast = useToast();
   // IdempotencyKey dibuat SEKALI saat dialog dibuka (bukan saat klik tombol),
@@ -231,7 +232,7 @@ export default function GenerateFlashcardsDialog({
     busyRef.current = true;
     setSubmitting(true);
     setError("");
-    const toastId = toast.loading("Membuat flashcard...");
+    const toastId = toast.loading("Starting flashcard generation...");
     try {
       const requestBody = generateFlashcardsRequestSchema.parse({
         groupName: groupName.trim() || undefined,
@@ -246,8 +247,7 @@ export default function GenerateFlashcardsDialog({
         }),
         "Could not start generation."
       );
-      toast.success("Proses pembuatan flashcard dimulai.", { id: toastId });
-      onStarted(body.jobId);
+      onStarted(body.jobId, toastId);
       onClose();
     } catch (cause) {
       const response = cause as Error & { code?: GenerateFlashcardsErrorCode };

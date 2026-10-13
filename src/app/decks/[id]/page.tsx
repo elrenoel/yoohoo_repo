@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { GENERATION_FINISHED_EVENT, useGenerationTracker, type GenerationFinishedDetail } from "@/lib/generation-tracker";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -47,15 +48,6 @@ type DeckResponse = {
   flashcardGroups: FlashcardGroup[];
 };
 type FlashcardGroup = { id:string; name:string; createdAt:string; cardCount:number; materials:{id:string;title:string}[]; preview:FlashcardPreview[]; mastery:number; quizSetId:string|null };
-type JobStatusResponse = {
-  job: {
-    id: string;
-    status: string;
-    errorMessage: string | null;
-    flashcardCount: number;
-    quizCount: number;
-  };
-};
 type DocumentKeywordsResponse = {
   document: {
     id: string;
@@ -126,76 +118,33 @@ export default function DeckWorkbenchPage() {
 
   const toast = useToast();
   const queryClient = useQueryClient();
-  const generationToastIdRef = useRef<string | number | null>(null);
-
-  // Job dibuat server (202); worker dijalankan via after() di route generate.
-  // Di sini: toast + refresh daftar + polling status job + invalidasi badge.
-  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  // Status generate dilacak global (GenerationTrackerProvider) agar toast
+  // tetap muncul walau user pindah halaman; di sini cukup daftarkan job dan
+  // refresh deck saat job deck ini selesai.
+  const { activeJobs, trackGeneration } = useGenerationTracker();
+  const activeJobId = activeJobs.find(job => job.deckId === id)?.jobId ?? null;
   const handleGenerateStarted = useCallback(
-    (jobId: string) => {
-      if (generationToastIdRef.current !== null) toast.dismiss(generationToastIdRef.current);
-      generationToastIdRef.current = toast.loading(
-        "Creating flashcards and a quiz... You will be notified when they are ready.",
-      );
-      setActiveJobId(jobId);
+    (jobId: string, toastId: string | number) => {
+      trackGeneration(jobId, { deckId: id, toastId });
       void fetchDeck()
         .then(applyDeck)
         .catch(() => undefined);
       void queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
-    [toast, queryClient, fetchDeck, applyDeck],
+    [id, trackGeneration, queryClient, fetchDeck, applyDeck],
   );
 
-  // Polling status job tiap 4 detik sampai selesai/gagal (UI tidak diblokir).
   useEffect(() => {
-    if (!activeJobId) return;
-    let cancelled = false;
-    const tick = async () => {
-      try {
-        const body = await responseJson<JobStatusResponse>(
-          await fetch(`/api/jobs/${activeJobId}`, { cache: "no-store" }),
-          "The generation status could not be loaded.",
-        );
-        if (cancelled) return;
-        const status = body.job.status;
-        if (status === "succeeded" || status === "completed") {
-          setActiveJobId(null);
-          toast.success(
-            body.job.flashcardCount
-              ? `Done — ${body.job.flashcardCount} flashcards and ${body.job.quizCount} questions were added.`
-              : "Done — your study material was updated.",
-            generationToastIdRef.current === null ? undefined : { id: generationToastIdRef.current },
-          );
-          generationToastIdRef.current = null;
-          void fetchDeck()
-            .then(applyDeck)
-            .catch(() => undefined);
-        } else if (status === "failed" || status === "canceled") {
-          setActiveJobId(null);
-          toast.error(
-            body.job.errorMessage || "Flashcard generation failed.",
-            generationToastIdRef.current === null ? undefined : { id: generationToastIdRef.current },
-          );
-          generationToastIdRef.current = null;
-        }
-        void queryClient.invalidateQueries({ queryKey: ["notifications"] });
-      } catch {
-        // Koneksi sesaat gagal — biarkan polling berikutnya mencoba lagi.
-      }
+    const onFinished = (event: Event) => {
+      const detail = (event as CustomEvent<GenerationFinishedDetail>).detail;
+      if (detail.deckId !== id || detail.status !== "succeeded") return;
+      void fetchDeck()
+        .then(applyDeck)
+        .catch(() => undefined);
     };
-    void tick();
-    const timer = window.setInterval(() => {
-      void tick();
-    }, 4000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [activeJobId, fetchDeck, applyDeck, toast, queryClient]);
-
-  useEffect(() => () => {
-    if (generationToastIdRef.current !== null) toast.dismiss(generationToastIdRef.current);
-  }, [toast]);
+    window.addEventListener(GENERATION_FINISHED_EVENT, onFinished);
+    return () => window.removeEventListener(GENERATION_FINISHED_EVENT, onFinished);
+  }, [id, fetchDeck, applyDeck]);
 
   useEffect(() => {
     let cancelled = false;
@@ -708,23 +657,6 @@ export default function DeckWorkbenchPage() {
           />
         )}
       </div>
-
-      {activeJobId && (
-        <div
-          role="status"
-          className="fixed bottom-24 right-4 z-40 inline-flex max-w-[min(92vw,22rem)] items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-text shadow-none sm:right-7"
-        >
-          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-success-text" />
-          <span className="min-w-0">
-            <span className="block font-medium">
-              Creating flashcards and a quiz...
-            </span>
-            <span className="block text-xs text-text-secondary">
-              The result will appear in Notifications.
-            </span>
-          </span>
-        </div>
-      )}
 
       <div className="pointer-events-none fixed inset-x-0 bottom-10 z-40 px-4 sm:px-7 lg:left-60 lg:px-9">
         <div className="mx-auto flex w-full max-w-[1440px] justify-end">

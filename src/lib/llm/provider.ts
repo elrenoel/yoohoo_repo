@@ -16,7 +16,16 @@ export interface GenerateOptions<T> {
   maxOutputTokens?: number;
   stage: string;
   validate?: (value: unknown) => T;
+  /** Batas waktu per percobaan (dikirim juga sebagai X-Server-Timeout ke Gemini). */
+  timeoutMs?: number;
+  maxAttempts?: number;
+  /** Epoch ms: jangan mulai percobaan baru bila sisa waktu sudah terlalu sedikit. */
+  deadlineAt?: number;
 }
+
+export type LlmCallOptions = Pick<GenerateOptions<unknown>, "timeoutMs" | "maxAttempts" | "deadlineAt">;
+
+const MIN_ATTEMPT_MS = 15_000;
 
 export interface LlmResult<T> {
   value: T;
@@ -48,14 +57,23 @@ function shouldRetry(error: unknown) {
   return status === undefined || status === 408 || status === 429 || status >= 500;
 }
 
-async function withRetry<T>(stage: string, model: string, operation: () => Promise<T>) {
+async function withRetry<T>(
+  stage: string,
+  model: string,
+  operation: (timeoutMs: number) => Promise<T>,
+  { timeoutMs = DEFAULT_TIMEOUT_MS, maxAttempts = MAX_ATTEMPTS, deadlineAt }: LlmCallOptions = {},
+) {
   let lastError: unknown;
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    const remainingMs = deadlineAt === undefined ? Infinity : deadlineAt - Date.now();
+    if (remainingMs < MIN_ATTEMPT_MS) {
+      throw lastError ?? new Error(`Gemini time budget exhausted before ${stage}`);
+    }
     try {
-      return await operation();
+      return await operation(Math.min(timeoutMs, remainingMs));
     } catch (error) {
       lastError = error;
-      if (!shouldRetry(error) || attempt === MAX_ATTEMPTS - 1) throw error;
+      if (!shouldRetry(error) || attempt === maxAttempts - 1) throw error;
       const delayMs = Math.min(1_000 * 2 ** attempt + Math.floor(Math.random() * 250), 10_000);
       console.warn("[LLM] Gemini call failed; retrying the same model", {
         stage,
@@ -84,7 +102,7 @@ export async function generateWithGemini<T = string>(options: GenerateOptions<T>
   const model = configuredGeminiModel();
   const client = new GoogleGenAI({ apiKey: apiKey() });
   const startedAt = Date.now();
-  const value = await withRetry(options.stage, model, async () => {
+  const value = await withRetry(options.stage, model, async timeoutMs => {
     const response = await client.models.generateContent({
       model,
       contents: options.contents,
@@ -96,7 +114,7 @@ export async function generateWithGemini<T = string>(options: GenerateOptions<T>
           responseMimeType: "application/json",
           responseSchema: options.responseSchema,
         } : {}),
-        httpOptions: { timeout: DEFAULT_TIMEOUT_MS },
+        httpOptions: { timeout: timeoutMs },
       },
     });
     const text = response.text?.trim() ?? "";
@@ -104,6 +122,6 @@ export async function generateWithGemini<T = string>(options: GenerateOptions<T>
     if (!options.responseSchema) return text as T;
     const parsed = parseJson(text);
     return options.validate ? options.validate(parsed) : parsed as T;
-  });
+  }, options);
   return { value, model, latencyMs: Date.now() - startedAt };
 }

@@ -39,7 +39,7 @@ export async function POST(request:Request,context:{params:Promise<{id:string}>}
 
    const staleJobs=await tx`select id,user_id,idempotency_key from public.generation_jobs where deck_id=${deckId} and status in ('queued','running') and created_at<now()-interval '5 minutes' for update`;
    for(const stale of staleJobs){
-    await tx`update public.generation_jobs set status='failed',error_message='Generation timed out after 5 minutes.',finished_at=now(),completed_at=now() where id=${stale.id}`;
+    await tx`update public.generation_jobs set status='failed',error_message='This took longer than expected and was stopped. Please try again. Your daily quota wasn''t used.',finished_at=now(),completed_at=now() where id=${stale.id}`;
     await tx`select private.refund_generation_quota_event(${String(stale.user_id)},${`flashcard:${String(stale.idempotency_key)}`})`;
    }
    const[active]=await tx`select id,status from public.generation_jobs where deck_id=${deckId} and status in ('queued','running') limit 1`;

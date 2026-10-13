@@ -5,6 +5,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import QueryProvider from "@/lib/query-provider";
 import { SessionProvider } from "@/lib/session-provider";
 import { AppToaster } from "@/lib/toast";
+import { GenerationTrackerProvider } from "@/lib/generation-tracker";
 import "katex/dist/katex.min.css";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import type { SessionData } from "@/lib/session-provider";
@@ -53,7 +54,9 @@ export default async function RootLayout({
           <QueryProvider>
             <SessionProvider initialSession={initialSession as SessionData | null}>
               <LanguageProvider>
-                <AppShell root>{children}</AppShell>
+                <GenerationTrackerProvider>
+                  <AppShell root>{children}</AppShell>
+                </GenerationTrackerProvider>
                 <AppToaster />
               </LanguageProvider>
             </SessionProvider>
