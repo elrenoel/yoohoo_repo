@@ -3,6 +3,9 @@ import { Pool } from "pg";
 import { APIError } from "better-auth";
 import { createAuthMiddleware, getOAuthState } from "better-auth/api";
 import { captcha, emailOTP, haveIBeenPwned } from "better-auth/plugins";
+import { PASSWORD_RULES } from "./password-rules";
+
+export { PASSWORD_RULES } from "./password-rules";
 
 // Fase 5 CSP reminder: allow https://challenges.cloudflare.com in script-src
 // and frame-src so the Turnstile widget can load and render.
@@ -54,6 +57,25 @@ async function sendVerificationOTP({ email, otp, type }: { email: string; otp: s
   if (!response.ok) throw new Error("Unable to send OTP email");
 }
 
+async function sendPasswordResetEmail({ user, url }: { user: { email: string; name: string }; url: string }) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    if (process.env.NODE_ENV !== "production") console.warn("Password reset URL (development only):", url);
+    return;
+  }
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.EMAIL_FROM || "Yoohoo <onboarding@resend.dev>",
+      to: [user.email],
+      subject: "Set or reset your Yoohoo password",
+      text: `Hi ${user.name},\n\nSet or reset your Yoohoo password by opening this link:\n${url}\n\nThis link expires in 60 minutes. If you did not request this, you can ignore this email.`,
+    }),
+  });
+  if (!response.ok) throw new Error("Unable to send password reset email");
+}
+
 /**
  * Payload carried inside the OAuth callback error when the login page's
  * "Login dengan Google" hits an email that is not registered yet.
@@ -97,13 +119,6 @@ function decodeNotRegisteredPayload(error: string): { email: string; name: strin
  * These same rules are enforced on the server (below) and
  * displayed in the register form on the client.
  */
-export const PASSWORD_RULES = {
-  minLength: 10,
-  maxLength: 128,
-  hasLetter: /[a-zA-Z]/,
-  hasNumber: /[0-9]/,
-} as const;
-
 /**
  * Standard email regex (RFC 5322 simplified).
  * Better Auth already validates email via zod z.email() in its sign-up route,
@@ -128,6 +143,8 @@ export const auth = betterAuth({
   },
   emailVerification: {
     requireEmailVerification: true,
+    sendResetPassword: sendPasswordResetEmail,
+    revokeSessionsOnPasswordReset: true,
     sendOnSignUp: true,
     sendOnSignIn: true,
     autoSignInAfterVerification: false,

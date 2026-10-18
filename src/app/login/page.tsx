@@ -23,6 +23,7 @@ function LoginForm() {
   const oauthError = searchParams.get("error");
   const requestedNext = searchParams.get("next");
   const nextPath = requestedNext?.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/home";
+  const noticeText = noticeMessage === "password-reset" ? t("auth.passwordResetLoginNotice") : noticeMessage;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -128,10 +129,10 @@ function LoginForm() {
         </p>
       </div>
 
-      {noticeMessage && (
+      {noticeText && (
         <div className="mb-6 flex items-start gap-2.5 text-xs text-warning-text bg-warning-subtle border border-warning-border p-3.5 rounded-xl">
           <Info className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{noticeMessage}</span>
+          <span>{noticeText}</span>
         </div>
       )}
 
@@ -251,6 +252,14 @@ function LoginForm() {
             >
               {isPasswordVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
             </button>
+          </div>
+          <div className="mt-2 text-right">
+            <Link
+              href="/forgot-password"
+              className="text-xs font-medium text-text-secondary underline underline-offset-4 transition hover:text-text"
+            >
+              {t("auth.forgotPassword")}
+            </Link>
           </div>
         </div>
 

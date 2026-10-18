@@ -19,14 +19,9 @@ import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import { useToast } from "@/lib/toast";
+import { PASSWORD_RULES } from "@/lib/password-rules";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PASSWORD_RULES = {
-  minLength: 8,
-  hasLetter: /[a-zA-Z]/,
-  hasNumber: /[0-9]/,
-};
-
 function validateEmail(email: string, t: (key: TranslationKey) => string): string | null {
   if (!email.trim()) return t("auth.emailRequired");
   if (!EMAIL_REGEX.test(email.trim())) return t("auth.emailInvalid");
