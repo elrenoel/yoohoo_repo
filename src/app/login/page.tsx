@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "@/lib/auth-client";
 import { useSession } from "@/lib/session-provider";
 import { useI18n } from "@/lib/i18n";
-import { ArrowRight, AlertCircle, Loader2, Info } from "lucide-react";
+import { ArrowRight, AlertCircle, Eye, EyeOff, Loader2, Info } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
@@ -26,6 +26,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -227,16 +228,30 @@ function LoginForm() {
           <label htmlFor="password" className="block text-xs font-medium text-text-secondary mb-1.5">
             {t("auth.passwordLabel")}
           </label>
-          <input
-            id="password"
-            type="password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            disabled={isLoading}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-control-border bg-surface-subtle text-text text-sm transition disabled:opacity-50"
-          />
+          <div className="relative">
+            <input
+              id="password"
+              type={isPasswordVisible ? "text" : "password"}
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              placeholder="••••••••"
+              disabled={isLoading}
+              className="w-full px-3.5 py-2.5 pr-11 rounded-xl border border-control-border bg-surface-subtle text-text text-sm transition disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={() => setIsPasswordVisible((visible) => !visible)}
+              aria-label={isPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+              aria-pressed={isPasswordVisible}
+              title={isPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+              disabled={isLoading}
+              className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-text-muted transition hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+            >
+              {isPasswordVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+            </button>
+          </div>
         </div>
 
         <div className="pt-2">

@@ -198,6 +198,8 @@
   "auth.orEmail": "atau dengan email",
   "auth.emailLabel": "Alamat Email",
   "auth.passwordLabel": "Kata Sandi",
+  "auth.showPassword": "Tampilkan kata sandi",
+  "auth.hidePassword": "Sembunyikan kata sandi",
   "auth.verifying": "Memverifikasi...",
   "auth.loginButton": "Masuk",
   "auth.noAccount": "Belum memiliki akun? ",

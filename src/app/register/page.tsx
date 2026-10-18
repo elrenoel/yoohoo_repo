@@ -11,6 +11,8 @@ import {
   AlertCircle,
   Loader2,
   Check,
+  Eye,
+  EyeOff,
   Info,
 } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
@@ -116,6 +118,8 @@ function RegisterForm() {
   const [password, setPassword] = useState("");
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -466,19 +470,33 @@ function RegisterForm() {
               <label htmlFor="password" className="block text-xs font-medium text-text-secondary mb-1.5">
                 {t("auth.passwordLabel")}
               </label>
-              <input
-                id="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (!passwordTouched) setPasswordTouched(true);
-                }}
-                placeholder="••••••••"
-                disabled={isLoading}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-control-border bg-surface-subtle text-text text-sm transition disabled:opacity-50"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  type={isPasswordVisible ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (!passwordTouched) setPasswordTouched(true);
+                  }}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                  className="w-full px-3.5 py-2.5 pr-11 rounded-xl border border-control-border bg-surface-subtle text-text text-sm transition disabled:opacity-50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordVisible((visible) => !visible)}
+                  aria-label={isPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                  aria-pressed={isPasswordVisible}
+                  title={isPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                  disabled={isLoading}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-text-muted transition hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+                >
+                  {isPasswordVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                </button>
+              </div>
 
               <div
                 className="overflow-hidden transition-all duration-300"
@@ -506,20 +524,34 @@ function RegisterForm() {
               <label htmlFor="confirmPassword" className="block text-xs font-medium text-text-secondary mb-1.5">
                 {t("auth.confirmPasswordLabel")}
               </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                disabled={isLoading}
-                className={`w-full px-3.5 py-2.5 rounded-xl border bg-surface-subtle text-text text-sm transition disabled:opacity-50 ${
-                  confirmPassword && confirmPassword !== password
-                    ? "border-danger"
-                    : "border-control-border"
-                }`}
-              />
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  type={isConfirmPasswordVisible ? "text" : "password"}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                  className={`w-full px-3.5 py-2.5 pr-11 rounded-xl border bg-surface-subtle text-text text-sm transition disabled:opacity-50 ${
+                    confirmPassword && confirmPassword !== password
+                      ? "border-danger"
+                      : "border-control-border"
+                  }`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsConfirmPasswordVisible((visible) => !visible)}
+                  aria-label={isConfirmPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                  aria-pressed={isConfirmPasswordVisible}
+                  title={isConfirmPasswordVisible ? t("auth.hidePassword") : t("auth.showPassword")}
+                  disabled={isLoading}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-text-muted transition hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+                >
+                  {isConfirmPasswordVisible ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
+                </button>
+              </div>
               {confirmPassword && confirmPassword !== password && (
                 <p className="mt-1.5 text-[11px] text-danger-text flex items-center gap-1">
                   <AlertCircle className="w-3 h-3 shrink-0" />

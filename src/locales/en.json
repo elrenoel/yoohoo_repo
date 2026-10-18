@@ -198,6 +198,8 @@
   "auth.orEmail": "or with email",
   "auth.emailLabel": "Email Address",
   "auth.passwordLabel": "Password",
+  "auth.showPassword": "Show password",
+  "auth.hidePassword": "Hide password",
   "auth.verifying": "Verifying...",
   "auth.loginButton": "Log in",
   "auth.noAccount": "Don't have an account? ",
